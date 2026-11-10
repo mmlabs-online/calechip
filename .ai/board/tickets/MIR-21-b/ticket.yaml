@@ -1,0 +1,64 @@
+# Created by `tech-lead-design` at /plan MIR-21 on 2026-11-05: the write slice and the drop of
+# feature MIR-21, split by operation (ADR-077 decision 3; .ai/board/tickets/MIR-21/01-plan.md § 1
+# and § 7). Not produced by /triage: no idea file promotes it. It shares MIR-21's feature row, which
+# stays PLANNED until this ticket ships.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-21-b
+title: "Every writer writes `membership` directly, and the mirror trigger, `member_team_id()` and `member.team_id` are dropped"
+feature_ids: [MIR-21]   # split of MIR-21 (operating model § ID scheme: splits get -a, -b)
+group: MIR
+state: DONE          # `orchestrator` at /ship, 2026-11-05
+owner: ""
+branch: ""
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. Predicted at /plan MIR-21: about 18 paths, so L. Split again at /plan MIR-21-b: the drop went to MIR-21-c (ADR-078), leaving 9 paths. The title above still names the drop; the drop is now MIR-21-c's
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-05, MIR-06, MIR-07, MIR-08, MIR-09, MIR-10, MIR-12, MIR-13, MIR-13-b, MIR-21]   # "Blocked by" — MIR-21 moves every reader off the column first (ADR-077 decision 3)
+invariants_touched: [INV-04, INV-07]
+allowed_paths:
+  - ".ai/registry/decisions/ADR-078-writers-write-membership-alongside-the-column-and-the-drop-moves-to-mir-21-c.md"
+  - ".ai/board/tickets/MIR-21-c/ticket.yaml"
+  - ".ai/board/tickets/MIR-16/ticket.yaml"
+  - ".ai/board/tickets/MIR-17/ticket.yaml"
+  - ".ai/board/tickets/MIR-19/ticket.yaml"
+  - ".ai/board/tickets/MIR-20/ticket.yaml"
+  - "supabase/migrations/20261105210000_mir21b_writers_write_membership.sql"
+  - "supabase/tests/230-writers-write-membership.test.sql"
+  - "supabase/create-account.sql"
+  - "supabase/tests/160-read-path-org-bound.test.sql"   # AC-9 fixture only, :263-268; 99-questions.md, 2026-11-05
+glossary_owed: []
+schema_delta: "ADR-078: adds the owner-only helper membership_make_primary(uuid, uuid); rewrites eight writer functions and the member_update_admin policy so they write membership and read member_roster_team_id; narrows the member_sync_membership trigger to insert or update of removed_at. No table, column or constraint changes (01-plan.md § 6)"
+requires_adr: true    # ADR-078, written under the operator's delegation (ADR-067), within ADR-077 decision 5
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 1, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-11-05T21:19:00+07:00" }
+  review: { passed: true, at: "2026-11-05T22:50:31+07:00" }   # orchestrator at /advance, from 04-review.md verdict: PASS
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+mir_phase: 3
+mir_plan_item: "P3-3, last step"             # .ai/board/plans/calechip-multi-tenancy-plan.md:187, write half and the drop
+verification_required: true
+expected_impact: []   # [predicted] none: the column has no reader after MIR-21
+mir_detail: |
+  The write slice and the drop of P3-3's last step. MIR-21 (the read slice) ships first and leaves,
+  in the database: `public.member_roster_team_id(uuid)` and the computed field
+  `public.roster_team_id(public.member)` (ADR-077 decision 2), and no read policy, read function or
+  seam read on the `member.team_id` column (MIR-21/01-plan.md § 4).
+
+  In scope, from MIR-21/01-plan.md § 1 *Out of scope* (latest definitions as of 2026-11-05):
+  - writer functions: admit_member, move_member, set_member_team, reject_member, set_member_role,
+    promote_member_to_admin, delete_team, grant_system_admin, admit_allow_listed_member
+  - write-side predicates and triggers: member_decide_admin, member_enforce_role_and_removal,
+    stamp_org_id (the `member` branch: org from `new.team_id`)
+  - drops: trigger and function member_sync_membership; public.member_team_id(uuid); column
+    member.team_id (and its index, ADR-069)
+  - fixtures inserting member.team_id: supabase/tests 010, 030, 040, 070, 100 (the case table at
+    :200 reads member_team_id), 110, 120, 140 (the mirror's own tests), 150, 160, 170, 180, 190;
+    supabase/seed.sql, supabase/bootstrap.sql, supabase/create-account.sql
+  - .ai/standards/data-model.md, where it documents the column
+  - the seam keeps `team_id:roster_team_id` (ADR-077 decision 2); no seam change is predicted
+
+  Predicted L at /plan MIR-21: its PLAN splits it again.

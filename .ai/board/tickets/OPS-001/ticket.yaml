@@ -1,0 +1,280 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-09-03 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: OPS-001
+title: "UI copy to English — chrome, account and team screens"
+feature_ids: [TEA-01, TEA-02, TEA-03, TEA-04, TEA-05]
+group: TEA
+state: DONE     # orchestrator at /ship, 2026-09-03, on 04-review.md `gate: PASS` /
+                # `next_state: DONE`. The developer's line, left as the record of the prior value:
+                # "state: REVIEW  # developer at /implement, 2026-09-03, on 03-impl-log.md gate: PASS."
+                # NOTE: gates.plan below is still `passed: false` and DoR was never evaluated —
+                # 01-plan.md carries `gate: PASS` / `next_state: READY` but nothing recorded it.
+                # That transition is orchestrator-owned (.ai/01-operating-model.md:82) and is NOT
+                # the developer's to make, so it is left alone rather than back-filled. /ship
+                # requires BOTH gates true, so it blocks there until the orchestrator records it.
+owner: ""
+branch: "feat/OPS-001"   # NOT `ops/<slug>`. See §4 — this is deliberate and it is not free.
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR. Read from 01-plan.md
+                      # section 1. Nine files - seven shipped screens, one config, one spec - and 72
+                      # lines carrying a diacritic, MEASURED on origin/main rather than recalled.
+                      # Not S: seven files, and AllowList and MemberList carry 23 and 25 lines each.
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. Counted from
+                      # the nine allowed_paths below, 01-plan.md section 7. AGREES with
+                      # size_estimate; ADR-012 is not engaged. Nine sits inside M's ceiling of
+                      # twelve, which is what the OPS-001/OPS-002 split at triage was for.
+depends_on: [CAL-03]  # see §3 — this FAILS Definition of Ready item 3 today, on purpose
+invariants_touched: []
+# 01-plan.md section 2. `[]` REACHED, NOT DEFAULTED - the value above is identical to the template's
+# default and this comment is the difference. invariants.md warns that concluding "none" from safe
+# behaviour is circular, so the MECHANISM is stated rather than the conclusion:
+#
+# NO FILE IN allowed_paths READS OR WRITES A ROW. All seven source files sit ABOVE the seam - none is
+# under src/lib/data/, none imports the Supabase client (RULE-02's lint rule would refuse it), and
+# none contains a query, a policy, a migration or an arithmetic. ui-language.json is lint and test
+# configuration. The one spec edited changes three assertions about a rendered label.
+#
+# THE SEAM FILES THAT DO CARRY COPY - src/lib/data/mock.ts and supabase.ts, 26 and 24 diacritic lines
+# - ARE DELIBERATELY OPS-002's. So this ticket does not touch the layer where a row could be reached
+# at all, which is why `[]` is a fact about the file list rather than a judgement about behaviour.
+#
+# INV-03 IS THE NEAREST and is written out because it is the only invariant whose subject is TEXT: a
+# rejected entry must carry a non-empty rejection_reason. That text is USER-AUTHORED and this ticket
+# changes no default for it, no validation of it and no storage of it. ui-design-system.md § Language
+# settles the category - "what the product says is English; what a user typed is whatever they typed".
+# allowed_paths - 01-plan.md section 7. Nine globs, nine files. NOTHING IS NEW; the first ticket on
+# this board to create no file at all.
+#
+# NO INLINE COMMENTS ON THE ITEMS. `readYamlList` in scripts/check-allowed-paths.mjs and in
+# .claude/hooks/guard-allowed-paths.mjs strips only a LEADING and a TRAILING quote, so a trailing
+# `# ...` is swallowed into the pattern and the glob then matches nothing.
+#
+# ***src/lib/fixtures.ts AND supabase/seed.sql ARE ABSENT AND THAT IS A CONTROL, NOT AN OMISSION.***
+# They are § Language's permanent exception and ui-language.json's `userContent` - the product's only
+# coverage for the diacritics requirement in CLAUDE.md § Visual direction. A file outside
+# allowed_paths is refused by guard-allowed-paths.mjs at write time and by check-allowed-paths.mjs in
+# CI, so RULE-03 enforces the exception here even though no rule was written to do so.
+#
+# ALSO DELIBERATELY ABSENT, each with its reason in 01-plan.md section 7: tests/ui-language.test.ts
+# (THE SAFETY NET - must pass UNEDITED; it is what fails if the exception is translated away or a
+# paid debt stays listed); eslint.config.js (it READS copyDebt from ui-language.json and needs no
+# change - editing the rule instead of the list is how a ratchet becomes a suppression list);
+# OPS-002's five files; every other shipped e2e suite (they assert selectors and no selector
+# changes); .ai/standards/ui-design-system.md (the standard is IMPLEMENTED, never amended - RULE-01);
+# .ai/registry/features.md (/triage already appended the provenance sentence; Status is /ship's).
+allowed_paths:
+  - "src/App.tsx"
+  - "src/routes/Home.tsx"
+  - "src/routes/SignIn.tsx"
+  - "src/routes/SignUp.tsx"
+  - "src/routes/NotOnATeam.tsx"
+  - "src/routes/AllowList.tsx"
+  - "src/routes/MemberList.tsx"
+  - "ui-language.json"
+  - "tests/e2e/tea-05-sign-in.spec.ts"
+schema_delta: none
+requires_adr: false
+rework_count: 0
+chat_budget:
+  # ADR-019 retired `ba` from the loop, so the two `->ba` edges are gone. They are not listed as
+  # zeroes: an edge nobody can walk is not a budget, it is a row that invites someone to try.
+  developer->tech-lead-design: { used: 0, max: 6 }
+  # ADR-022 removed the QA stage, and the `qa->tech-lead-design` edge with it.
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: 2026-09-03T16:29:46+07:00 }   # ADR-019 merged `spec` and `design`
+  review: { passed: true, at: 2026-09-03T16:56:32+07:00 }
+  #
+  # WRITTEN BY `orchestrator` AT /ship on 2026-09-03, each QUOTED from the artifact that carries it
+  # rather than re-judged:
+  #   plan   -> 01-plan.md:5   `produced_at: 2026-09-03T16:29:46+07:00`, `gate: PASS`
+  #   review -> 04-review.md:5 `produced_at: 2026-09-03T16:56:32+07:00`, `gate: PASS`
+  #
+  # NO `qa` KEY AND NONE IS OWED. This shell was created by `product` on 2026-09-03, after ADR-022,
+  # so it is the first in this repository to arrive at /ship already carrying the correct two-gate
+  # shape. The five tickets before it each carried the four pre-ADR-019 keys and each had to be
+  # migrated by whichever role noticed. Nothing needed migrating here.
+  #
+  # THE DEFINITION OF READY WAS GRADED and this is its only record: `orchestrator` graded all six
+  # items at /next-ticket on 2026-09-03, six of six PASS. Item 3 is worth naming because this file
+  # still says otherwise a few lines above: the comment beside `depends_on` reads "this FAILS
+  # Definition of Ready item 3 today, on purpose", which was true when `product` wrote it and is
+  # false now — CAL-03 reached DONE on 2026-09-03 in PR #38. The comment is left standing rather
+  # than rewritten, as the record of what was true at triage.
+  # No `qa` key. ADR-022 removed the stage and this shell is created after that date, so the two
+  # gates that decide anything are `plan` and `review`. /ship requires both.
+
+# Created by `product` at /triage on 2026-09-03, on a PROMOTE verdict, from
+# .ai/board/ideas/2026-09-03-the-interface-and-its-standard-speak-different-languages.md.
+# That file's verdict section is the reasoning; this block carries only what binds PLAN.
+#
+# Definition of Ready items 1, 3, 4 and 6 are filled here — they are produced at BACKLOG (ADR-010).
+# Items 2 and 5 (invariants_touched, size_estimate) are deliberately left as the template ships
+# them: they belong to tech-lead-design at PLAN, and the gate sits after PLAN so that they can.
+#
+# ---------------------------------------------------------------------------------------------
+# 0. ***THE PRECONDITION. READ IT BEFORE ANYTHING ELSE — IT IS NOT `depends_on`.***
+#
+# PR #37 IS OPEN AND UNMERGED. The standard this ticket exists to satisfy —
+# `§ Language` in .ai/standards/ui-design-system.md — lives in exactly ONE commit, `3ccbd37`, the
+# sole commit of the `ops/ui-language-english` branch. It is NOT on `main`.
+#
+# IF PR #37 DOES NOT MERGE, THIS TICKET IS INVALID RATHER THAN BLOCKED. There is no standard, so
+# there is no chore, and the correct action is to close it — not to wait.
+#
+# THIS CANNOT BE `depends_on`. That field names TICKETS and is graded by Definition of Ready item 3
+# against ticket state. No ticket can name a pull request, so the precondition is written here in
+# prose because there is no field that will carry it and nothing in the loop will ask.
+#
+# CITE THE STANDARD AS `3ccbd37:.ai/standards/ui-design-system.md`, NEVER BARE. On any branch other
+# than `ops/ui-language-english`, .ai/standards/ui-design-system.md is the 52-line STUB — and a bare
+# line citation does not merely dangle, it RESOLVES TO THE WRONG SECTION: `:44-48` on the stub is
+# `## Selectors`. That is worse than a broken reference, because it reads as correct.
+#
+# ---------------------------------------------------------------------------------------------
+# 1. SCOPE — the chrome, account and team screens. SEVEN FILES PLUS THREE TEST ASSERTIONS.
+#
+# This is one half of a thirteen-file surface. The other half is OPS-002. The cut is at the
+# entry-management boundary and the reason it is cut at all is arithmetic, not taste:
+# .ai/01-operating-model.md:374 sizes "more than 12" files as L and says L MUST SPLIT AT PLAN. A
+# single thirteen-file ticket would reach PLAN only to be split there.
+#
+# Interface copy to translate — each with the diacritic line count measured at triage:
+#
+#   src/App.tsx              2   the mock-seam banner :42, "Đang tải…" :55
+#   src/routes/Home.tsx      5   roleLabel :26, body :60, nav :73 and :88, sign-out :99
+#   src/routes/SignIn.tsx    4   heading, password label, submit/submitting, one refusal :54
+#   src/routes/SignUp.tsx    9   headings, four field labels, submit, TWO aria-labels :124 :128
+#   src/routes/NotOnATeam.tsx 4  the whole empty state
+#   src/routes/AllowList.tsx 23  headings, table headers, states, confirmation, aria-labels :162 :271
+#   src/routes/MemberList.tsx 25 a SECOND roleLabel :23, table headers, confirmation, aria-label :315
+#
+# Plus exactly THREE assertions in tests/e2e/tea-05-sign-in.spec.ts — :65, :146, :155. They read
+# `home-member-role`, which is the label at src/routes/Home.tsx:26, so they move with it.
+#
+# ***THE OTHER VIETNAMESE IN THAT SPEC FILE MUST NOT MOVE.*** :63, :137 and :140 assert
+# `home-member-name`, which is SEED DATA. See §2. Three lines change in that file, not six.
+#
+# THE ARIA-LABELS ARE THE ONES THAT SURVIVE A CARELESS PASS. Five of them across three files. They
+# render nothing visible, so no manual walkthrough and no screenshot will ever catch a missed one.
+#
+# `roleLabel` IS WRITTEN TWICE — src/routes/Home.tsx:26 and src/routes/MemberList.tsx:23. Both are
+# in this ticket, so this is the ticket that can stop them drifting. Whether to fold them into one
+# module is PLAN's call, not triage's.
+#
+# ---------------------------------------------------------------------------------------------
+# 2. ***OUT OF SCOPE, AND IT IS A NEGATIVE REQUIREMENT — THE KIND NOBODY CHECKS.***
+#
+#   src/lib/fixtures.ts   —  8 Vietnamese lines. DO NOT TOUCH.
+#   supabase/seed.sql     — 16 Vietnamese lines. DO NOT TOUCH.
+#
+# 3ccbd37:.ai/standards/ui-design-system.md:61-74 carries a DELIBERATE EXCEPTION. Display names,
+# team names and note text in fixtures and seed data STAY VIETNAMESE, WITH DIACRITICS. They are not
+# interface copy — they are stand-in USER CONTENT, and the users of this product are a Vietnamese
+# team whose names carry diacritics. The line is BY ROLE, NOT BY FILE:
+#   "What the product says is English; what a user typed is whatever they typed."
+#
+# IT IS THE PRODUCT'S ONLY COVERAGE FOR THE DIACRITICS REQUIREMENT in CLAUDE.md § Visual direction,
+# which asks for a type face that renders Vietnamese diacritics correctly. Flatten it and NOTHING
+# ANYWHERE renders a diacritic, so the next font change breaks the real names of real people.
+#
+# ***THE FAILURE IS SILENT AND THE STANDARD PREDICTED IT IN ADVANCE***
+# (3ccbd37:.ai/standards/ui-design-system.md:70-71). The mechanism, verified in this tree:
+#
+#   src/routes/Home.tsx:26          roleLabel returns "Thành viên"  -> INTERFACE, translate
+#   supabase/seed.sql:345, :356     display_name is "Thành viên"    -> USER CONTENT, keep
+#   tests/e2e/tea-05-sign-in.spec.ts:63  asserts home-member-name    -> the SEED row, keep
+#   tests/e2e/tea-05-sign-in.spec.ts:65  asserts home-member-role    -> the LABEL, translate
+#
+# SAME LITERAL. TWO LINES APART. OPPOSITE VERDICTS. A find-and-replace of "Thành viên" translates
+# the seed data along with the label AND EVERY TEST STILL PASSES. Nothing in the toolchain will
+# report it: scripts/check-docs.mjs has NO language check and eslint.config.js has NO rule for it.
+# The only control is whoever reads the diff.
+#
+# Also out of scope, each for its own reason:
+#   - REINTERPRETING § Language. It is .ai/standards/, human plane under RULE-01.
+#   - DATE, NUMBER AND NAME-ORDER FORMATTING. src/routes/AllowList.tsx:20 renders `dd/MM/yyyy`,
+#     which is numeric and language-neutral, so nothing here forces the question. § Language governs
+#     STRINGS. Whether "English" reaches into formats is open question 4 in the idea and belongs to
+#     the first calendar view, not here.
+#   - BUILDING A CHECK OR LINT RULE that enforces § Language. Named in the idea as absent because it
+#     explains why this went unnoticed. An unbuilt mechanism belongs in .ai/board/model-debt.md.
+#   - THE `PLANNED` FEATURES' COPY. English by the standard alone, at no cost, no ticket needed.
+#
+# NOTE ON `invariants_touched`: left as the template's `[]`, which is the DEFAULT and not an answer.
+# .ai/registry/invariants.md warns that concluding "none" from safe behaviour is circular reasoning.
+# What triage did establish, and PLAN may use as a starting point rather than a conclusion: the
+# ledger's seven rows all range over `entry` and `member` ROWS, and INV-03 — the nearest — requires a
+# rejected entry to carry a NON-EMPTY rejection reason, which is user-authored text. An entry whose
+# reason was typed in Vietnamese still satisfies it. PLAN reaches its own answer and writes it.
+#
+# ---------------------------------------------------------------------------------------------
+# 3. `depends_on: [CAL-03]` — AND IT FAILS DEFINITION OF READY ITEM 3 TODAY, ON PURPOSE
+#
+# Item 3 (.ai/01-operating-model.md:333) requires every ticket in `depends_on` to be DONE. CAL-03 is
+# `BACKLOG`. SO THIS TICKET IS NOT READY AND IS NOT MEANT TO LOOK READY. DoR is evaluated after
+# PLAN, and item 3 passes when CAL-03 ships. Stated plainly so it reads as a dependency rather than
+# as an oversight — the inverse of BUG-001 §3, which had to explain why its list was EMPTY.
+#
+# THE DEPENDENCY IS A FILE COLLISION, NOT A BEHAVIOURAL ONE. CAL-03's allowed_paths claim TWO of the
+# seven files above: src/App.tsx and src/routes/Home.tsx. At the time this shell was written a
+# concurrent session was actively editing both. Two writers in one working tree is how work is lost
+# (ADR-006, MD-013), and this repository runs ONE working directory with ONE branch.
+#
+# ---------------------------------------------------------------------------------------------
+# 4. `branch: "feat/OPS-001"` — NOT `ops/<slug>`, AND THE COST IS RECORDED RATHER THAN GLOSSED
+#
+# .ai/standards/git-conventions.md:33 gives chore work the pattern `ops/<slug>` and marks its path
+# guard "inactive, correctly". THAT ROW WAS WRITTEN FOR STEWARD CHORES ON THE MODEL PLANE. This
+# chore edits SEVEN SHIPPED APPLICATION FILES, which is the case the word "correctly" does not cover.
+#
+# MEASURED, NOT ASSUMED: scripts/check-allowed-paths.mjs:96-98 exits 0 with "nothing to check" on any
+# branch that does not begin `feat/`; :101-103 slices `feat/` off and resolves the remainder to
+# .ai/board/tickets/<ID>/ticket.yaml. So an `ops/` branch would run RULE-03 UNENFORCED across shipped
+# files, and `feat/OPS-001` is the only name under which the guard is live.
+#
+# WHAT IT COSTS, and it is the same debt `feat/BUG-001` incurred: git-conventions.md:36 says
+# `<FEATURE-ID>` is a row in .ai/registry/features.md and nothing else — and OPS-001 is not a row.
+# THE OPERATOR SETTLED THIS EXACT TRADE-OFF FOR `feat/BUG-001` ON 2026-09-03, choosing the enforced
+# guard over the documented name with the contradiction in front of them. The full record is the
+# §4 CORRECTION block at the end of .ai/board/tickets/BUG-001/ticket.yaml.
+#
+# ***DO NOT REOPEN IT HERE.*** The residual contradiction with git-conventions.md:36 is standards
+# plane under RULE-01, it is unresolved, and it is not this ticket's to resolve. Fixing the two
+# resolvers is steward work on an `ops/` branch — do not let it grow into here.
+#
+# ---------------------------------------------------------------------------------------------
+# 5. DEFINITION OF READY ITEM 6 — SATISFIED LITERALLY, NO SPLIT RATIONALE NEEDED
+#
+# Item 6 (.ai/01-operating-model.md:336) reads "Exactly one feature group, or a stated split
+# rationale". All five feature_ids are TEA. EXACTLY ONE GROUP, so the first clause applies and
+# nothing is owed. OPS-002 is the ticket that needs the second clause.
+#
+# The five rows and what each contributes, so a reviewer can check the list rather than trust it:
+#   TEA-01  src/routes/SignUp.tsx, and src/App.tsx — the seam banner its own suite asserts
+#   TEA-02  src/routes/AllowList.tsx
+#   TEA-03  src/routes/MemberList.tsx — the list itself
+#   TEA-04  src/routes/MemberList.tsx — the remove and promote controls and their confirmation
+#   TEA-05  src/routes/Home.tsx, SignIn.tsx, NotOnATeam.tsx, and the three spec assertions
+#
+# src/App.tsx IS AN ATTRIBUTION RATHER THAN A CERTAINTY. Its banner is asserted by TEA-01's suite
+# (tests/e2e/tea-01-signup.spec.ts:49-56) and its "Đang tải…" is the auth loading state, which is
+# TEA-05's. Both rows are in the list either way, so nothing turns on it — flagged so a reviewer
+# does not read a judgement call as a fact.
+#
+# ---------------------------------------------------------------------------------------------
+# 6. WHY THERE IS NO NEW ROW IN .ai/registry/features.md
+#
+# THIS IS A CHORE AGAINST ALREADY-SHIPPED SURFACE. Not a defect — nothing regressed, and the
+# Vietnamese copy was CORRECT until the standard landed on 2026-09-03. Not a capability — a row
+# would file "translate the copy" as something the product contains, and CLAUDE.md calls that file
+# "the only valid source of feature IDs". .ai/01-operating-model.md:317 declares the scheme:
+# "Defects are BUG-nnn, chores are OPS-nnn."
+#
+# CHECK D1 IS NOT TRIPPED. scripts/check-docs.mjs:184-185 builds \b(?:CAL|ADM|TEA)-\d{2}\b from the
+# declared prefixes; `OPS-001` matches neither half — wrong prefix, three digits against \d{2}.
+#
+# WHAT WAS WRITTEN INSTEAD, following .ai/board/tickets/BUG-001/ticket.yaml §2 exactly: a sentence
+# appended to the `Notes` of EACH of the five feature rows above, citing the idea file and this
+# ticket. That plus the idea filename in this header is THE WHOLE PROVENANCE A REVIEWER GETS.
+# RULE-01 permits a feature-row edit with no ADR; CODEOWNERS review at merge is the approval.

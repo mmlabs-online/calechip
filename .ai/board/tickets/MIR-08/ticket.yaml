@@ -1,0 +1,67 @@
+# Copied from .ai/templates/ticket.yaml by `claude` on 2026-10-12, recording item P2-1 of
+# .ai/board/plans/calechip-multi-tenancy-plan.md. Not produced by /triage: no idea file promotes it.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-08
+title: "`supabase/db.sql` is regenerated from the applied migrations or retired, and CI fails on drift"
+feature_ids: [MIR-08]   # ADR-063 row; written by the steward on the operator's decision of 2026-10-20
+group: MIR           # ADR-063: MIR is the eighth feature group
+state: DONE         # `orchestrator` at /ship, 2026-10-23
+owner: ""
+branch: ""
+size_estimate: "S"    # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "S"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. 5 paths, 3 of them code
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04]   # "Blocked by" — the MIR IDs that must be DONE first
+invariants_touched: []
+allowed_paths:        # option A, ADR-068 (01-plan.md §7)
+  - ".ai/registry/decisions/ADR-068-db-sql-is-retired-and-the-migrations-are-the-only-schema-source.md"
+  - ".ai/registry/decisions/ADR-026-db-sql-carries-the-target-schema.md"
+  - "supabase/db.sql"
+  - "src/lib/data/supabase.ts"
+  - "src/routes/MonthView.tsx"
+glossary_owed: []
+schema_delta: "none"  # db.sql is not a migration (ADR-026 decision 6); no database object changes
+requires_adr: true    # not a schema ADR: ADR-068 supersedes ADR-026 under ADR-067 delegation
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-10-23T04:13:34Z" }
+  review: { passed: true, at: "2026-10-23T07:43:47Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+# Not in .ai/templates/ticket.yaml. Added for the multi-tenancy plan; nothing in scripts/ reads them.
+# Plan status lives only in .ai/board/plans/multi-tenancy-status.md. `state` above is the loop's.
+mir_phase: 2
+mir_plan_item: "P2-1"             # .ai/board/plans/calechip-multi-tenancy-plan.md:142-145
+verification_required: false   # phase 0 and phase 3 — a passing mock test is not verification
+expected_impact: []   # none
+# [predicted] at plan time. Corrected at ship in .ai/board/plans/feature-change-log.md.
+mir_detail: |
+  Short names (tea04, cal11, …) are migrations, per the File legend in
+  .ai/board/audits/multi-tenancy-audit-2026-10-12.md:38-77. "A:n" is a line of that audit;
+  "plan:n" a line of .ai/board/plans/calechip-multi-tenancy-plan.md.
+
+  Plan P2-1 (plan:142-145):
+  - Generate the real schema from the applied migrations
+  - Replace `supabase/db.sql` with the generated dump, or delete it and document migrations as the only source
+  - If kept, add a CI check that regenerates it and fails on drift
+
+  Audit references (A:307-337): db.sql calls itself "the whole schema" (`db.sql:1`) and stops around
+  2026-09-05. The twelve discrepancies:
+  1. `member.team_id` not null in db.sql (~`db.sql:146`), dropped at `member_approval:50`
+  2. `member` columns missing: `status`, `last_sign_in_at`, `email`, `event_email_enabled`
+  3. `team` columns missing: `wfh_need_approve`, `pto_need_approve`
+  4. `allowed_email` still created (`db.sql:157`) with three policies (`db.sql:825/841/854`)
+  5. Tables missing: `busy_day`, `issue_report`, `event`, `event_invitee`, `event_attendance`,
+     `event_guest_link`, `event_guest`, `notification`
+  6. Functions missing (`list_teams` … `move_member`, the three `*_for_team`, `set_member_role`,
+     `entry_apply_approval_setting`, the `auth.users` sync triggers)
+  7. Policies missing: `team_select_own` (`cal04:36`), `team_update_admin` (`adm01:62`),
+     `member_update_own`, `member_select_pending_admin`, `member_decide_admin`
+  8. §9.1 / §9.2 stale on `team` policies
+  9. §9.3 stale: holidays are seeded
+  10. `is_admin` / `member_team_id` old bodies (`db.sql:317/329`) without `status = 'approved'`
+  11. Admission trigger `db.sql:343` is the TEA-01 version
+  12. `member_role` enum declared directly (`db.sql:82`) vs `alter type` (`manager_role:36`)

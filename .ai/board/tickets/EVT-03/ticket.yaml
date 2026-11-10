@@ -1,0 +1,38 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-10-08 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: EVT-03
+title: "Events are drawn on the week and month grids, and a click opens the event"
+feature_ids: [EVT-03]
+group: EVT
+state: DONE
+owner: ""
+branch: "feat/EVT-03"
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting (12 paths)
+depends_on: []        # EVT-01, EVT-02 and CAL-12 are all DONE and merged; nothing to wait on
+invariants_touched: [INV-04, INV-05, INV-07]  # 01-plan.md § 2 — untouched by construction, asserted by AC-15/AC-16
+allowed_paths:
+  - "src/lib/event-layer.ts"
+  - "src/lib/data/index.ts"
+  - "src/lib/data/supabase.ts"
+  - "src/lib/data/mock.ts"
+  - "src/lib/viewed-team.ts"
+  - "src/components/EventChip.tsx"
+  - "src/routes/WeekView.tsx"
+  - "src/routes/MonthView.tsx"
+  - "src/index.css"
+  - ".ai/standards/ui-design-system.md"
+  - "tests/event-layer.test.ts"
+  - "tests/e2e/evt-03-calendar-events.spec.ts"
+glossary_owed: []     # Event, Attendee, Invitation, Capacity already have rows; nothing owed
+schema_delta: none    # Confirmed at PLAN: the admin read (ADR-049 decision 3) is a filter over existing
+                      # reads, no definer function — 01-plan.md § 6 and § 8 alternative 1.
+requires_adr: true    # ADR-049, ACCEPTED by the operator 2026-10-08
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-10-08T09:40:27+0000" }
+  review: { passed: true, at: "2026-10-08T12:43:54+0000" }

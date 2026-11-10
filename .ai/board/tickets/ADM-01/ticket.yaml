@@ -1,0 +1,220 @@
+# Copied from .ai/templates/ticket.yaml at /triage (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: IDEA TRIAGE BACKLOG SPEC READY DESIGN IN_PROGRESS REVIEW QA REWORK ESCALATED DONE
+id: ADM-01
+title: "Set the overload threshold"
+feature_ids: [ADM-01]
+group: ADM
+state: DONE      # orchestrator at /ship, 2026-09-05, on 04-review.md `gate: PASS` /
+                 # `next_state: DONE`. ADR-022 removed the QA stage, so REVIEW -> DONE is the whole
+                 # remaining transition (.ai/01-operating-model.md:36). The comment below is the
+                 # `developer`'s and is left standing: it records the BACKLOG -> REVIEW jump, which
+                 # this ticket made for the same reason every ticket before it did.
+# PREVIOUS VALUE, `REVIEW`:
+# SET BY `developer` AT /implement ON 2026-09-05, per the command file: "On PASS, set the ticket to
+# REVIEW". 03-impl-log.md carries `gate: PASS` and `next_state: REVIEW`.
+#
+# IT JUMPED FROM `BACKLOG`, and that is worth a reader's attention rather than a silent overwrite.
+# The board's own sequence is BACKLOG -> READY -> IN_PROGRESS -> REVIEW, and no orchestrator run
+# moved this shell through the middle two: 01-plan.md reached `gate: PASS` with `next_state: READY`
+# on 2026-09-05 and `/implement` was invoked directly after it. Nothing about the work is affected —
+# the branch, `allowed_paths` and the plan were all in place, which is what the stage actually
+# depends on — but `gates.plan.passed` is still `false` below, so no Definition of Ready was ever
+# graded for this ticket. That is the orchestrator's to do and this stage did not do it for them,
+# for the reason the `gates` comment already gives.
+#
+# CORRECTION, `orchestrator` at /ship on 2026-09-05 — the last sentence above is wrong, and the
+# paragraph is left standing because the mistake is the interesting part. THE DEFINITION OF READY
+# WAS GRADED, six of six, at /next-ticket on 2026-09-05 00:13 — after the plan reached `gate: PASS`
+# and BEFORE /implement ran. The developer could not see it: /next-ticket writes no file, so a grade
+# it performs leaves no trace until /ship records it, and `gates.plan.passed: false` is exactly what
+# a graded ticket looks like from inside the next stage. CAL-06's shell recorded that nothing in the
+# model says who owns that flag; this is the same gap read from the other side, by an agent who
+# concluded from it that a gate had been skipped. The jump BACKLOG -> REVIEW is real and every
+# ticket since BUG-001 has made it; what is NOT real is the inference that nobody graded DoR.
+owner: ""
+branch: "feat/ADM-01"
+# `branch` FILLED BY `tech-lead-design` AT PLAN, 2026-09-05, and it is a fact rather than a state
+# change: /plan is the only command permitted to create a `feat/` branch, it created this one from
+# `origin/main`, and every later stage stops when it arrives at a missing branch. The triage shell
+# left this empty where CAL-04's carried it from the template — an inconsistency between shells, not
+# a decision. Nothing else about state is set here; the orchestrator grades DoR and moves the board.
+size_estimate: M      # 01-plan.md section 1. Written by tech-lead-design at PLAN under ADR-019,
+                      # which moved this field here from the retired SPEC stage.
+size: M               # 01-plan.md section 7, counted from the NINE allowed_paths below — one fewer
+                      # than the 2026-09-03 pass, because `src/lib/domain/types.ts` went with the
+                      # `Team` type CAL-04 shipped. AGREES with size_estimate; ADR-012 is not
+                      # engaged and nothing splits.
+depends_on: [TEA-01, CAL-04]
+# CAL-04 ADDED BY `orchestrator` ON 2026-09-04, RESOLVING 01-plan.md's `gate: BLOCKED`.
+# The operator delegated the decision ("tự quyết định đi"). THE ANSWER IS NO: ADM-01 does NOT ship
+# `grant select ... on public.team` or the `team_select_own` policy, and features.md is correct
+# exactly as written — CAL-04 owns the select half, ADM-01 owns the update half and nothing else.
+# The blocking_reason rested on one premise that is now stale: it says the operator reordered the
+# backlog so "ADM-01 is row 1 and CAL-04 is row 7". backlog.md today reads CAL-04 at row 1 and
+# ADM-01 at row 4 — the ordering moved back under it as CAL-01/02/03 shipped and left the table.
+# So the registry's OWN stated reason for the assignment ("the owner should be the first consumer,
+# so the policy is exercisable at its own gate") points at CAL-04 again, which is who it already
+# names. Nothing in features.md is edited, because nothing in it is wrong.
+# This makes the dependency real rather than notional: ADM-01 cannot show an admin the value they
+# are editing until CAL-04's select policy exists. It is not a new constraint — it is the one the
+# plan discovered, now written where Definition of Ready item 3 will actually grade it.
+invariants_touched: []   # 01-plan.md section 2. AGREES with the ADM-01 row in features.md.
+                         # Explicit, not absent: setting the threshold changes what is CALLED
+                         # overloaded and touches no entry and no count. invariants.md:178
+                         # records "The threshold is 50%" under `Considered and rejected as an
+                         # invariant` — configurable, therefore not an invariant — so the field
+                         # this ticket makes writable is the one the register already declined
+                         # to constrain. INV-04 is deliberately absent: a row that changes what
+                         # a comparison yields, while computing no comparison, cannot produce a
+                         # second definition of anything.
+# allowed_paths — 01-plan.md section 7. NINE globs, nine files, three of them new.
+#
+# REWRITTEN AT PLAN ON 2026-09-05 against the shipped tree. Two changes from the 2026-09-03 pass:
+#   * `src/lib/domain/types.ts` is GONE. It was there to create the `Team` domain type; CAL-04
+#     created it and it is at src/lib/domain/types.ts:225 with the `createdAt` this plan did not
+#     predict. Nothing here adds a type or a FailureCode.
+#   * `tests/permission-model.test.ts` is GONE, replaced by `tests/threshold.test.ts`. The former
+#     is cited by a comment in TEA-01's migration (20260831150024_tea01_membership.sql:150) and
+#     HAS NEVER EXISTED; the 2026-09-03 pass listed it on the strength of that comment. Creating
+#     it here would mean adopting a scope nobody wrote. 01-plan.md Open question 5.
+# The migration timestamp also moves, 20260903000000 -> 20260905000000, so it sorts after CAL-04's
+# 20260904100000_cal04_team_select.sql, which is now merged.
+#
+# NO INLINE COMMENTS ON THE ITEMS. `readYamlList` in scripts/check-allowed-paths.mjs and in
+# .claude/hooks/guard-allowed-paths.mjs strips only a LEADING and a TRAILING quote, so a
+# trailing `# ...` is swallowed into the pattern and the glob then matches nothing.
+#
+# DELIBERATELY ABSENT, with the reason for each in 01-plan.md section 7:
+# tests/seam-parity.test.ts (must pass unedited with the one seam function added);
+# src/lib/fixtures.ts (FIXTURE_TEAM already carries overloadThreshold at fixtures.ts:24);
+# src/lib/data/absence.ts and src/routes/MonthView.tsx (CAL-04's — AC-13 asserts their output
+# changes and touches neither; if either needed an edit, AC-13 would be describing a CAL-04
+# defect and belongs on a bug ticket);
+# supabase/db.sql (out of scope on the CAL-04 precedent — 01-plan.md Open question 4 records
+# that its sections 9.1 and 9.2 are both going stale and that no ticket owns keeping it true);
+# playwright.config.ts (BUG-001 pinned the seam and this ticket has no reason to touch it);
+# .ai/registry/** (nothing here writes the registry, and this pass identifies no amendment it
+# needs — features.md is correct exactly as written).
+allowed_paths:
+  - "supabase/migrations/20260905000000_adm01_team_threshold.sql"
+  - "src/lib/data/index.ts"
+  - "src/lib/data/supabase.ts"
+  - "src/lib/data/mock.ts"
+  - "src/routes/Threshold.tsx"
+  - "src/routes/Home.tsx"
+  - "src/App.tsx"
+  - "tests/threshold.test.ts"
+  - "tests/e2e/adm-01-threshold.spec.ts"
+schema_delta: >-
+  NOT none — ADR-014, no carve-out. CORRECTED from `none` by tech-lead-design at PLAN on
+  2026-09-03, on the same grounds the BA used at TEA-02
+  (.ai/board/tickets/TEA-02/ticket.yaml:28), and NARROWED at the 2026-09-05 pass. The ADM-01 row
+  in features.md says `schema_delta` none because `team` and `overload_threshold` are created
+  by TEA-01's migration; that is true of the COLUMN and does not settle the PRIVILEGES, which
+  the same row requires two sentences earlier. One new migration,
+  `supabase/migrations/20260905000000_adm01_team_threshold.sql`, altering no table, adding no
+  column and creating no function: a COLUMN-LEVEL grant `update (overload_threshold) on
+  public.team` to `authenticated`, which is what withholds `name` and every other column from
+  everybody — an RLS UPDATE policy is row-level and would otherwise turn `set the threshold`
+  into `edit the team row`, and no permission row for renaming the team exists anywhere; and
+  the policy `team_update_admin`, scoped to an admin of the caller's own team through
+  `public.is_admin` and `public.member_team_id`, both already granted to `authenticated` by
+  TEA-01. TEA-01 revoked all on `public.team` from `anon` and `authenticated` at
+  supabase/migrations/20260831150024_tea01_membership.sql:145, so neither statement is
+  inherited. No trigger, unlike TEA-04 — there is one writable column and nothing here needs a
+  sentence that `with check` structurally cannot express. THE SELECT HALF IS NO LONGER HERE:
+  the 2026-09-03 pass carried `grant select on public.team` and `team_select_own` and was
+  BLOCKED on whether it might keep them; CAL-04 shipped both in
+  supabase/migrations/20260904100000_cal04_team_select.sql, merged to main, so a second
+  `create policy team_select_own` would now fail on apply. features.md is unedited and no
+  registry row moves. Applying the migration is human, RULE-09. Full statements in 01-plan.md
+  section 6.
+requires_adr: true   # CORRECTED from `false` by tech-lead-design at PLAN on 2026-09-03. ADR-005
+                     # and ADR-014 are LINKED at the 2026-09-05 pass and NO NEW ADR IS AUTHORED —
+                     # the CAL-03 and CAL-04 precedent, where a policy migration is not `none` and
+                     # the decision it rests on has already been taken.
+                     #
+                     # THIS REVERSES THE 2026-09-03 PASS'S DEBT, and the reason is that the debt's
+                     # own reason is gone. That pass owed `the admin write path on team` to the
+                     # OPERATOR rather than to an agent under ADR-008, because the ADR would have
+                     # settled its blocking open question — a features.md ownership change, and
+                     # therefore RULE-01 human-only. That question is closed by a merged migration
+                     # and no registry row moves. What is left is a policy predicate, which is
+                     # PLAN's to design and which CAL-04 designed for the select half at its own
+                     # gate with no ADR. ADR-020 is cited in section 6 as the SHAPE precedent — a
+                     # column grant beside an admin update policy — and is not extended: it is
+                     # scoped to public.member and narrows ADR-018, neither of which is touched.
+rework_count: 0
+chat_budget:
+  # Migrated 2026-09-04 by `steward`. This shell had its `gates` block migrated at PLAN and its
+  # `chat_budget` left behind — a half-migration nobody noticed, including the two passes that
+  # inventoried the stale shells on this date and both counted ADM-01 as already done. Check D14
+  # found it, which is the argument for D14 in one line.
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  # ADR-019 Decision point 4 merged the `spec` and `design` gates into one `plan` gate, and
+  # ADR-022 removed the `qa` stage and its gate. This shell predates both and was migrated here
+  # by tech-lead-design at PLAN, the same migration TEA-04 and TEA-05 made at their own PLAN.
+  # The remaining unstarted shells still carry the old set.
+  #
+  # `plan` is left `passed: false` DELIBERATELY, and this is not the same reason as before.
+  #
+  # It read: "left `passed: false` and stays that way: 01-plan.md's front-matter carries
+  # `gate: BLOCKED`, not PASS. There is no PASS to quote." As of the 2026-09-05 pass there IS one —
+  # 01-plan.md carries `gate: PASS` and `next_state: READY`. The flag stays false anyway, because
+  # THE ORCHESTRATOR WRITES IT and it is the record that somebody graded the Definition of Ready,
+  # not a copy of the artifact's own verdict. TEA-05's shell states that convention in terms, and
+  # both the developer and the reviewer at BUG-001 declined to write it for that reason. CAL-04's
+  # shell records what goes wrong when a stage writes it early: the flag arrives true, agrees with
+  # the artifact, and stops being evidence that anyone graded anything.
+  #
+  # BOTH WRITTEN BY `orchestrator` AT /ship, 2026-09-05, quoted from the artifacts' front-matter
+  # rather than re-judged, which is the convention CAL-06's shell states in terms.
+  #
+  # `plan`  — 01-plan.md `gate: PASS` / `next_state: READY`, `produced_at: 2026-09-05T00:03:06+07:00`.
+  #           THAT IS THE SECOND PLAN PASS. The first, 2026-09-03T10:29:17+07:00, carried
+  #           `gate: BLOCKED` on whether ADM-01 might keep the `team` select policy; CAL-04 shipped
+  #           it on 2026-09-04 and the question closed without a registry edit. No rework was
+  #           charged: RULE-08, and the block was upstream of the plan rather than a defect in it.
+  # `review` — 04-review.md `gate: PASS` / `next_state: DONE`,
+  #           `produced_at: 2026-09-05T00:36:57+07:00`. R1-R8 all PASS with citations.
+  plan:   { passed: true, at: "2026-09-05T00:03:06+07:00" }
+  review: { passed: true, at: "2026-09-05T00:36:57+07:00" }
+  #
+  # THE DEFINITION OF READY WAS GRADED: `orchestrator`, /next-ticket, 2026-09-05 00:13, six of six
+  # PASS. Item 4 was discharged by LINKING ADR-005 and ADR-014, not by authoring one — the debt the
+  # 2026-09-03 pass owed the operator died with its own reason. /next-ticket writes no file, so this
+  # comment is the grade's only record.
+
+# Created by `product` at /triage on 2026-08-31, promoting
+# .ai/board/ideas/2026-08-31-a-crowded-day-is-discovered-too-late.md.
+#
+# The first ticket in the ADM group. Definition of Ready item 6 is one feature group per ticket,
+# and that is what splits this from CAL-07 rather than any judgement about scope: the warning is
+# CAL, the setting is ADM.
+#
+# Definition of Ready items 1, 3, 4 and 6 are filled here. Items 2 and 5 (invariants_touched,
+# size_estimate) are deliberately empty: they belong to the BA at SPEC.
+#
+# Item 3. TEA-01 alone. This is an admin-only write, so it needs a `member` row with `role = admin`
+# and an established session, and TEA-01 creates both the `team` table this row writes to and the
+# member record. Not TEA-04 — v1's first admin comes from a seed, per TEA-01's own marker, so this
+# does not wait on promotion existing. Not CAL-04 or CAL-07 — reading and writing the threshold is
+# independent of any view, and the column has a default, so the setting is useful before the
+# warning exists and the warning works before the setting does.
+#
+# Item 4: `schema_delta: none`. `team.overload_threshold` already exists — TEA-01's migration
+# creates it, confirmed in .ai/board/tickets/TEA-01/02-design.md. What this row adds is an RLS
+# update policy and a column privilege, not a column.
+#
+# The column privilege is the part that is easy to lose. An RLS UPDATE policy is row-level and
+# permits updating every column of the row it admits, including `name` — and no permission row
+# anywhere allows renaming the team. `grant update (overload_threshold) on public.team to
+# authenticated` is required beside the policy. TEA-01 revokes all on `public.team` from `anon`
+# and `authenticated`, so nothing here is inherited.
+#
+# Whether a policy-only migration counts as a `schema_delta` is written down nowhere, and this
+# ticket makes the fourth to depend on the answer after CAL-02, CAL-03 and CAL-04. Recorded for
+# the steward in the triage verdict; not settled here.

@@ -1,0 +1,62 @@
+# Created by `tech-lead-design` at /plan MIR-16-c on 2026-11-08: the write side and the removal of
+# 'manager' from public.member_role, split off because MIR-16-c as ADR-082 described it counted L
+# (ADR-085 decision 2; .ai/board/tickets/MIR-16-c/01-plan.md § 1 and § 7).
+# Not produced by /triage: no idea file promotes it. It shares MIR-16's feature row, which stays
+# PLANNED until MIR-16, MIR-16-b, MIR-16-c, MIR-16-d, MIR-16-e and MIR-16-f have all shipped.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-16-f
+title: "`'manager'` leaves `public.member_role`: `set_member_role` writes `team_role` only, manager rows move to `member`, and the type is re-created"
+feature_ids: [MIR-16]   # split of MIR-16 (operating model § ID scheme: splits get -a, -b)
+group: MIR
+state: DONE
+owner: ""
+branch: ""
+size_estimate: "M"   # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"            # S|M|L|XL - 9 allowed_paths at /plan MIR-16-f; as ADR-085 described it, ~19 (L), so the removal split to MIR-16-g (ADR-086)
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-10, MIR-11, MIR-12, MIR-13, MIR-14, MIR-15, MIR-18, MIR-21, MIR-21-b, MIR-21-c, MIR-21-d, MIR-21-e, MIR-21-f, MIR-16, MIR-16-b, MIR-16-d, MIR-16-e, MIR-16-c]
+invariants_touched: []
+allowed_paths:
+  - ".ai/registry/decisions/ADR-086-set-member-role-writes-the-team-role-and-the-manager-value-is-removed-by-a-column-retype.md"
+  - ".ai/board/tickets/MIR-16-g/ticket.yaml"
+  - ".ai/board/tickets/MIR-17/ticket.yaml"
+  - "supabase/migrations/20261108150000_mir16f_set_member_role_writes_team_role.sql"
+  - "supabase/tests/320-set-member-role-team-role.test.sql"
+  - "supabase/tests/070-definer-callers.test.sql"
+  - "supabase/tests/230-writers-write-membership.test.sql"
+  - "src/lib/data/supabase.ts"
+  - "tests/org-admin-role-mapping.test.ts"
+glossary_owed: []
+schema_delta: "20261108150000_mir16f_set_member_role_writes_team_role.sql — re-creates set_member_role(uuid, public.member_role) so it writes membership.team_role and a member_role_change row, and no longer writes member.role. Same signature; no table, column, enum, policy, trigger, constraint or row change (ADR-086; 01-plan.md § 6)"
+requires_adr: true    # ADR-085 names the work; ADR-086 (written at this PLAN) narrows it
+rework_count: 1
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-11-08T01:17:31Z" }
+  review: { passed: true, at: "2026-11-08T01:41:49Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+mir_phase: 4
+mir_plan_item: "P4-1"             # .ai/board/plans/calechip-multi-tenancy-plan.md:230-236
+verification_required: false
+expected_impact:
+  - { feature: TEA-12, tag: SUPERSEDED, why: "transcribed from MIR-16-c's ticket.yaml: manager is no longer one global value on `member.role`; replaced by `membership.role_in_team`" }
+  - { feature: TEA-08, tag: CHANGED, why: "transcribed from MIR-16-c's ticket.yaml: ranks become `org_admin` | `member` on `member.role`, with manager per team" }
+mir_detail: |
+  Slice of P4-1 (ADR-085 decision 2). Moved here from MIR-16-c at /plan MIR-16-c on 2026-11-08.
+  After MIR-16-c, nothing reads member.role = 'manager'; set_member_role still writes it.
+  - set_member_role(uuid, public.member_role) writes membership.team_role only, or is replaced by
+    a team-role setter; its signature names the type being re-created
+  - member rows with role 'manager' move to 'member'. member_record_role_change would write one
+    audit row per manager for a change no person made (ADR-084 Context's reasoning for admins);
+    decide at PLAN
+  - member_role_change.from_role / to_role hold 'manager' in history rows; decide what they become
+    before the type loses the value
+  - public.member_role re-created as ('member', 'org_admin') (ADR-070 § 1)
+  - tests.seed() (_isolation.psql:116, :122), tests.member_role's 'manager' branch, seed.sql, and
+    the pgTAP files that insert or assert 'manager': 040, 070, 100, 140, 150, 230, 250, 270-member,
+    290, 300 (grep at /plan MIR-16-c)
+  - the member seam already reads the manager rank from roster_team_role (MIR-16-c)
+  Not counted at /plan MIR-16-c. Expected to split again at its own PLAN.

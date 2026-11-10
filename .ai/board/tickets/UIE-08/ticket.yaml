@@ -1,0 +1,252 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-09-08 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: UIE-08
+title: "The year grid is repainted onto the product's semantic tokens and its card treatment"
+feature_ids: [UIE-08]
+group: UIE           # ONE GROUP, ONE FEATURE ID. Definition of Ready item 6 is therefore satisfied
+                     # OUTRIGHT by its FIRST clause and NO SPLIT RATIONALE IS OWED — the same
+                     # situation as UIE-01 through UIE-07.
+                     # CAL-06 AND CAL-08 ARE DELIBERATELY NOT IN feature_ids, for the reason UIE-05
+                     # kept CAL-05 out and UIE-06 kept CAL-04 out: this ticket repaints the screen
+                     # those features shipped and delivers none of it. Listing them would claim
+                     # otherwise. The link is prose in both directions, and §3 and §7 do the work.
+state: DONE          # `orchestrator` at /ship, 2026-09-08, on 04-review.md `gate: PASS` /
+                     # `next_state: DONE`. ADR-022 removed the QA stage, so REVIEW -> DONE is the
+                     # whole remaining transition (.ai/01-operating-model.md:84).
+                     #
+                     # THE IN_PROGRESS COMMENT, KEPT RATHER THAN OVERWRITTEN: this row read REVIEW,
+                     # and PLAN had left it at BACKLOG although 01-plan.md front-matter carried
+                     # `gate: PASS` / `next_state: READY`. 03-impl-log.md Open question 1 reported
+                     # that instead of fixing it silently, and 04-review.md agreed it is a question
+                     # about /plan for the steward and not a defect in this ticket.
+owner: "developer"    # IN_PROGRESS, 2026-09-08.
+branch: "feat/UIE-08"  # Created by /plan; /implement may not create it (git-conventions.md).
+size_estimate: S      # PLAN, 2026-09-08. DEFINITION OF READY ITEM 5, read from 01-plan.md § 1.
+                      # Triage left this EMPTY ON PURPOSE and its note is worth keeping: a signal was
+                      # available from the technical half of that triage and was deliberately not
+                      # written here, because the gate sits after PLAN precisely so the field is
+                      # MEASURED from `allowed_paths` rather than inherited. Measured, it is S, and
+                      # `size` below agrees.
+size: S               # PLAN, 2026-09-08. COUNTED from allowed_paths below, not inherited: ONE file
+                      # outside the ticket folder, and .ai/01-operating-model.md:372 puts S at up to
+                      # six. size_estimate and size AGREE, so ADR-012 never engages — 01-plan.md § 7
+                      # says so in one line.
+depends_on: []        # DEFINITION OF READY ITEM 3, AND IT PASSES TODAY. Measured, not assumed:
+                      # EVERY ticket on the board is DONE — UIE-01 through UIE-07, CAL-01 through
+                      # CAL-09, and the ADM, TEA, OPS and BUG rows with them — and the `## BACKLOG`
+                      # table in .ai/board/backlog.md was EMPTY when this row was written, so no live
+                      # ticket claims a path.
+                      # ***NOTHING IS WAITING ON ADR-032 EITHER — see §5.*** That decision is
+                      # `PROPOSED` and this ticket is planned on the assumption it is NOT taken.
+invariants_touched: [INV-04, INV-05, INV-06]   # PLAN, 2026-09-08. 01-plan.md § 2 carries a
+                         # sentence each, and the ticket predicted all three from UIE-06.
+                         # INV-04 — AC-12 asserts data-type and data-count are IDENTICAL before and
+                         #          after, so no second definition of the absence count enters here.
+                         # INV-05 — the tentative distinction is opacity-50 plus an sr-only word,
+                         #          and the three fills introduced are FLAT OPAQUE HEXES, so it
+                         #          survives the substitution untouched (AC-7). A token carrying
+                         #          alpha is where it would stop being distinguishable.
+                         # INV-06 — a half day still cannot be shown in a one-day-wide cell. TRUE
+                         #          TODAY AND NOT MADE WORSE BY PAINT. Recorded as looked at rather
+                         #          than concluded away; the fix is geometry, which AC-15 forbids.
+allowed_paths:        # PLAN, 2026-09-08. 01-plan.md § 7. ONE file outside the ticket folder.
+  - ".ai/board/tickets/UIE-08/**"
+  - "src/routes/YearView.tsx"
+                      # src/index.css IS DELIBERATELY OUT, and that is the finding that sized this
+                      # ticket: EVERY token the conversion needs already exists — --color-pto :168,
+                      # --color-wfh :169, --color-holiday :170, --color-bg :102, --color-card :103,
+                      # --color-ink-2 :108, --radius-card :124, --shadow-soft :127-128. UIE-06 had
+                      # to WRITE --color-overload before its conversion could finish; this one owes
+                      # the token file nothing.
+                      # NO SPEC FILE IS IN, AND THAT IS MEASURED: the only two suites addressing
+                      # this screen (cal-06-year-view, cal-08-holiday-shading) assert no class, no
+                      # colour and no bounding box, and every assertion they make reads a data-*
+                      # attribute § 4 preserves and AC-11 asserts.
+                      # src/components/Sidebar.tsx and src/routes/WeekView.tsx are OUT — 01-plan.md
+                      # § 1 Out-of-scope items 6 and 7, reported as Open questions 3 and 4.
+schema_delta: none    # DEFINITION OF READY ITEM 4. Every file this ticket can touch sits ABOVE the
+                      # data-access seam. No query, no policy, no migration, no index, no arithmetic
+                      # — four class strings and two token values. ADR-014's test (a policy migration
+                      # is not `none`) does not engage because there is no migration of any kind.
+requires_adr: false   # CONFIRMED AT PLAN, 2026-09-08. 01-plan.md § 6 DISCHARGES the clause below
+                      # rather than ignoring it: the plan concluded it needs NONE of the five things
+                      # named there, and the two additions it makes beyond "the four fills and the
+                      # card treatment" — the four non-grid cards and the bridge dot — are not
+                      # things the picture draws, so neither triggers it.
+                      #
+                      # TRIAGE'S ORIGINAL NOTE, KEPT. FIRST READING, AND SCOPED.
+                      # Nothing in §2 needs a decision: the fills are a
+                      # substitution the criterion was written to survive (§3.1). ***IF PLAN
+                      # CONCLUDES IT NEEDS ANYTHING THE PICTURE DRAWS BEYOND THE FOUR FILLS AND THE
+                      # CARD TREATMENT — a month card, a summary number, a day-level fill, a
+                      # gradient, an overload colour — THE CORRECT VERDICT FROM PLAN IS `BLOCKED`
+                      # WITH `requires_adr: true`.*** That is ADR-032's question, it is `PROPOSED`,
+                      # and ADR-008's test is to decide inside the envelope and ask before changing
+                      # it.
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-09-08T20:28:55+07:00" }   # TRANSCRIBED from 01-plan.md
+                     # front-matter (`gate: PASS`), carrying THAT artifact's `produced_at`. Written
+                     # by /implement because PLAN left it `false`; it is not a developer assertion
+                     # that the plan passed. 03-impl-log.md Open question 1.
+                     # QUOTED by `orchestrator` at /ship, the form every ticket but BUG-002 carries.
+                     # The value is unchanged; only its form was normalised.
+  review: { passed: true, at: "2026-09-08T21:25:35+07:00" }   # TRANSCRIBED by `orchestrator` at
+                     # /ship from 04-review.md front-matter (`gate: PASS`, `blocking_reason: ""`),
+                     # carrying THAT artifact's `produced_at`. Neither gate value is claimed here —
+                     # each is a copy of a gate another stage reached, read from its own artifact.
+                     # ADR-022 removed the QA stage, so no `qa` key appears and none may be added.
+
+# ---------------------------------------------------------------------------------------------
+# 1. WHERE THIS CAME FROM
+#
+# The operator's request, verbatim, 2026-09-08: "thay đổi UI calendar view", with an image.
+# Promoted by `product` at /triage from
+# .ai/board/ideas/2026-09-08-the-year-grid-is-the-last-calendar-surface-still-drawn-in-defaults.md,
+# whose `# Triage verdict — PROMOTE, as UIE-08` section is the reasoning.
+#
+# THE REQUEST WAS SPLIT IN TWO AT THAT TRIAGE. This ticket is the repaint half. The other half —
+# twelve month mini-calendars, four summary cards, and no member dimension — is
+# .ai/board/ideas/2026-09-08-the-year-view-is-the-only-screen-that-shows-who-declared-nothing.md,
+# ruled NEEDS-ADR, with ADR-032 drafted and `PROPOSED — awaiting the operator`.
+#
+# ---------------------------------------------------------------------------------------------
+# 2. WHAT IT IS, MEASURED AT TRIAGE AGAINST THE TREE
+#
+# The year view is the LAST calendar surface UIE-01's and UIE-02's tokens never reached.
+#
+#   src/routes/YearView.tsx:385   status?.nonWorkingReason === "holiday" ? "bg-violet-200"
+#                                                                       : "bg-slate-100"
+#   src/routes/YearView.tsx:445   !mark ? "bg-slate-100"
+#                                       : mark.type === "wfh" ? "bg-emerald-200" : "bg-orange-200"
+#   src/routes/YearView.tsx:339   overflow-x-auto rounded-2xl bg-white p-4 shadow-sm
+#
+# while src/index.css:168-174 carries --color-pto, --color-wfh, --color-holiday and
+# --color-overload, and :124 / :127-128 carry --radius-card and --shadow-soft. THE SIDEBAR LEGEND
+# BESIDE THIS GRID ALREADY DRAWS FROM THOSE TOKENS, so the legend and the grid it explains are
+# painted from two different palettes, permanently side by side. That is the identical defect
+# UIE-06 closed on the month screen one day earlier.
+#
+# src/routes/YearView.tsx:28-31 records WHY it exists: § Colour was TODO(project) when CAL-06
+# shipped, so the palette was cited straight to CLAUDE.md § Visual direction.
+#
+# THE THREE NON-LIST STATES AND THE EMPTY-CALENDAR SENTENCE carry the same default
+# `rounded-2xl … shadow-sm` pair (:270, :281, :296, :508). Whether they come with the repaint is
+# PLAN's — it is the same screen and the same two token values, and it is the only thing in this
+# ticket that could move the file count.
+#
+# ---------------------------------------------------------------------------------------------
+# 3. WHAT MAKES THE SUBSTITUTION SAFE, AND ALL THREE ARE WRITTEN IN THE FILE ALREADY
+#
+# 3.1 CAL-06 AC-5 TURNS ON THE ATTRIBUTE, NOT THE COLOUR. src/routes/YearView.tsx:433-437 says so
+#     in terms: `data-type` is what the criterion reads, "so it keeps AC-5 true when the palette is
+#     finally written". The criterion was authored in anticipation of exactly this change.
+# 3.2 CAL-06 AC-6 AND INV-05 ARE HELD BY OPACITY PLUS AN `sr-only` WORD (:446-460), not by a
+#     border. Both survive a fill substitution untouched. NEITHER SURVIVES A CHANGE OF CELL
+#     GEOMETRY, and this ticket proposes none.
+# 3.3 THE PER-CELL RENDER BUDGET IS LOAD-BEARING (:332-338, :363-365). ~10,950 cells is why every
+#     cell is an ELEMENT reading precomputed values rather than a component. NO LOOKUP, NO
+#     DERIVATION AND NO CLASS FUNCTION MAY ENTER THE CELL LOOP.
+#
+# ---------------------------------------------------------------------------------------------
+# 4. THE TEST QUESTION, WHICH IS A MEASUREMENT PLAN MAKES AND TRIAGE DID NOT
+#
+# Two spec files address year selectors: tests/e2e/cal-06-year-view.spec.ts and
+# tests/e2e/cal-08-holiday-shading.spec.ts. UIE-06 found that NO test on the month screen asserted
+# a class, a colour or a bounding box, so it opened no spec file. THE SAME IS LIKELY HERE AND IS
+# NOT ASSERTED: PLAN measures it. Every count and status assertion this ticket must preserve reads
+# a data-* attribute — data-type, data-count, data-day-status, data-bridge, data-member-id,
+# data-date, data-month — and this ticket renames none of them.
+#
+# ---------------------------------------------------------------------------------------------
+# 5. ADR-032 IS `PROPOSED` AND THIS TICKET DOES NOT WAIT ON IT AND MUST NOT ANTICIPATE IT
+#
+# ADR-032 asks whether the year view may stop carrying the member dimension. It is drafted in full
+# at .ai/registry/decisions/ADR-032-the-year-view-replaces-its-member-grid-with-twelve-month-cards.md
+# and its status is `PROPOSED — awaiting the operator`, on the same test ADR-031 applied one day
+# earlier: nine shipped DOMAIN acceptance criteria are the envelope, so an agent may not sign it.
+#
+# ***THIS TICKET IS PLANNED ON THE ASSUMPTION THAT DECISION IS NOT TAKEN.*** The member grid stays
+# exactly where it is and only its paint changes.
+#
+# THE HONEST COST OF THE SPLIT, STATED HERE RATHER THAN DISCOVERED: if ADR-032 is later accepted,
+# THIS WORK IS THROWN AWAY RATHER THAN ADJUSTED. That is the one asymmetry with the UIE-06 /
+# ADR-031 pair, where the pending change was a one-line deletion. It is stated on the row and in
+# the ADR's § Consequences, and it is not a reason to fold the two together — folding them would
+# delete nine criteria inside a ticket whose stated scope is a palette.
+#
+# ---------------------------------------------------------------------------------------------
+# 6. THE THREE INVARIANTS TO LOOK AT — NAMES, NOT AN ANSWER
+#
+# Definition of Ready item 2 is `tech-lead-design`'s. UIE-06 reached [INV-04, INV-05, INV-06] on
+# the month grid without setting out to, and this screen renders the same three facts.
+#
+#   INV-04 — the `Away` totals strip (:475-492) is `absenceCountsFor` and the grid beside it is
+#            `absentDatesByMember`; :468-471 says the two being the same function is what makes a
+#            divergence detectable at all. A repaint must not put a filter, a sum or a `.length`
+#            anywhere in this file — :18-22 forbids it in terms.
+#   INV-05 — the tentative treatment is `opacity-50` plus an `sr-only` span (:446-460). A fill
+#            substitution that changes the fill's alpha, or a token with alpha in it, is where
+#            "tentative" and "settled" stop being distinguishable.
+#   INV-06 — a half day weighs 0.5 and a one-day-wide cell cannot show it. That is TRUE TODAY and
+#            is not made worse by paint; it is named so the plan records having looked rather than
+#            concluding it away.
+#
+# ---------------------------------------------------------------------------------------------
+# 7. WHAT THIS TICKET DOES NOT DO. THE LOAD-BEARING HALF, AS NEGATIVE REQUIREMENTS
+#
+#  1. NO MONTH CARDS, NO SUMMARY CARDS, NO REMOVAL OF THE MEMBER DIMENSION. ADR-032's, `PROPOSED`.
+#  2. NO VIETNAMESE COPY ANYWHERE. .ai/standards/ui-design-system.md § Language, the operator's own
+#     instruction of 2026-09-03, lint-enforced on JSX text under src/ — several of the picture's
+#     strings FAIL THE BUILD rather than failing review — with `copyDebt` empty and only ever
+#     shrinking. UIE-01, UIE-05 and UIE-06 each refused the identical request.
+#  3. NO PEACH→MINT BLEND. It is a NEW day-level derivation, :18-22 forbids this file deriving
+#     anything of its own, and no gradient token exists.
+#  4. NO `--color-overload` ON THIS SCREEN. :24-26 records that `seam.getTeam()` is deliberately
+#     not called and no soft pink appears here. Adding it is a read and a domain state.
+#  5. NO SHELL EDIT AT ALL — not the sidebar, not the top bar, not the legend card, not the
+#     `Quá tải (>50%)` row (which hardcodes a value ADM-01 lets an admin change), not the floating
+#     `?`. THE TRAP UIE-05 AND UIE-06 BOTH NAMED: adjusting a sidebar swatch to match cells this
+#     ticket has just repainted will feel like finishing the job. It is still a shell edit.
+#  6. NO CHANGE OF CELL GEOMETRY. §3.2 and §3.3.
+#  7. NO SELECTOR RENAMED AND NO data-* ATTRIBUTE MOVED.
+#  8. NO NEW READ, NO NEW STATE, NO NEW SEAM CALL.
+#  9. src/components/Sidebar.tsx:63-64 IS NOT TOUCHED. It carries the same three false clauses
+#     UIE-06 corrected in src/index.css and deliberately left alone there: correcting a comment in
+#     a shell file puts the whole file in `allowed_paths`, and RULE-03's guard does not distinguish
+#     a comment from a rewrite.
+# 10. src/routes/WeekView.tsx IS NOT TOUCHED, including its copy of the stale comment in §8.
+#
+# ---------------------------------------------------------------------------------------------
+# 8. ONE STALE COMMENT IN THE FILE THIS TICKET OPENS, REPORTED RATHER THAN ASSIGNED
+#
+# src/routes/YearView.tsx:174 still cites `MONTH_ENTRY_LIMIT` as the truncation mechanism. CAL-09
+# removed that constant's only reader (src/lib/data/supabase.ts:46, :1166-1168; src/lib/data/mock.ts:38);
+# src/lib/domain/types.ts:365 survives unread. src/routes/WeekView.tsx:296 carries the same line
+# and is out of scope by §7.10.
+#
+# ONE COMMENT LINE, IN A FILE ALREADY IN SCOPE. Available to PLAN under the small-defect grant in
+# .ai/steward/context.md § Autonomy; leaving it is also defensible, since the refusal the sentence
+# describes is still correct and only its named mechanism is stale. PLAN SAYS WHICH IT DID.
+#
+# ---------------------------------------------------------------------------------------------
+# 9. THE IMAGE
+#
+# .ai/board/tickets/UIE-08/design/README.md is the visual reference and it is A HAND TRANSCRIPTION,
+# written by the dispatching session because THE IMAGE IS NOT ON DISK — it was pasted into
+# conversation, `git ls-files` holds nothing for it, and the harness wrote no temp copy. A later
+# reader cannot check a sentence of it against the picture.
+#
+# IT IS EVIDENCE OF INTENT AND NOT A SPECIFICATION (.ai/standards/ui-design-system.md:137-138).
+# THE IMAGE WAS ATTACHED AT EXACTLY ONE STAGE AND THAT STAGE HAS HAPPENED: /plan must not be handed
+# a second one. Its § 4 records everything it shows that this ticket does not build, including the
+# THIRD appearance of the five team subtitles that contradict INV-07 and the charter's one-team
+# scope, and the two literals in it that are fictional against src/lib/fixtures.ts.
+#
+# UNDER .ai/standards/ui-design-system.md:140-155 THE LAYOUT IS `tech-lead-design`'s AT PLAN, with
+# the obligation that comes with the grant: 01-plan.md § 2b says the layout is its own and where the
+# transcription was silent. The grant covers visual arrangement and nothing else.

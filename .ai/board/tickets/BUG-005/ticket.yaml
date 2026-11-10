@@ -1,0 +1,63 @@
+# Created by `developer` at CICD-01 /implement, 2026-10-13, from .ai/board/tickets/CICD-01/01-plan.md § 4.8 — not by /triage (ADR-010); see that plan's § 0.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: BUG-005
+title: "EVT-02 AC-28 and EVT-10 AC-2/3/4 fail on first attempt under full-suite load and pass on retry"
+feature_ids: [EVT-02, EVT-10]
+group: EVT
+state: BACKLOG
+owner: ""
+branch: ""
+size_estimate: ""     # S|M - set by tech-lead-design at PLAN; gates DoR
+size: ""              # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting
+depends_on: []
+invariants_touched: []
+allowed_paths: []
+glossary_owed: []     # terms /triage found missing from .ai/registry/glossary.md; PLAN writes the rows (ADR-047)
+schema_delta: none
+requires_adr: false
+rework_count: 0
+chat_budget:
+  # ADR-019 retired `ba` from the loop, so the two `->ba` edges are gone. They are not listed as
+  # zeroes: an edge nobody can walk is not a budget, it is a row that invites someone to try.
+  developer->tech-lead-design: { used: 0, max: 6 }
+  # ADR-022 removed the QA stage, and the `qa->tech-lead-design` edge with it.
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: false, at: null }   # ADR-019 merged the `spec` and `design` gates into one
+  review: { passed: false, at: null }
+  # There is no `qa` gate. ADR-017 waived it on 2026-09-01, ADR-021 reverted that the same
+  # afternoon, and ADR-022 removed the stage outright. Tickets planned before that date carry a
+  # `qa` key; three of them carry `waived: true`. `/ship` requires `plan` and `review`.
+
+# Register rows owned (docs/ops/e2e-quarantine.md), kind flaky (not quarantined; they keep running under retries):
+#   evt-02-attendance: AC-28: the three fields sit after the dates and before the scope, empty and off by default
+#   evt-10-description: AC-2, AC-3, AC-4: every format is shown on both surfaces, and re-saving changes nothing
+# Suspected cause: flaky under full-suite load. EVT-02 AC-28 failed then passed on retry in CI run 281; EVT-10
+#   AC-2/3/4 failed on event-description `ul > li` then passed on retry in a local CI=1 run. Both 10/10 isolated.
+# Quarantine expires 2026-11-12 (docs/ops/e2e-quarantine.md). Fixing the test, or deleting it with a reason, closes this ticket.
+
+# The state enum line above is machine-read. Checks D10 and D13 in scripts/check-docs.mjs both parse
+# it: D10 holds it and the stage ownership table to the same membership, D13 reads it as the
+# LIFECYCLE ORDER and positions the Definition of Ready gate against it. Reordering the lifecycle
+# without reordering this line leaves D13 measuring against the old order and silently agreeing with
+# a document that has changed underneath it.
+#
+# EXA-01 is a placeholder, not a real feature. Check D1 skips .ai/templates/ for exactly this reason.
+#
+# Notes on fields that are easy to get wrong:
+#
+# invariants_touched  [] means "considered, none engaged". Absent means nobody looked.
+#                     Definition of Ready requires it to be explicit.
+# allowed_paths       [] is a control, not a placeholder. guard-allowed-paths.mjs blocks every
+#                     write outside this ticket folder while it is empty. PLAN fills it.
+# glossary_owed       Written by `product` at /triage on PROMOTE, read by `tech-lead-design` at /plan.
+#                     Bare term names, e.g. [Event, Attendee]. /triage never writes glossary.md itself:
+#                     nothing would commit it (MD-041). A non-empty list puts
+#                     `.ai/registry/glossary.md` in `allowed_paths` and the rows ship with the ticket.
+#                     [] means "considered, none owed". ADR-047.
+# rework_count        Only Developer-caused failures increment it (RULE-08). Two failures
+#                     escalate (RULE-06).
+# chat_budget         Six messages per pair per ticket (RULE-15). chat-guard.mjs increments
+#                     `used` and blocks at `max`. Pairs absent from this map are not chattable.
+# sync_enabled        false by default (RULE-10). Turn on per ticket, after the loop is proven.

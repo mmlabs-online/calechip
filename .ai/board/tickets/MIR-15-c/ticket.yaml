@@ -1,0 +1,54 @@
+# Created by `tech-lead-design` at /plan MIR-15 on 2026-11-05: the move-a-team half of MIR-15, split
+# by operation (.ai/board/tickets/MIR-15/01-plan.md § 1 and § 7; ADR-076 decision 6).
+# Not produced by /triage: no idea file promotes it. It shares MIR-15's feature row, which stays
+# PLANNED until MIR-15, -b, -c and -d have all shipped.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-15-c
+title: "A system admin moves a team from Org public to another org from the system panel"
+feature_ids: [MIR-15]   # split of MIR-15 (operating model § ID scheme: splits get -a, -b)
+group: MIR
+state: BACKLOG
+owner: ""
+branch: ""
+size_estimate: ""     # S|M - set by tech-lead-design at PLAN; gates DoR
+size: ""              # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-05, MIR-06, MIR-07, MIR-08, MIR-09, MIR-10, MIR-18, MIR-18-b, MIR-15, MIR-15-b]   # the panel's org screens (MIR-18-b); MIR-15-b's holiday read decides what a moved team sees
+invariants_touched: []
+allowed_paths: []
+glossary_owed: []
+schema_delta: "TODO(plan): set at PLAN — a security definer RPC gated on is_system_admin() that rewrites org_id across every org-stamped table"
+requires_adr: false
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: false, at: null }
+  review: { passed: false, at: null }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+# Not in .ai/templates/ticket.yaml. Added for the multi-tenancy plan; nothing in scripts/ reads them.
+# Plan status lives only in .ai/board/plans/multi-tenancy-status.md. `state` above is the loop's.
+mir_phase: 3
+mir_plan_item: "P3-6"             # .ai/board/plans/calechip-multi-tenancy-plan.md:206-211
+verification_required: true   # phase 0 and phase 3 — a passing mock test is not verification
+expected_impact: []   # none predicted; set at PLAN
+# [predicted] at plan time. Corrected at ship in .ai/board/plans/feature-change-log.md.
+mir_detail: |
+  The last item of MIR-15, transcribed from MIR-15's ticket.yaml `mir_detail` (plan P3-6,
+  plan:210-211; plan:317 "Org-to-org team transfer UI — Needed by Phase 3 for Org public; polish
+  later"; ADR-074 decision 8 and ADR-075 § Context: "Move-team-between-orgs is MIR-15's").
+
+  - Build "move a team to another org" in the system panel — needed the day a customer buys a
+    licence (plan:210).
+
+  Questions this ticket's PLAN must settle or route to the operator, none of which the sources
+  answer (found at /plan MIR-15, not decided there):
+  - A user belongs to exactly one org (ADR-059 decision 1). A member of the moved team who is also
+    on another Org public team cannot follow into both orgs — which membership survives?
+  - Every org-stamped row carries a composite FK to its parent's `org_id` (MIR-11). Which rows move
+    with the team — its members' entries, busy days, tasks, notifications, events created in it,
+    attendances and invitations crossing teams — and what happens to cross-team rows left behind?
+  - Whether a move is allowed only from Org public, or between any two orgs; and whether the target
+    org's caps (`max_members`, `max_teams`, ADR-075) refuse it.

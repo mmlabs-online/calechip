@@ -1,0 +1,110 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-09-29 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: EVT-01
+title: "A member announces an event to their own team, to named people, or to every team, and those it is for can read it"
+feature_ids: [EVT-01]
+group: EVT
+state: DONE      # orchestrator at /ship, 2026-09-29, on 04-review.md `gate: PASS` / `verdict: PASS` /
+                 # `next_state: DONE`. `DONE` means MERGED, so it is written ahead of the pull request
+                 # a human must merge — RULE-09. Definition of Done items 1, 2, 4 and 5 are met.
+                 # ITEM 3 IS NOT FULLY MET AND IS NOT CLAIMED: /ship step 1 was skipped on the
+                 # operator's standing instruction (*tạm ignore bước này*), as on the eighteen ships
+                 # before it, so the four commands were not re-run here. What is on record is the
+                 # developer's own run in 03-impl-log.md § *Verification run*: tsc, eslint, vitest
+                 # and the EVT-01 Playwright spec each exit 0, but THE FULL `playwright test` SUITE
+                 # EXITS 1 — 296 passed, 20 failed, and that same 20 fail on a clean HEAD worktree
+                 # with none of them in this ticket's spec. Pre-existing and not caused here is not
+                 # the same as item 3 passing, and it is recorded as the former.
+# PREVIOUS VALUE, `REVIEW`:
+#                # developer at /implement, 2026-09-29T11:05:10+0700, on 03-impl-log.md `gate: PASS` /
+                 # `next_state: REVIEW`. Typecheck and lint exit 0; every § 4 contract item is implemented.
+# PREVIOUS VALUE, `READY`:
+#                # orchestrator at /advance, 2026-09-29, on 01-plan.md `gate: PASS` /
+                 # `next_state: READY`, with all six Definition of Ready items passing. Item 4 is the
+                 # only one that took more than a field read: `schema_delta` is not `none`, and the
+                 # approved ADR it requires is ADR-045 (`ACCEPTED by the operator`), linked from
+                 # 01-plan.md section 6 rather than named inside the `schema_delta` string as
+                 # ADM-05, ADM-06, CAL-01, CAL-11, TEA-01 and TEA-02 each named theirs. The DoR item
+                 # asks that an approved ADR be linked, not where; section 6 is written by
+                 # `tech-lead-design`, which the DoR table names as a producer of item 4. Failing it
+                 # would have returned the ticket to BACKLOG over the position of a citation, not a
+                 # missing decision.
+# PREVIOUS VALUE, `BACKLOG`: set at /triage on 2026-09-29 and never moved, because PLAN ran and the
+# recording step did not. 01-plan.md was produced at 2026-09-29T10:24:22+0700 carrying `gate: PASS`
+# and `next_state: READY`; until this run `gates.plan.passed` was still `false` on disk. This is the
+# gap ADR-036 created this command to close.
+owner: ""
+branch: ""
+size_estimate: "M"    # Set by tech-lead-design at /plan, 2026-09-29, from 01-plan.md section 1. Gates DoR.
+size: "M"             # Twelve files, counted from allowed_paths below - 01-plan.md section 7. Agrees
+                      # with size_estimate. XL clause checked in section 5: no existing seam
+                      # signature changes, types.ts gains only new types and union members.
+depends_on: []
+# ^ Measured at /triage: the only BACKLOG row is CAL-12 (admin team switcher on the calendar
+#   screens); it claims no event path and this ticket claims none of its. EVT-02 depends on this
+#   one, not the reverse.
+invariants_touched: [INV-04]
+# ^ Filled by tech-lead-design at /plan, 2026-09-29. The first cross-team read of member identity is
+#   one policy edit away from widening listMembers(), INV-04's denominator; held by a separate definer
+#   read and no change to any public.member policy. 01-plan.md section 2 and AC-12.
+allowed_paths:
+  - "supabase/migrations/20260929120000_evt01_event.sql"
+  - "src/lib/domain/types.ts"
+  - "src/lib/data/index.ts"
+  - "src/lib/data/supabase.ts"
+  - "src/lib/data/mock.ts"
+  - "src/App.tsx"
+  - "src/components/TopBar.tsx"
+  - "src/routes/Events.tsx"
+  - "src/routes/EventDetail.tsx"
+  - "src/routes/EventEditor.tsx"
+  - "tests/events.test.ts"
+  - "tests/e2e/evt-01-events.spec.ts"
+# ^ 01-plan.md section 7. The charter is NOT here: .ai/00-charter.md was amended by c3e00cc before
+#   /plan ran. The rbac-and-security.md and data-model.md rows are NOT here either: .ai/standards/** is
+#   human plane (CLAUDE.md § Two planes), so they are /thuki's - 01-plan.md section 6.
+schema_delta: "new event and invitee tables with row-level security, and a security definer read for the invitee picker — no change to any existing table or policy"
+# ^ DoR item 4. ADR: .ai/registry/decisions/ADR-045-charter-refusals-4-and-5-are-lifted-for-events.md
+#   (ACCEPTED by the operator). Table and column names are tech-lead-design's at /plan; the words
+#   above name the kind of change, not the shape. Widening member_select_team, or any select policy
+#   on public.member, is OUT OF BOUNDS (ADR-045 point 4) — if PLAN concludes it is needed, PLAN
+#   returns BLOCKED.
+requires_adr: false
+# ^ False because ADR-045 and ADR-046 are the ADRs and both are accepted. Not a licence to go
+#   outside them: ADR-005 stands, so no server and no email.
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: 2026-09-29T10:32:35+0700 }   # orchestrator at /advance, transcribed
+                                                          # from 01-plan.md front-matter `gate: PASS`.
+  review: { passed: true, at: 2026-09-29T11:35:58+0700 }   # orchestrator at /advance, transcribed
+                                                          # from 04-review.md front-matter: `gate: PASS`,
+                                                          # `verdict: PASS`, `failed_checks: []`,
+                                                          # `invariant_violation: false`, `route_to: none`,
+                                                          # `increments_rework: false`. `gate` and `verdict`
+                                                          # agree, so the artifact is not void under RULE-13.
+                                                          # `state` STAYS `REVIEW`: 04-review.md says
+                                                          # `next_state: DONE`, and /advance is told in terms
+                                                          # not to write it — `/ship` sets DONE when the pull
+                                                          # request is opened. The artifact names the
+                                                          # destination; this command does not take the ticket
+                                                          # there.
+
+# Provenance: .ai/board/ideas/2026-09-29-a-gathering-has-nowhere-to-be-announced-or-joined.md,
+# § Re-triage verdict — PROMOTE. DoR item 6: feature_ids is one group, EVT.
+#
+# OWED BY THIS TICKET, NOT BY A LATER ONE (ADR-045 § Affected documents): the charter amendment in
+# .ai/00-charter.md — refusals 4 and 5 removed, the old wording kept beside an "Amended 2026-09-29 by
+# ADR-045" note — unless /thuki has landed it before /plan runs. PLAN reads the charter on disk and
+# puts it in allowed_paths only if it is still unamended. Also owed: the event rows in
+# .ai/standards/rbac-and-security.md (manager column all default denials) and the event tables in
+# .ai/standards/data-model.md.
+#
+# No visual reference was attached at /idea or /triage. The layout is tech-lead-design's to
+# originate at /plan § 2b (CLAUDE.md § No invention carve-out). /plan must not be handed an image.
+#
+# The idea's § Out of scope and § Guesses bound this ticket. The guesses are product's, not the
+# operator's, and are marked so in the idea.

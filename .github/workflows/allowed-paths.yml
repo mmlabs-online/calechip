@@ -1,0 +1,29 @@
+name: allowed-paths
+
+# One of the three required checks: verify, allowed-paths and mir-tracking (docs/ops/ci-cd.md). It runs
+# one script and nothing else.
+#
+# RULE-03 says an agent may not edit any file outside the active ticket's allowed_paths. Since
+# ADR-004 unwired the pre-write guard, this check and review check R1 are what remain — both after
+# the fact. It diffs origin/main...HEAD, the whole branch, which is why ticket work and chore work
+# must live on separate branches.
+
+# TEMPORARY, operator 2026-10-17: Actions run on release branches only. Branch protection on main is
+# the operator's to lift, since its required checks no longer report there.
+on:
+  pull_request:
+    branches: ["release/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  allowed-paths:
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - run: node scripts/check-allowed-paths.mjs

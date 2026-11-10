@@ -1,0 +1,55 @@
+# Created by `tech-lead-design` at /plan MIR-16 on 2026-11-07: the second of three slices of the
+# role split (ADR-082 decision 1; .ai/board/tickets/MIR-16/01-plan.md § 1 and § 7).
+# Not produced by /triage: no idea file promotes it. It shares MIR-16's feature row, which stays
+# PLANNED until MIR-16, MIR-16-b and MIR-16-c have all shipped.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-16-b
+title: "`is_org_admin(uid, org_id)` replaces `is_admin(uid)` at every call site"   # narrowed at /plan MIR-16-b, 2026-11-07 (ADR-083). Was: "`admin` becomes `org_admin`: the enum value, `is_org_admin(uid, org_id)`, and the demotion trigger"
+feature_ids: [MIR-16]   # split of MIR-16 (operating model § ID scheme: splits get -a, -b)
+group: MIR
+state: DONE   # `orchestrator` at /ship, 2026-11-07
+owner: ""
+branch: ""
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"             # S|M|L|XL - counted at /plan MIR-16-b from 8 allowed_paths; as ADR-082 described it, ~19 (L), so the rename split to MIR-16-d (ADR-083)
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-10, MIR-11, MIR-12, MIR-13, MIR-14, MIR-15, MIR-18, MIR-21, MIR-21-b, MIR-21-c, MIR-21-d, MIR-21-e, MIR-21-f, MIR-16]
+invariants_touched: [INV-02, INV-03]   # entry_enforce_decision is re-created (01-plan.md § 2)
+allowed_paths:
+  - ".ai/registry/decisions/ADR-083-is-org-admin-replaces-is-admin-before-the-admin-value-is-renamed.md"
+  - ".ai/board/tickets/MIR-16-d/ticket.yaml"
+  - ".ai/board/tickets/MIR-16-c/ticket.yaml"
+  - ".ai/board/tickets/MIR-17/ticket.yaml"
+  - "supabase/migrations/20261107230000_mir16b_is_org_admin.sql"
+  - "supabase/tests/280-is-org-admin.test.sql"
+  - "supabase/tests/010-catalogue.test.sql"
+  - "supabase/tests/100-mock-parity.test.sql"
+glossary_owed: []
+schema_delta: "adds is_org_admin(uid, org_id); re-creates 19 function bodies (one a trigger function) and 12 policies with each is_admin call replaced; drops is_admin(uid). No table, column, enum value or row changes (ADR-083; 01-plan.md § 4.1, § 6)"
+requires_adr: true    # ADR-082 names the work; ADR-083 (written at this PLAN) narrows it
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-11-07T11:43:13Z" }
+  review: { passed: true, at: "2026-11-07T12:32:20Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+mir_phase: 4
+mir_plan_item: "P4-1"             # .ai/board/plans/calechip-multi-tenancy-plan.md:230-236
+verification_required: false
+expected_impact:
+  - { feature: TEA-04, tag: CHANGED, why: "promote_member_to_admin's door check is re-pointed to `is_org_admin`. Promotion to `org_admin` itself moved to MIR-16-d (ADR-083)" }
+  - { feature: TEA-09, tag: CHANGED, why: "transcribed from MIR-16's ticket.yaml: the sign-up queue is decided by `org_admin` (operator, 2026-10-12)" }
+  - { feature: ADM-05, tag: CHANGED, why: "the admin half of the entry decider (ADR-073 decision 2) moves to `org_admin`" }
+  - { feature: EVT-01, tag: CHANGED, why: "the event override is re-pointed to `is_org_admin` (ADR-082 decision 2)" }
+mir_detail: |
+  Slice 2 of 4 of P4-1 (ADR-082, narrowed by ADR-083 at /plan MIR-16-b on 2026-11-07):
+  - `is_org_admin(p_uid uuid, p_org_id uuid)` is added, still reading role = 'admin'
+  - every `is_admin(` call in a public function body (19 functions, 20 sites) and in a policy (12)
+    is replaced, including the sign-up queue, `may_manage_event`, the entry decider's admin half,
+    and dedicated-org holiday writes (ADR-082 decision 2)
+  - `is_admin(uid)` is dropped
+  Moved to MIR-16-d: the enum rename, the demotion trigger's wording, bootstrap, seed, fixtures, and
+  the seam mapping. Until 2026-11-07 this block listed all of those here.

@@ -1,0 +1,158 @@
+# Copied from .ai/templates/ticket.yaml at /triage (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: IDEA TRIAGE BACKLOG SPEC READY DESIGN IN_PROGRESS REVIEW QA REWORK ESCALATED DONE
+id: CAL-07
+title: "Overload warning shown while choosing dates, before the entry is saved"
+feature_ids: [CAL-07]
+group: CAL
+state: DONE      # orchestrator at /ship, 2026-09-05, on 04-review.md `gate: PASS`.
+                 #
+                 # NOT ON ITS `next_state`, WHICH READS `QA`. That state does not exist: ADR-022
+                 # removed the QA stage and the lifecycle at .ai/01-operating-model.md:36 is
+                 # IN_PROGRESS -> REVIEW -> DONE. `.ai/templates/review-report.md` still ships
+                 # `next_state: QA` and this reviewer copied it through; ADM-01's reviewer hit the
+                 # same template on 2026-09-05 and corrected it to DONE in the artifact, naming the
+                 # staleness. Two reviews, one template, two different outcomes — the operating
+                 # model is authoritative and DONE is what the gate means either way, but the
+                 # template is what should stop producing a retired state. That is steward work and
+                 # is named in this ticket's metrics row rather than fixed here.
+                 #
+                 # The `developer`'s note below is left standing.
+# PREVIOUS VALUE, `REVIEW`, set by `developer` at /implement, 2026-09-05, on 03-impl-log.md
+# `gate: PASS`:
+                 #
+                 # IT MOVED FROM `BACKLOG` AND NOT FROM `IN_PROGRESS`, and that is worth a line
+                 # rather than a silent jump. /plan ran and left `gate: PASS` with
+                 # `next_state: READY` in 01-plan.md's front-matter, but the board was never advanced
+                 # — the orchestrator grades DoR and moves it, and /implement was invoked directly
+                 # rather than through /next-ticket. So `READY` and `IN_PROGRESS` were never written
+                 # here, and the `plan` gate row below still reads `passed: false` while the artifact
+                 # it describes says PASS. Neither is this agent's to write: a gate row is a claim
+                 # about a grading that happened, and recording one nobody performed would be worse
+                 # than the gap. 03-impl-log.md § Open questions carries it for the reviewer.
+owner: ""
+branch: "feat/CAL-07"
+# `branch` FILLED BY `tech-lead-design` AT PLAN, 2026-09-05. /plan is the only command permitted to
+# create a `feat/` branch and it created this one from `origin/main`; every later stage stops when it
+# arrives at a missing branch. A fact about the tree, not a state change — the orchestrator grades
+# DoR and moves the board.
+size_estimate: S      # 01-plan.md section 1. Written by tech-lead-design at PLAN under ADR-019,
+                      # which moved this field here from the retired SPEC stage. Taken from the
+                      # CAL-07 feature row's own instruction — "This row builds no arithmetic and no
+                      # read ... It should be sized at SPEC in that knowledge".
+size: S               # 01-plan.md section 7, counted from the SIX allowed_paths below. AGREES with
+                      # size_estimate; ADR-012 is not engaged and nothing splits.
+                      #
+                      # IT IS SIX AND NOT TEN BECAUSE OF A RULE, NOT A COUNT. The first shape of the
+                      # design added an `AbortSignal` parameter to `listTeamEntriesOverlapping` so
+                      # the in-flight read could be cancelled, as the idea file asks. That is a
+                      # change to the signature of an existing seam function, which
+                      # .ai/01-operating-model.md:375 makes XL — escalate — whatever the file count.
+                      # 01-plan.md section 8 carries it as a rejected alternative with what is lost.
+depends_on: [CAL-01, CAL-04]
+invariants_touched: [INV-04, INV-05, INV-07]
+# 01-plan.md section 2. AGREES with the CAL-07 row in features.md, which reaches the same three.
+#
+# INV-04: the prospective count must come from handing an entry-shaped draft to CAL-04's
+# `absenceCountsFor`, never from a `+1` in the component — a number added in the interface is a
+# second implementation of INV-04. INV-05: a tentative draft counts toward its own warning, and a
+# warning that discounted it would defeat the reason tentative exists. INV-07: the draft is
+# attributed to the member whose entry it is — the caller on create, the entry's OWNER on an admin
+# edit — and a draft attributed to nobody vanishes from the count silently.
+#
+# INV-06 IS DELIBERATELY ABSENT and is relied on rather than chosen: passing the draft as an
+# entry-shaped value leaves the portion arithmetic inside CAL-04's function. The registry row states
+# this and reaches the same list.
+# allowed_paths — 01-plan.md section 7. Six globs, six files, four of them new.
+#
+# NO INLINE COMMENTS ON THE ITEMS. `readYamlList` in scripts/check-allowed-paths.mjs and in
+# .claude/hooks/guard-allowed-paths.mjs strips only a LEADING and a TRAILING quote, so a trailing
+# `# ...` is swallowed into the pattern and the glob then matches nothing.
+#
+# THE TWO MOST LOAD-BEARING ABSENCES, with the rest in 01-plan.md section 7:
+# src/routes/NewEntry.tsx and src/routes/MonthView.tsx — both render EntryForm and both get the
+# warning with no edit, because `ownerId` and `excludeEntryId` are OPTIONAL props whose correct
+# values on those two surfaces are the defaults;
+# src/lib/data/absence.ts — CAL-04's, and INV-04's single home. If the warning needed a line added
+# there, this ticket would be building a second arithmetic.
+allowed_paths:
+  - "src/lib/draft-entry.ts"
+  - "src/components/OverloadWarning.tsx"
+  - "src/components/EntryForm.tsx"
+  - "src/routes/EditEntry.tsx"
+  - "tests/draft-entry.test.ts"
+  - "tests/e2e/cal-07-overload-warning.spec.ts"
+schema_delta: none    # 01-plan.md section 6. Unchanged from triage and verified rather than
+                      # inherited: no migration, no policy, no trigger, no constraint, no column and
+                      # no grant, and `supabase/**` is absent from allowed_paths entirely. ADR-014 is
+                      # not engaged because there is no migration for it to be engaged by. AC-14 is
+                      # what keeps this true — no policy, CHECK or BEFORE INSERT/UPDATE trigger may
+                      # consult `overload_threshold`, and CAL-01 already ships both mechanisms that
+                      # could, so the assertion is about their CONTENT rather than their absence.
+requires_adr: false
+rework_count: 0
+chat_budget:
+  # Migrated 2026-09-04 by `steward`, together with the gates below. `ba` left the loop at ADR-019
+  # and `qa` at ADR-022, so three of the four edges this shell carried named roles nobody can
+  # dispatch. They are not kept as zeroes — `.ai/templates/ticket.yaml` says an edge nobody can walk
+  # is not a budget, it is a row that invites someone to try.
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  # Migrated 2026-09-04 by `steward`. This shell was created at /triage before ADR-019 merged the
+  # `spec` and `design` gates into one `plan` gate, and before ADR-022 removed the `qa` stage and
+  # its gate — and nothing migrated it, so five earlier tickets each patched their own copy at PLAN
+  # or at /ship. Check D14 now fails any ticket that is not DONE whose gate keys disagree with
+  # `.ai/templates/ticket.yaml`, so the set cannot drift again unnoticed.
+  #
+  # No value changes here, only the key set: every gate on an unstarted shell is `passed: false`
+  # under either shape.
+  #
+  # BOTH WRITTEN BY `orchestrator` AT /ship, 2026-09-05, quoted from the artifacts' front-matter
+  # rather than re-judged — the convention CAL-06's shell states in terms.
+  #
+  # `plan`   — 01-plan.md `gate: PASS` / `next_state: READY`, produced 2026-09-05T00:56:58+07:00.
+  # `review` — 04-review.md `gate: PASS`, produced 2026-09-05T01:27:37+07:00. R1-R8 all PASS.
+  #            Its `next_state` reads `QA`; see the note on `state` above.
+  plan:   { passed: true, at: "2026-09-05T00:56:58+07:00" }
+  review: { passed: true, at: "2026-09-05T01:27:37+07:00" }
+  #
+  # THE DEFINITION OF READY WAS GRADED: `orchestrator`, /next-ticket, 2026-09-05 01:01, six of six
+  # PASS, every item outright — nothing discharged by linking, which had not happened since CAL-06.
+  # /next-ticket writes no file, so this comment is the grade's only record. ADM-01's developer read
+  # `passed: false` here and concluded no grade had happened; it had. Same gap, recorded again.
+
+# Created by `product` at /triage on 2026-08-31, promoting
+# .ai/board/ideas/2026-08-31-a-crowded-day-is-discovered-too-late.md.
+#
+# Definition of Ready items 1, 3, 4 and 6 are filled here — they are produced at BACKLOG.
+# Items 2 and 5 (invariants_touched, size_estimate) are deliberately empty: they belong to the BA
+# at SPEC, and the gate sits after SPEC so that they can.
+#
+# Item 3. CAL-01 because the warning has no surface of its own — it lives inside that form and
+# there is no second place it could appear. CAL-04 because it builds all three mechanisms this
+# feature consumes: INV-04's absence-count function, the `team.overload_threshold` select policy
+# and grant, and the current-member-count read. A CAL-07 that shipped first would build them, which
+# is the outcome CAL-04's registry Notes were written to prevent.
+#
+# TEA-03 is deliberately not named. Naming absent people reads the same `member` rows CAL-04
+# already reads for avatars, so the policy dependency is inherited through CAL-04 rather than owned
+# here. If CAL-04's dependency on TEA-03 later reduces to [CAL-01], nothing here changes.
+#
+# ADM-01 is deliberately not named, and this is a decision rather than an omission. The idea
+# bundled the warning with the threshold setting, saying the first "cannot ship honestly without
+# the second" — that is a release-ordering claim, not a dependency. `overload_threshold` is
+# `not null default 0.5`, so this feature works before any admin screen exists, and making it wait
+# would serialize an admin screen in front of the highest-frequency member-facing moment in the
+# product for a non-technical reason.
+#
+# Item 4: `schema_delta: none`. This row reads, computes and renders; it adds no column, no policy
+# and no migration.
+#
+# No longer blocks READY. ADR-013 settled it on 2026-08-31: a removed member's entries count for
+# dates before `removed_at` and not after, and a view draws an avatar exactly when the entry is
+# counted. `.ai/registry/invariants.md` and the glossary record it, amended together.
+#
+# The provenance in the earlier note was wrong and is corrected here rather than deleted: the
+# operator had decided that entries SURVIVE a removal, which is the denominator. Whether they still
+# COUNT is the numerator, and nobody had answered it until asked.

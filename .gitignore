@@ -1,0 +1,40 @@
+node_modules
+
+# `node_modules` has no trailing slash on purpose. A trailing slash matches only directories, and a
+# worktree provisioned with a symlinked dependency tree produces a FILE — which then sits untracked
+# and visible, one `git add -A` away from committing a path specific to one machine.
+
+# Build output and tool artefacts. Generated code is not source and must not be reviewed as if it
+# were — the marker this replaces said exactly that.
+dist
+coverage
+.vite
+*.tsbuildinfo
+test-results
+playwright-report
+blob-report
+
+# Secrets. This file held no env rule until 2026-09-01, and by then `.env` had already been
+# committed once — 5a29434 on origin/ops/architecture, carrying a live SUPABASE_SERVICE_ROLE_KEY.
+# Under ADR-005 that key bypasses row-level security entirely, which is the whole authorization
+# model. The rule below stops the next commit; it does nothing about the one that already happened.
+# Rotation record: docs/ops/key-rotation.md (MIR-01).
+.env
+.env.*
+!.env.example
+
+# Supabase CLI scratch. `supabase/migrations/` and `supabase/seed.sql` are source and are tracked;
+# `.temp/` is the CLI's own state and belongs to a machine, not to the repository.
+supabase/.temp/
+
+# Local Supabase credentials. Never committed: the anon key and the DB URL are per-machine, and a
+# committed `.env` is a credential leak that survives in history after the file is deleted.
+.env
+
+# Supabase CLI scratch. `cli-latest` is a version-check cache the CLI rewrites on its own schedule.
+supabase/.temp/
+
+# The unattended loop runner's own state — session ids, per-step JSON, STOPPED.md, REPORT.md.
+# ADR-036. It is a machine's working notes, not a record: the record is the ticket artifacts and the
+# commit. Session ids in particular are per-machine and resuming someone else's is meaningless.
+.runner/

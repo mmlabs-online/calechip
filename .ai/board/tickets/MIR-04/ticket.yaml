@@ -1,0 +1,63 @@
+# Copied from .ai/templates/ticket.yaml by `claude` on 2026-10-12, recording item P0-4 of
+# .ai/board/plans/calechip-multi-tenancy-plan.md. Not produced by /triage: no idea file promotes it.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-04
+title: "The member directory returns only members of the caller's own teams, and the event-invitee check is audited"
+feature_ids: [MIR-04]   # ADR-063 row; written by the steward on the operator's decision of 2026-10-20
+group: MIR           # ADR-063: MIR is the eighth feature group
+state: DONE          # `orchestrator` at /ship, 2026-10-21
+owner: ""
+branch: ""
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting
+depends_on: []   # "Blocked by" — the MIR IDs that must be DONE first
+invariants_touched: [INV-04]
+allowed_paths:
+  - "supabase/migrations/20261020180000_mir04_scoped_member_directory.sql"
+  - "src/lib/data/mock.ts"
+  - "src/lib/data/index.ts"
+  - "src/routes/EventEditor.tsx"
+  - "tests/member-directory-scope.test.ts"
+  - "tests/events.test.ts"                  # the one superseded AC-10 assertion (01-plan.md § 4.6)
+  - "tests/e2e/evt-01-events.spec.ts"       # two picker tests re-aimed at a teammate (01-plan.md § 4.6)
+  - "src/routes/EventDetail.tsx"            # onInvited re-reads the directory (01-plan.md § 4.5b), 2026-10-21
+  - "tests/e2e/evt-03-calendar-events.spec.ts"   # "Named B" invited by email (01-plan.md § 4.6), 2026-10-21
+  - ".ai/registry/decisions/ADR-066-the-member-directory-is-own-team-plus-people-the-caller-already-shares-an-event-with.md"
+  - ".ai/registry/decisions/ADR-045-charter-refusals-4-and-5-are-lifted-for-events.md"   # supersession note under § Status only
+  - ".ai/board/tickets/MIR-04/**"
+glossary_owed: []
+schema_delta: "REPLACE FUNCTION list_member_directory() (same signature, grants restated): own team, plus creators of readable events, invitees of managed events, visible attendees, and actors of the caller's notifications; admin unchanged. No policy, table, trigger or constraint changes (ADR-066)"
+requires_adr: true    # .ai/registry/decisions/ADR-066-the-member-directory-is-own-team-plus-people-the-caller-already-shares-an-event-with.md, ACCEPTED by the operator 2026-10-20 ("Q1. B / Q2. B")
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 1, max: 6 }   # 99-questions.md, 2026-10-21; chat-guard did not count the Write, set by developer
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-10-20T17:05:58+07:00" }
+  review: { passed: true, at: "2026-10-21T08:42:30+07:00" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+# Not in .ai/templates/ticket.yaml. Added for the multi-tenancy plan; nothing in scripts/ reads them.
+# Plan status lives only in .ai/board/plans/multi-tenancy-status.md. `state` above is the loop's.
+mir_phase: 0
+mir_plan_item: "P0-4"             # .ai/board/plans/calechip-multi-tenancy-plan.md:88-90
+verification_required: true   # phase 0 and phase 3 — a passing mock test is not verification
+expected_impact:
+  - { feature: EVT-01, tag: CHANGED, why: "the named-people picker offers only members of the caller's own teams" }
+# [predicted] at plan time. Corrected at ship in .ai/board/plans/feature-change-log.md.
+mir_detail: |
+  Short names (tea04, cal11, …) are migrations, per the File legend in
+  .ai/board/audits/multi-tenancy-audit-2026-10-12.md:38-77. "A:n" is a line of that audit;
+  "plan:n" a line of .ai/board/plans/calechip-multi-tenancy-plan.md.
+
+  Plan P0-4 (plan:88-90):
+  - Scope `list_member_directory` (`evt01:154-163`) to the caller's own teams
+  - Audit the event-invitee check (`evt01:215-220`) — it only requires the invitee to have a team
+
+  Audit references:
+  - `supabase.ts:3285-3292` → `evt01:154-163` `list_member_directory`, gated by
+    `member_team_id(auth.uid()) is not null and m.status = 'approved'` (A:394)
+  - Invitee check in `save_event`: `evt01:215-220` / `evt02:192-197` (A:427)
+  - Policy `event_invitee_insert_manage`, `evt01:306-311` (A:430)
+  - `save_event(p_invitee_ids)` (A:763)

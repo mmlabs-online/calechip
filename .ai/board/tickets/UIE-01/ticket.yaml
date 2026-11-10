@@ -1,0 +1,491 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-09-05 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: UIE-01
+title: "Restyle the sign-in and sign-up screens to the product's visual direction"
+feature_ids: [UIE-01]
+group: UIE           # ONE GROUP, ONE FEATURE ID. Definition of Ready item 6 is therefore satisfied
+                     # OUTRIGHT by its FIRST clause and NO SPLIT RATIONALE IS OWED. Said explicitly
+                     # because OPS-002 sits two folders away with the opposite situation — two
+                     # groups, `group: CAL` recording only the primary one, and a whole §5
+                     # discharging the second clause. Nothing of that kind is needed here.
+                     # TEA-01 AND TEA-05 ARE DELIBERATELY NOT IN feature_ids. See §10.
+state: DONE        # `orchestrator` at /ship, 2026-09-07, on 04-review.md `gate: PASS` /
+                  # `next_state: DONE`. ADR-022 removed the QA stage, so REVIEW -> DONE is the whole
+                  # remaining transition (.ai/01-operating-model.md:36).
+#
+# PREVIOUS VALUE, `REVIEW`, and the `developer`'s comment is reproduced below rather than deleted,
+# because it is the most careful statement any stage has made of a defect now on its SEVENTH
+# consecutive ticket: no command in `.claude/commands/` owns PLAN -> READY, so this shell went
+# BACKLOG -> REVIEW on disk while the work went through PLAN, IN_PROGRESS and REVIEW.
+#
+# ONE CORRECTION, and it is the same one OPS-002 needed. The comment says leaving `gates.plan`
+# false avoids recording "a DoR evaluation that never happened". THE EVALUATION HAPPENED:
+# `/next-ticket` graded the full Definition of Ready in the orchestrator session at
+# 2026-09-07 09:27 +07, SIX OF SIX PASS, after `/plan` and before `/implement` — including item 5,
+# where `size_estimate: S` against `size: M` is settled by ADR-012 rather than routed back. The
+# `developer` was right to refuse to write another stage's gate; what was missing was a writer for
+# a grade that had already been given, not the grade.
+#
+# state: REVIEW    # Set by `developer` at /implement, 2026-09-07, on the PASS in 03-impl-log.md.
+#                  # IT WAS `BACKLOG` WHEN /implement RAN, NOT `READY`. 01-plan.md's front-matter
+#                  # carries `gate: PASS` and `next_state: READY`, but the PLAN->READY transition
+#                  # and `gates.plan` belong to `orchestrator` (.ai/01-operating-model.md:82,:285),
+#                  # which was not run between the two commands. `gates.plan` is DELIBERATELY LEFT
+#                  # `false` below — flipping another stage's gate from here would record a DoR
+#                  # evaluation that never happened. /ship requires it (:349). See 03-impl-log.md
+#                  # Open questions item 4.
+owner: ""
+branch: "feat/UIE-01"   # The convention followed, not a trade-off. See §5.
+size_estimate: S      # 01-plan.md section 1. Two screens, one new presentational component, one
+                      # stylesheet, one class on App.tsx. No schema, no seam function, no permission,
+                      # no test file. Agrees with triage's reading recorded at §2.
+size: M               # 01-plan.md section 7, counted from allowed_paths. IT DISAGREES WITH
+                      # size_estimate AND THE VERDICT WINS — ADR-012, and PLAN proceeded.
+                      # THE WHOLE GAP IS THE THREE .woff2 FILES that `public/fonts/**` resolves to:
+                      # five source files is S (up to 6), eight is M (up to 12). An estimate that
+                      # counts SURFACES does not see font binaries. §2 of this shell predicted the
+                      # shape — "S as scoped, M if index.html and a font path are added".
+                      # NOT L, so nothing splits: the frozen-selector constraint at §2 is what keeps
+                      # the twelve spec files out of allowed_paths, and it is written as AC-10.
+depends_on: []        # VERIFIED IN THIS TREE AT TRIAGE, NOT ASSUMED. See §6.
+invariants_touched: []   # REACHED AT PLAN, and no longer the template's default. 01-plan.md
+                         # section 2 carries the row-by-row reasoning. All seven rows at
+                         # .ai/registry/invariants.md:33-39 constrain an `entry` row or the member it
+                         # belongs to; NO INVARIANT GOVERNS THE APPEARANCE OF A SCREEN. The
+                         # circularity invariants.md warns about is avoided by a STRUCTURAL fact
+                         # rather than by inspecting intent: every file in section 7 sits ABOVE THE
+                         # SEAM — no query, no policy, no migration, no arithmetic — and neither
+                         # route imports the Supabase client, which RULE-02's lint rule would refuse.
+                         # AC-18 is the observable form of that claim. ADR-028 records that `[]` will
+                         # be the answer on almost every UIE row, as a COST of the group rather than
+                         # as permission to skip the question.
+# FILLED BY tech-lead-design AT PLAN, from 01-plan.md section 7.
+#
+# src/App.tsx IS LINE 35 ONLY (01-plan.md section 4.4) — the className, so the ground colour and the
+# font stack resolve. It has appeared in the allowed_paths of NINE shipped tickets and it is the file
+# here most likely to attract an unrelated edit. data-testid="app-root" and the seam banner at
+# :41-50 are untouched; AC-13 keeps the banner whole.
+#
+# NO TEST FILE IS LISTED AND NONE IS NEEDED. That is the frozen-selector constraint at §2 holding:
+# rename one of the thirteen data-testids and this becomes 5 source + 12 spec = 17 files, which is L
+# and must split. It is written as AC-10, and AC-18 asserts the suite passes unedited.
+#
+# public/fonts/** IS A GLOB and every other entry is a file. The exact filenames depend on which
+# subsets the Developer can obtain (01-plan.md Open questions item 2); a wrong enumeration would
+# block the ticket at the guard over a naming detail. It is narrow — a directory that does not exist
+# today, holding nothing but font binaries.
+allowed_paths:
+  - ".ai/board/tickets/UIE-01/**"
+  - "src/index.css"
+  - "src/components/AuthCard.tsx"
+  - "src/routes/SignIn.tsx"
+  - "src/routes/SignUp.tsx"
+  - "src/App.tsx"
+  - "public/fonts/**"
+schema_delta: none
+requires_adr: false   # ON THE SELF-HOSTED @font-face READING ONLY. See §7 — this field flips on a
+                      # question PLAN answers, and PLAN MUST STOP AND ASK rather than flip it.
+rework_count: 1   # Set by `developer` at /implement, rework cycle 1, on the FAIL in 04-review.md
+                  # (R5, one finding, routed to `developer` and stated there as incrementing this).
+                  # `state` was NOT touched and still reads REVIEW: the REVIEW->REWORK transition is
+                  # `orchestrator`'s (.ai/01-operating-model.md:290) and it was not run between the
+                  # two commands, exactly as with `gates.plan` above. THE COUNT IS TREATED
+                  # DIFFERENTLY FROM THE STATE ON PURPOSE — it records a cycle this session was part
+                  # of and that the reviewer had already decided, whereas a state or a gate written
+                  # from here would record a judgement nobody made. RULE-06 escalates at >= 2, so a
+                  # count nobody increments is a budget that never runs out. 03-impl-log.md Open
+                  # questions item 5.
+chat_budget:
+  # ADR-019 retired `ba` from the loop, so the two `->ba` edges are gone. They are not listed as
+  # zeroes: an edge nobody can walk is not a budget, it is a row that invites someone to try.
+  developer->tech-lead-design: { used: 0, max: 6 }
+  # ADR-022 removed the QA stage, and the `qa->tech-lead-design` edge with it.
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  # BOTH ROWS TRANSCRIBED BY `orchestrator` AT /ship ON 2026-09-07. Neither value is claimed here —
+  # each is a copy of a gate another stage reached, taken from that artifact's own front-matter.
+  #
+  # From .ai/board/tickets/UIE-01/01-plan.md: `gate: PASS`, `blocking_reason: ""`,
+  # `produced_at: 2026-09-07T09:05:00+07:00`. ADR-019 merged the `spec` and `design` gates into one.
+  plan:   { passed: true, at: "2026-09-07T09:05:00+07:00" }
+  # From .ai/board/tickets/UIE-01/04-review.md: `gate: PASS`, `blocking_reason: ""`,
+  # `next_state: DONE`, `produced_at: 2026-09-07T10:55:14+07:00`. THIS IS REVIEW PASS 2 — pass 1 at
+  # 09:52 was a FAIL on R5 and is recorded in that report's own § Review pass 1, not overwritten.
+  # `rework_count: 1` below is that cycle.
+  review: { passed: true, at: "2026-09-07T10:55:14+07:00" }
+  # No `qa` key. ADR-022 removed the stage and this shell is created after that date, so the two
+  # gates that decide anything are `plan` and `review`. /ship requires both.
+
+# Created by `product` at /triage on 2026-09-05, on a PROMOTE verdict, from
+# .ai/board/ideas/2026-09-05-the-first-screen-does-not-look-like-the-product.md.
+# That file's verdict section is the reasoning; this block carries only what binds PLAN.
+#
+# ***RENUMBERED OPS-003 -> UIE-01 ON 2026-09-05, HOURS AFTER IT WAS CREATED, AND NOT BY ITS OWN
+# ARGUMENT.*** This shell was first written as a chore in the OPS series with no feature row. The
+# operator instructed that UI-enhancement work get a feature group of its own —
+# .ai/registry/decisions/ADR-028-uie-is-a-fourth-feature-group.md records the instruction verbatim
+# and declares `UIE` — so `id`, `group`, `feature_ids` and `branch` all moved together with the row
+# in .ai/registry/features.md. NOTHING ELSE MOVED: the scope in §1, the frozen selectors in §2, the
+# four negative requirements in §4 and the ten originations in §9 are exactly as triage wrote them.
+# The superseded argument is at §10, marked rather than deleted, on the same principle the TEA-01
+# and TEA-02 status corrections in features.md already follow.
+#
+# THE VISUAL REFERENCE IS .ai/board/tickets/UIE-01/design/README.md AND IT IS NOT AN IMAGE. Two
+# images were shown in conversation on 2026-09-05 and NEITHER IS ON DISK. That README is a
+# transcription written by `product`, at the canonical path, because there was no file to move.
+# See §8 for what that does to PLAN's obligations.
+#
+# Definition of Ready items 1, 3, 4 and 6 are filled here — they are produced at BACKLOG (ADR-010).
+# Items 2 and 5 (invariants_touched, size_estimate) are deliberately left as the template ships
+# them: they belong to tech-lead-design at PLAN, and the gate sits after PLAN so that they can.
+#
+# ---------------------------------------------------------------------------------------------
+# 1. SCOPE — FIVE PATHS PLUS THE FONT DIRECTORY. Sized and cited by tech-lead-design at triage.
+#
+#   src/index.css                  @font-face + a @theme token block. TODAY THIS FILE IS ONE LINE,
+#                                  `@import "tailwindcss";`. This ticket introduces the FIRST
+#                                  palette and the FIRST type scale the real application has had.
+#   src/components/AuthCard.tsx    NEW — the ground, the card, the title, the subtitle and the
+#                                  segmented control. Presentational; imports nothing below the
+#                                  hook layer, so eslint.config.js:60-79 has nothing to fire on
+#                                  and RULE-02 is satisfied by construction. CHECKED, NOT ASSUMED.
+#   src/routes/SignIn.tsx          Restyle. Its seam call at :37 — signIn({ email, password }) —
+#                                  DOES NOT MOVE.
+#   src/routes/SignUp.tsx          Restyle. Its seam call at :48 —
+#                                  seam.signUp({ email, password, displayName, avatar }) — DOES
+#                                  NOT MOVE. Nothing is added to src/lib/data/index.ts:158,303.
+#   src/App.tsx                    LINE 35 ONLY. See the argument immediately below.
+#   public/fonts/**                2-4 .woff2 files, VIETNAMESE SUBSET EXPLICITLY. See §7.
+#
+# TWO ROUTES SHARING AN AuthCard, NOT ONE MERGED SCREEN. The segmented control is two <Link>s —
+# react-router-dom 7 (package.json:26) supplies them. This changes nothing in the router, nothing in
+# App.tsx's membership routing and nothing in any shipped spec. Merging the two routes into one was
+# considered and rejected at triage for three measured reasons:
+#   - App.tsx:72-81 guards /signin on membership.state === "signed-out" and Navigates away
+#     otherwise, while /signup at :65-67 is DELIBERATELY reachable in EVERY membership state
+#     (ADR-009: a person who signed up before being allow-listed has an auth user and no member
+#     row). Merging forces either loosening the /signin guard — which
+#     tests/e2e/tea-05-sign-in.spec.ts:39-56 ASSERTS — or branching that guard on a query parameter
+#     inside a component.
+#   - tests/e2e/tea-01-signup.spec.ts:45,125,174 navigate to /signup DIRECTLY.
+#   - Sign-up's terminal `submitted` state (SignUp.tsx:61-73, TEA-01 AC-13) would have to coexist
+#     with a toggle that lets you click away from it.
+#
+# ***src/App.tsx:35 DESERVES AN ARGUMENT AND TRIAGE MAKES IT RATHER THAN LEAVING IT TO BE FOUND.***
+# The line reads `className="min-h-screen bg-slate-50 p-8 font-sans"`. The mockup's flat
+# edge-to-edge lavender viewport REQUIRES changing it there — and that one class REPAINTS ALL
+# FOURTEEN ROUTES and the seam-banner at :41-50. So either this ticket accepts a slate-50 gutter and
+# does not match the reference, or it takes the one-line global change. **TAKE IT.** One class, it
+# moves the app TOWARD CLAUDE.md § Visual direction rather than away, and NO TEST ASSERTS A COLOUR —
+# grep for `toHaveClass|className|bg-slate-50` across tests/ returns NOTHING. The `font-sans` on
+# that same line is what currently resolves to Tailwind's default stack, which is why NINE SHIPPED
+# TICKETS have rendered Vietnamese fixture names in whatever the OS supplied.
+#
+# ---------------------------------------------------------------------------------------------
+# 2. ***THE FROZEN-SELECTOR CONSTRAINT. THIS IS WHAT KEEPS THE TICKET S. READ IT BEFORE §1.***
+#
+# ***data-testid NAMES ARE FROZEN. NEW CONTROLS MAY ADD SELECTORS. NO EXISTING SELECTOR MAY BE
+# RENAMED OR REMOVED.*** This is a CONSTRAINT PLAN MUST WRITE AS A CONSTRAINT, not a hope.
+#
+# The thirteen, verbatim, every one of which survives a restyle intact:
+#
+#   sign-in-email          sign-in-password        sign-in-submit         sign-in-error
+#   signup-form            signup-email            signup-password        signup-display-name
+#   signup-avatar-picker   signup-avatar-option    signup-error           signup-submit
+#   signup-confirm-notice
+#
+# THE ARITHMETIC, AND IT IS THE WHOLE REASON THE RULE EXISTS. TWELVE spec files reference
+# `sign-in-*` or `signup-*`: tea-01-signup, tea-05-sign-in, adm-01, adm-02, adm-03, and cal-01
+# through cal-07. EIGHT of them only because each carries a LOCAL signIn(page, email) helper filling
+# those three sign-in ids — e.g. tests/e2e/cal-04-month-view.spec.ts:59-63.
+#
+#   5 source files + 12 spec files = 17.
+#   .ai/01-operating-model.md:374 sizes MORE THAN 12 as L, AND L MUST SPLIT AT PLAN.
+#
+# SO: SELECTORS KEPT -> test files touched: ZERO -> five files -> S
+#     SELECTORS MOVED -> seventeen files -> L -> THIS TICKET SPLITS AT PLAN AND STOPS BEING ONE
+#                        RESTYLE.
+#
+# Triage's reading of size, as EVIDENCE for item 5 rather than as an answer to it: S as scoped
+# (.ai/01-operating-model.md:371 puts S at up to 6), M if index.html and a font path are added.
+# NOT L. tech-lead-design sets `size_estimate` and `size`; this paragraph is what it starts from.
+#
+# ---------------------------------------------------------------------------------------------
+# 3. ONE CORRECTION TO THE IDEA FILE, MEASURED IN THIS TREE — carry it, do not re-derive it.
+#
+# The idea says the avatar column is `not null` WITH NO DEFAULT. The column IS `not null`
+# (supabase/migrations/20260831150024_tea01_membership.sql:35) but the ADMISSION TRIGGER SUPPLIES A
+# FALLBACK: :117 writes coalesce(nullif(btrim(new.raw_user_meta_data ->> 'avatar'), ''), '🙂'), and
+# :116 does the same for display_name falling back to split_part(new.email, '@', 1).
+#
+# ***THIS CHANGES WHAT BLOCKS REMOVING THE PICKER: IT IS TEA-01's AC-8, NOT THE COLUMN SHAPE.***
+# Recorded because a reader who checks the column and finds a default may conclude the picker is
+# free to drop. It is not. See §4.
+#
+# ---------------------------------------------------------------------------------------------
+# 4. ***OUT OF SCOPE, AND THESE ARE NEGATIVE REQUIREMENTS — THE KIND NOBODY CHECKS.***
+#
+# The first three each REVERSE A DECISION ALREADY TAKEN, and each SCOPES OUT WITHOUT TOUCHING THE
+# LAYOUT — which is the finding that made this a restyle rather than an ADR.
+#
+# 4.1 ***DO NOT TRANSLATE ANY COPY ON THESE TWO SCREENS INTO VIETNAMESE.***
+#     Reverses .ai/standards/ui-design-system.md § Language — the operator's own instruction of
+#     2026-09-03 — and it is LINT-ENFORCED at eslint.config.js:83-92 against `Literal`,
+#     `TemplateElement` and `JSXText` under src/. `Đăng nhập`, `Tài khoản`, `Mật khẩu` and
+#     `Tạo tài khoản` ALL MATCH [À-ɏḀ-ỿ] (Đ is U+0110). NEITHER ROUTE IS IN
+#     copyDebt (ui-language.json:20-26) and that list ONLY EVER SHRINKS — adding to it is named as
+#     the failure mode at :10-13. OPS-001 translated these two files and is DONE.
+#     COSTS THE LAYOUT NOTHING: `Sign in` / `Sign up`, `EMAIL`, `PASSWORD`, `DISPLAY NAME` fit the
+#     same pills at the same widths.
+#
+# 4.2 ***DO NOT INTRODUCE A USERNAME. IDENTITY STAYS THE EMAIL ADDRESS.***
+#     Reverses ADR-009 and, underneath it, ADR-005. THE EMAIL IS THE JOIN KEY:
+#     supabase/migrations/20260831150024_tea01_membership.sql:100-105 consumes the allow-list row by
+#     matching `a.email = new.email`, and member.id IS auth.users.id. `username` appears ZERO times
+#     under src/, supabase/ and .ai/standards/data-model.md. A username needs a new column, a
+#     uniqueness constraint, a new allow-list key, a changed trigger, and a way to turn a username
+#     into something supabase.auth.signInWithPassword accepts — `schema_delta` NON-EMPTY,
+#     `requires_adr: true`, XL.
+#     COSTS THE LAYOUT NOTHING: the field is one pill either way; only the label and the
+#     placeholder change.
+#
+# 4.3 ***DO NOT PRINT CREDENTIALS ON THE SIGN-IN SCREEN.***
+#     Reverses no accepted ADR but CONTRADICTS SHIPPED BEHAVIOUR and names accounts that DO NOT
+#     EXIST — the reference lists min, tram, huy, dat, ngoc, khoa, linh, bao; this product's
+#     fixtures are quan, thanh, dung, chi, cu, hoa, khanh (src/lib/fixtures.ts:237-285).
+#     TEA-05 AC-2 is "a wrong address and a wrong password are refused identically" —
+#     SignIn.tsx:39-44 goes to some length NOT to distinguish the two and
+#     tests/e2e/tea-05-sign-in.spec.ts:68-80 ASSERTS it. Printing the valid account list defeats
+#     that ON PURPOSE, in a product whose only authorization mechanism is row-level security against
+#     a publicly reachable endpoint (.ai/standards/rbac-and-security.md:124, :143).
+#     COSTS THE LAYOUT NOTHING: two lines deleted. If a demo affordance is genuinely wanted it
+#     belongs behind `seamName === "mock"` beside the existing banner at App.tsx:41-50 — and that is
+#     a separate ticket, not a side effect of this one.
+#
+# 4.4 ***DO NOT REMOVE THE AVATAR PICKER. A RESTYLE MUST KEEP IT.***
+#     The reference shows no avatar picker. Dropping it breaks no constraint but breaks TEA-01's
+#     AC-8 (SignUp.tsx:109-110), the `complete` gate at SignUp.tsx:31, and FOUR assertions in
+#     tests/e2e/tea-01-signup.spec.ts:39,73,78,80. WHERE IT GOES in a card with no room for it is
+#     exactly the § Visual specification origination PLAN is granted to make — see §8.
+#     A SUGGESTION, TO BE WRITTEN AS AN ACCEPTANCE CRITERION RATHER THAN ASSUMED: a single-row
+#     horizontally scrollable strip of `rounded-full` swatches between DISPLAY NAME and EMAIL, at
+#     the same 44px rhythm. Removing the picker is a SEPARATE ticket that amends TEA-01's AC-8, and
+#     the trigger fallback at migration :117 (§3) is what would make that ticket safe.
+#
+# 4.5 ***DARK MODE IS OUT OF SCOPE AND § Out-of-scope MUST SAY SO RATHER THAN BE SILENT.***
+#     The reference shows one theme. Silence here reads as an omission; it is a decision.
+#
+# 4.6 ***src/routes/NotOnATeam.tsx IS NOT RESTYLED.*** It is reached IMMEDIATELY AFTER A SUCCESSFUL
+#     SIGN-IN for an allow-list miss (App.tsx:93) and is visually adjacent to these two screens — so
+#     it is the file most likely to be swept in. It is not in §1 and it is not this ticket's. Named
+#     here so that leaving it unstyled is legible as a choice.
+#
+# 4.7 ***THE Vui/Gọn DENSITY TOGGLE DOES NOT APPLY HERE.*** CLAUDE.md § Visual direction puts
+#     density on the calendar grid; these are the charm surface and carry no grid. Written once so
+#     nobody re-derives it at PLAN or at REVIEW.
+#
+# Also out of scope, each for its own reason:
+#   - AMENDING .ai/standards/ui-design-system.md — filling § Colour, § Type, § Direction or
+#     § Components with this ticket's tokens. HUMAN PLANE, RULE-01. See §9.
+#   - AMENDING ui-language.json. Adding either auth route to copyDebt is what that file calls the
+#     failure mode (:10-13).
+#   - EVERY OTHER SCREEN. Home, MemberList, AllowList, Threshold, Holidays, the entry forms and the
+#     three calendar views. The App.tsx:35 repaint in §1 CHANGES THEIR BACKGROUND AND NOTHING ELSE;
+#     it is not a licence to restyle them.
+#   - THE SEED DATA AND THE FIXTURES. src/lib/fixtures.ts and supabase/seed.sql are § Language's
+#     stated exception and keep their Vietnamese diacritics. Nothing here makes the reference's
+#     eight names real.
+#
+# ---------------------------------------------------------------------------------------------
+# 5. `branch: "feat/UIE-01"` — THE CONVENTION FOLLOWED. THE OPS APOLOGIA IS DISCHARGED, NOT INHERITED.
+#
+# .ai/standards/git-conventions.md:36 asks for `feat/<FEATURE-ID>`, and UIE-01 IS A ROW in
+# .ai/registry/features.md as of 2026-09-05 (ADR-028). So this branch name needs no argument beyond
+# the standard, and the RULE-03 path guard being live on it is a CONSEQUENCE rather than the reason:
+# scripts/check-allowed-paths.mjs:101 slices `feat/` off and resolves the remainder to
+# .ai/board/tickets/<ID>/ticket.yaml, which is this file.
+#
+# ***WHAT USED TO STAND HERE, AND WHY IT NO LONGER APPLIES.*** While this ticket was OPS-003 the name
+# rested on a measured fact instead: scripts/check-allowed-paths.mjs:96 exits 0 with "nothing to
+# check" on ANY branch that does not begin `feat/`, so an `ops/` branch would have run RULE-03
+# UNENFORCED across five SHIPPED APPLICATION FILES — and `feat/OPS-003` was the only name under which
+# the guard was live, against git-conventions.md:33, which gives chore work the pattern `ops/<slug>`
+# and marks its path guard "inactive, correctly". The operator settled that exact trade-off on
+# 2026-09-03 for OPS-001, OPS-002 and BUG-001; the record is
+# .ai/board/tickets/OPS-002/ticket.yaml §4 and the §4 CORRECTION block at the end of
+# .ai/board/tickets/BUG-001/ticket.yaml. IT REMAINS THE RECORD FOR THOSE THREE TICKETS AND IS NOT
+# REOPENED. The residual contradiction it left — a `feat/` branch for an ID that is not a row in
+# features.md — DOES NOT EXIST FOR THIS TICKET, because UIE-01 is a row.
+#
+# ---------------------------------------------------------------------------------------------
+# 6. `depends_on: []` — CHECKED IN THIS TREE AT TRIAGE RATHER THAN INHERITED
+#
+# NO FILE COLLISION EXISTS AGAINST ANY LIVE TICKET. What was read, so a reviewer can re-check it
+# rather than trust it:
+#
+#   - OPS-001 is DONE (.ai/board/tickets/OPS-001/ticket.yaml:8). Its allowed_paths — which DID
+#     include src/App.tsx, src/routes/SignIn.tsx and src/routes/SignUp.tsx (:66,:68,:69) — are
+#     released. It translated these two screens; it did not restyle them.
+#   - OPS-002 is BACKLOG and its §1 scope is FIVE FILES: src/routes/NewEntry.tsx,
+#     src/routes/EditEntry.tsx, src/components/EntryForm.tsx, src/lib/data/supabase.ts and
+#     src/lib/data/mock.ts. DISJOINT from §1 above. Corroborated independently by
+#     ui-language.json:20-26, whose copyDebt lists exactly those five entry-and-seam files and
+#     NEITHER auth route.
+#   - THE OTHER FOUR BACKLOG ROWS — ~~CAL-08,~~ ADM-04, ADM-05, ADM-06 — ALL CARRY
+#     `allowed_paths: []`, so no live ticket claims a path at all. ~~Five of five~~ BACKLOG shells
+#     are unfilled.
+#
+# ONE THING THIS DOES NOT PROTECT AGAINST, stated because `depends_on: []` reads as safety: a ticket
+# planned between now and this one's PLAN will fill its allowed_paths, and ~~CAL-08,~~ ADM-04,
+# ADM-05 and ADM-06 all add or edit screens. src/App.tsx in particular has appeared in the
+# allowed_paths of NINE shipped tickets. RE-CHECK AT PLAN. `depends_on: []` is a measurement taken
+# on 2026-09-05, not a standing guarantee.
+#
+# ***CAL-08 STRUCK FROM BOTH LISTS BY `product` ON 2026-09-05, LATER THE SAME DAY.*** It merged in
+# PR #56 and is `DONE`, so it is no longer a BACKLOG shell and no longer a ticket that might fill an
+# `allowed_paths` between now and this one's PLAN. ***THE MEASUREMENT IS THE THING THIS PARAGRAPH
+# PREDICTED, AND IT LANDED ON THE SIDE THAT COSTS NOTHING:*** CAL-08 claimed src/routes/WeekView.tsx,
+# MonthView.tsx, YearView.tsx and src/lib/data/, and ***NONE OF THOSE IS IN THIS TICKET'S §1 SCOPE***
+# — the two auth routes, src/index.css, src/App.tsx and a new component. `depends_on: []` therefore
+# STILL HOLDS, measured again rather than assumed. Struck rather than deleted so the shape of the
+# original measurement stays readable. ***NOTHING ELSE IN THIS SHELL IS AFFECTED BY THE CAL-08
+# REBASE***, because this ticket touches none of the three files it rewrote.
+#
+# ---------------------------------------------------------------------------------------------
+# 7. ***THE FONT IS THE ONE OPEN QUESTION THAT CAN CHANGE `requires_adr`.***
+#
+# NOTHING LOADS A FONT TODAY. src/index.css is one line; index.html:1-12 has no <link>; App.tsx:35
+# uses `font-sans` -> Tailwind's default stack. CLAUDE.md § Visual direction requires a rounded face
+# with correct Vietnamese diacritics — Nunito or Baloo 2, never Quicksand — and no shipped screen has
+# ever rendered in one.
+#
+#   PATH                                          COST
+#   -------------------------------------------   ------------------------------------------------
+#   @font-face over self-hosted .woff2 in          NO ADR. Not an npm package (R9,
+#   public/fonts/                                  coding-standards.md:91), not a runtime third
+#                                                  party (integrations.md:38-44). NEEDS THE
+#                                                  `vietnamese` SUBSET EXPLICITLY. ***RECOMMENDED.***
+#   @import url('https://fonts.googleapis.com/…')  A runtime third party = an integration;
+#                                                  integrations.md:42 sends it through R9. This is
+#                                                  what the prototype does (_figma/src/index.css:1).
+#   @fontsource/nunito                             An npm dependency. R9 FAILS IT WITHOUT AN ADR.
+#
+# ***`requires_adr: false` ABOVE IS RECORDED ON THE SELF-HOSTED @font-face READING ONLY. IF PLAN
+# CONCLUDES OTHERWISE IT MUST STOP AND ASK RATHER THAN CORRECT THE FIELD QUIETLY.*** Same clause and
+# same reason as OPS-002 §2's localisation-library question. `requires_adr` also flips to true the
+# moment 4.1 or 4.2 enters scope, which is the other half of why they are negative requirements.
+#
+# THE PROTOTYPE ALREADY CARRIES ALMOST THIS PALETTE and both tech-lead-design and developer may read
+# it: _figma/src/index.css:4-33 — --color-bg: #F1EFFA, --color-ink: #241F45, --color-line: #E4E0F4,
+# --radius-lg: 26px, --shadow-soft. _figma/src/index.css:23 binds --font-display to 'Baloo 2'. The
+# prototype has NO auth screen at all, so the reference is that lockup applied where it stopped.
+#
+# ---------------------------------------------------------------------------------------------
+# 8. ***THIS TICKET REVERSES A DOCUMENTED TEA-05 DESIGN DECISION, AND THE COMMENT SAYING SO IS IN
+#     THE FILE THE DEVELOPER WILL OPEN.***
+#
+# src/routes/SignIn.tsx:110-115 is a NINE-LINE COMMENT explaining that the absence of a link to
+# /signup is DELIBERATE, citing TEA-05's 01-plan.md §1 — "nothing else navigates".
+#
+# ***A SEGMENTED CONTROL IS THAT LINK, IN BOTH DIRECTIONS.*** So the restyle reverses it. This is NOT
+# ADR-level: the control adds no permission and reveals nothing, because /signup is ALREADY reachable
+# by address in every membership state (App.tsx:65-67, ADR-009). But A DEVELOPER WHO FINDS THAT
+# COMMENT AND OBEYS IT WILL NOT BUILD THE CONTROL.
+#
+# PLAN MUST SAY SO EXPLICITLY, AND ***THE COMMENT MUST BE REWRITTEN IN THIS SAME TICKET*** rather
+# than left standing to contradict the code beside it.
+#
+# ---------------------------------------------------------------------------------------------
+# 9. WHAT PLAN MUST ORIGINATE, AND THE OBLIGATION THAT COMES WITH THE GRANT
+#
+# THERE IS NO IMAGE. .ai/standards/ui-design-system.md:105-125 moves a triage-time image to
+# .ai/board/tickets/<ID>/design/ on PROMOTE; NO FILE EXISTED, so design/README.md at that path is a
+# TRANSCRIPTION written by `product`, and § 2b HAS NO IMAGE TO CITE.
+#
+# That puts this squarely under the "With no image, the Tech Lead designs it" grant at
+# .ai/standards/ui-design-system.md:140-150 — ***INCLUDING ITS OBLIGATION: § 2b MUST CARRY THE LINE
+# THAT THE LAYOUT IS THE TECH LEAD'S OWN AND WAS NEVER SPECIFIED.***
+#
+# TEN THINGS THE TRANSCRIPTION CANNOT SETTLE. PLAN originates each and marks it its own:
+#
+#   1. THE POST-SIGN-UP NOTICE. SignUp.tsx:61-73 renders `signup-confirm-notice` as a TERMINAL state
+#      (TEA-01 AC-13). The reference has TWO states; the product has THREE. The card needs a third.
+#   2. ERROR PLACEMENT. `sign-in-error` / `signup-error` render role="alert" above the button; the
+#      reference shows no error state at all.
+#   3. SUBMITTING. "Signing in…" / "Sending…" inside a SOLID INDIGO button — and `disabled:opacity-40`
+#      on an indigo pill reads as A DIFFERENT INDIGO, not as disabled.
+#   4. THE seam-banner. App.tsx:41-50 puts a PERMANENT amber notice above every screen in a mock
+#      build. Not in the reference, and not dismissible.
+#   5. AVATAR STRIP PLACEMENT — see 4.4.
+#   6. FOCUS, HOVER AND DISABLED for the pill inputs, BOTH halves of the segmented control, and the
+#      button. A BORDERLESS INPUT ON A FILLED GROUND HAS NO DEFAULT FOCUS AFFORDANCE WORTH HAVING.
+#   7. ANYTHING NARROWER THAN THE CARD. No responsive width is shown; the card is ~355px fixed.
+#      Below ~390px it needs a rule.
+#   8. WHETHER Vui/Gọn APPLIES — answered no at 4.7, and PLAN restates it rather than re-deriving it.
+#   9. DARK MODE — out, and § Out-of-scope must SAY so (4.5).
+#  10. THE MEMBER-LESS LANDING STATE — out, and named at 4.6 so its absence is legible.
+#
+# ***ONE THING THE OPERATOR HAS TO DECIDE, AND NO AGENT MAY DECIDE IT.***
+# .ai/standards/ui-design-system.md:17-24 — § Colour and § Type are BOTH BARE `TODO(project)` STUBS.
+# There is no palette and no type scale in the standards plane for this ticket's tokens to be
+# checked against or written into, and that file is HUMAN-ONLY under CLAUDE.md § Two planes and
+# RULE-01. A developer CAN write tokens into src/index.css; a developer CANNOT record them in the
+# standard. ***IF NOBODY FILLS § Colour, THIS TICKET BECOMES THE DE-FACTO DESIGN SYSTEM WITH NO
+# DOCUMENT BEHIND IT.*** Stated as a consequence, not as a blocker: the ticket is buildable either
+# way, and the cost is that the next screen has nothing to conform to.
+#
+# ONE COLLISION WORTH NAMING BEFORE THE PALETTE IS CHOSEN: CLAUDE.md § Visual direction assigns
+# LAVENDER to HOLIDAYS in the grid, and the reference is lavender-and-indigo throughout. Whether that
+# collides on a screen with no grid on it is not settled here and is not settled by silence.
+#
+# NOTE ON `invariants_touched`: left as the template's `[]`, which is the DEFAULT and NOT an answer.
+# invariants.md warns that concluding "none" from safe behaviour is circular reasoning. What triage
+# established as a starting point, and PLAN must reach its own: .ai/registry/invariants.md:33-39 —
+# all seven rows constrain `entry` rows (overlap, approval state, rejection reasons, the absence
+# count, tentative entries, portions, ownership), and NO INVARIANT GOVERNS THE APPEARANCE OF A
+# SCREEN. Every file in §1 sits ABOVE the seam: no query, no policy, no migration, no arithmetic,
+# and NEITHER ROUTE IMPORTS @supabase/* (checked — RULE-02's lint rule would refuse it anyway).
+# ADR-028 records separately that `Invariants touched` will be `[]` on almost every UIE row, and
+# says so as a COST of the group rather than as permission to skip the question.
+#
+# ---------------------------------------------------------------------------------------------
+# 10. THE ROW IN .ai/registry/features.md, AND WHY feature_ids IS [UIE-01] AND NOT [TEA-01, TEA-05]
+#
+# THERE IS A ROW: `UIE-01`, in the `## UIE` section, `Status: PLANNED`, `Invariants touched: []`,
+# citing the idea file by name — the provenance ADR-007 requires of every promoted row, written by
+# `product` at /triage.
+#
+# ***feature_ids IS [UIE-01] ALONE.*** .ai/01-operating-model.md:317 makes the ticket ID equal the
+# feature ID in the 1:1 case, and this is now exactly that case. TEA-01 and TEA-05 are NOT listed,
+# for two independent reasons: listing them would CLAIM THIS TICKET DELIVERS THOSE FEATURES, which it
+# does not — it restyles the surfaces they shipped — and it would span two groups, putting Definition
+# of Ready item 6 back into owing a split rationale for nothing. ***THE LINK SURVIVES AS PROSE IN
+# BOTH DIRECTIONS, WHICH IS WHERE IT BELONGS***: the TEA-01 and TEA-05 `Notes` paragraphs point at
+# UIE-01, and UIE-01's own `Notes` names them as the rows whose surfaces this restyles.
+#
+# ***WHAT THIS SECTION SAID BEFORE, KEPT BECAUSE IT WAS THE ARGUMENT AND NOT AN ERROR.*** Until the
+# afternoon of 2026-09-05 this section was titled "WHY THERE IS NO NEW ROW IN
+# .ai/registry/features.md" and argued: nothing regressed and the current screens are correct, so
+# this is not a defect; a row saying "the sign-in screen looks like the product" would file an
+# APPEARANCE as something the product CONTAINS; .ai/01-operating-model.md:317 declares chores as
+# OPS-nnn; and BUG-001 and OPS-002 had already taken that departure from ADR-007's PROMOTE default.
+# The provenance was to be one sentence appended to the `Notes` of TEA-01 and TEA-05, and nothing
+# else. It also observed that check D1 could not be tripped, because the prefix marker declared three
+# groups and `OPS-003` matched none of them.
+#
+# ***THE OPERATOR OVERRULED IT***, in these words:
+#   "nhưng ticket liên quan UI enhancement tôi đề nghị mở 1 feature group riêng sử dụng UIE
+#    (UI enhancement)"
+# .ai/registry/decisions/ADR-028-uie-is-a-fourth-feature-group.md records that instruction, declares
+# `UIE` as a fourth feature group, and carries the four-step test that decides between UIE, the three
+# capability groups, BUG-nnn and OPS-nnn. Under that test this ticket is UIE at step 3: the
+# deliverable is the appearance of a surface that already exists, more than one output would be
+# acceptable, and somebody has to look at the result and judge it. The two sentences on TEA-01 and
+# TEA-05 were NOT deleted and were NOT silently switched to the new ID — each is marked as overruled,
+# quotes the instruction, and points here.
+#
+# ***THE D1 OBSERVATION IS NOW REVERSED AND IT CONSTRAINED THE ORDER OF THE EDIT.*** The prefix
+# marker declares four groups, so scripts/check-docs.mjs:154 builds \b(?:CAL|ADM|TEA|UIE)-\d{2}\b and
+# `UIE-01` DOES match it. Declaring a prefix with no rows is green; what fails the audit is a document
+# citing UIE-01 before the row exists. The row and every citation of it therefore landed in ONE change.

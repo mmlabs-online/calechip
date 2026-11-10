@@ -1,0 +1,652 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-09-08 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: UIE-07
+title: "The week view renders a per-day absence count"
+feature_ids: [UIE-07]
+group: UIE
+state: DONE     # `orchestrator` at /ship, 2026-09-08, on 04-review.md `gate: PASS` /
+                # `next_state: DONE`. ADR-022 removed the QA stage, so REVIEW -> DONE is the whole
+                # remaining transition (.ai/01-operating-model.md:36).
+#
+# PREVIOUS VALUE, `REVIEW`, set by `developer` at /implement. FIFTEENTH TICKET TO GO BACKLOG ->
+# REVIEW ON DISK. BUG-002 broke that run once and only because the operator instructed the gate by
+# hand; the hole itself is unchanged — no command owns PLAN -> READY, `/next-ticket` grades it and
+# writes no file by design, and `/ship` is where both rows land at the end.
+#
+# THE GRADE BEHIND IT: `/next-ticket` graded the full Definition of Ready in the orchestrator session
+# at 2026-09-08 12:03 +07, SIX OF SIX PASS — after `/plan` (11:54) and before `/implement`.
+owner: ""
+branch: "feat/UIE-07"
+size_estimate: S      # 01-plan.md section 1. One route file and one new spec file. No new module,
+                      # no new state, no new seam call, no new token, and NO NEW ARITHMETIC.
+                      # Set by `tech-lead-design` at /plan, 2026-09-08. The triage left this empty
+                      # deliberately and §9.1's `S` was a SIGNAL, not this value; the two agree.
+size: S               # 01-plan.md section 7, counted from allowed_paths: TWO files outside the
+                      # ticket folder. S is up to 6 at .ai/01-operating-model.md:372. AGREES with
+                      # size_estimate, so ADR-012 never engages and nothing is owed under it.
+                      # §9.2 SIGNALLED UP TO FOUR PATHS; THIS IS TWO, AND BOTH SUBTRACTIONS ARE
+                      # DECISIONS RECORDED IN 01-plan.md §8 rather than omissions.
+                      # - src/hooks/useRoster.ts is OUT: §13.3's "one line, number-preserving, in
+                      #   one file" is not available on disk. `currentMemberCount` returns a NUMBER
+                      #   and the filter's product is the `Member[]` the sidebar RENDERS AS A LIST
+                      #   (Sidebar.tsx:174), so the swap breaks RosterState and the typecheck; and
+                      #   the same filter appears a THIRD time at MemberList.tsx:179. §8 alt 2
+                      #   carries the measurement; 01-plan.md Out of scope item 10 names it.
+                      # - tests/e2e/cal-05-week-view.spec.ts is OUT because §4's open decision was
+                      #   taken the way §14 recommends: "Everybody is in." STAYS. §8 alt 1.
+depends_on: []        # MEASURED AT THIS TRIAGE RATHER THAN ASSUMED — §5 below is the measurement,
+                      # including why BUG-002 is not in this list.
+                      # RE-CHECKED AT /plan ON 2026-09-08 AS §5 REQUIRES, AND THE VALUE IS UNCHANGED.
+                      # UIE-04 and UIE-05 are still DONE. BUG-002 IS NOW DONE AND MERGED (PR #76),
+                      # which strengthens §5's reasoning rather than changing it: the truncated-read
+                      # exposure CAL-05 AC-15 records is repaired AHEAD of this work instead of being
+                      # inherited by it. It was never a dependency and it is not one now.
+invariants_touched: [INV-04, INV-06]
+                         # DECIDED AT PLAN from the three §6 names, WITH THE MECHANISM STATED per
+                         # invariant rather than the conclusion. 01-plan.md section 2 carries it in
+                         # full, and its Changelog carries the distinction the decision turns on.
+                         #
+                         # INV-04 — ENGAGED, AND IT IS THE WHOLE CONTENT OF THE TICKET. ADR-029
+                         # :133-134 says it is SATISFIED by this decision rather than amended, and
+                         # satisfied is NOT unengaged: this ticket puts INV-04's number on a second
+                         # screen, so the only thing between the permitted number and a forbidden
+                         # second definition is that AC-5 is a CRITERION and not a comment. The
+                         # cheapest wrong path is no longer the chip count — clause 1 and UIE-04
+                         # closed that — it is the LOCAL SUM over the `absent` map already in scope
+                         # three lines away (§9.3). AC-3 and AC-4 are what catch it.
+                         #
+                         # INV-06 — ENGAGED AS A DISPLAY, AND §6 IS RIGHT THAT IT IS THE ONE MOST
+                         # LIKELY TO BE MISSED. A half day weighs 0.5, so the number is a DECIMAL on
+                         # some days, rendered directly beneath chips carrying `week-row-portion` —
+                         # INV-06's only visible surface in the product. THE MECHANISM IS AC-8's
+                         # "no rounding": the risk is not a second definition, it is a DISPLAY
+                         # decision — Math.round, toFixed(0), an integer format chosen for tidiness
+                         # — taken ENTIRELY INSIDE clause 1, where the count is still INV-04's and
+                         # the screen still lies about the half day. A failure mode this ticket
+                         # creates and no other surface has.
+                         #
+                         # INV-05 — CONSIDERED AND DELIBERATELY NOT LISTED. THAT IS A DECISION AND
+                         # NOT AN OMISSION, which is what §6 asked for. A column showing a
+                         # `week-row-tentative` chip over a count that excluded it WOULD be a
+                         # visible contradiction, and the first in the product — but it is
+                         # UNREACHABLE WITHOUT FIRST BREAKING INV-04: `absenceCountsFor` never
+                         # consults `tentative` (absence.ts:194-195), so the only way to exclude one
+                         # is the local sum AC-5 already forbids. INV-05 has no display-only failure
+                         # mode of INV-06's kind, and listing an invariant held entirely by another
+                         # invariant's mechanism is the over-declaration that makes this field stop
+                         # meaning anything.
+                         #
+                         # INV-01/02/03/07 are properties of stored entries and their members.
+                         # Nothing is written, nothing new is read, no comparison is added.
+                         #
+                         # THE TRIAGE'S SHIPPED `[]` IS REPLACED, NOT REINTERPRETED — §6 said it
+                         # meant "nobody looked" and required PLAN to replace it. Original comment:
+                         # invariants_touched: []   # THE TEMPLATE'S SHIPPED DEFAULT, LEFT UNTOUCHED
+                         #                          # — AND IT IS *NOT* THIS TRIAGE'S ANSWER. §6
+                         #                          # names what to look at and settles nothing.
+# FILLED BY tech-lead-design AT /plan, 2026-09-08, from 01-plan.md section 7. TWO files outside the
+# ticket folder. EXACT PATHS, NO GLOBS ON THE SOURCE FILES, AND NO INLINE COMMENTS ON THE ITEMS —
+# §9's `readYamlList` warning is honoured: it strips only a leading and a trailing quote, so a
+# trailing `# ...` is swallowed into the pattern and the glob then matches nothing.
+#
+# src/index.css IS NOT HERE. `--color-line` (:104) and `--color-ink-3` (:109) already exist, so the
+# footer strip adds no token and UIE-06's collision note at :117-123 is not reopened.
+# src/hooks/useRoster.ts and tests/e2e/cal-05-week-view.spec.ts ARE NOT HERE EITHER — see `size`
+# above and 01-plan.md §8 alternatives 1 and 2.
+allowed_paths:
+  - ".ai/board/tickets/UIE-07/**"
+  - "src/routes/WeekView.tsx"
+  - "tests/e2e/uie-07-week-absence-count.spec.ts"
+schema_delta: none    # §7. Both functions are pure and the screen already holds their arguments.
+requires_adr: false   # AND UNUSUALLY THIS IS A FACT RATHER THAN A FIRST READING — §1. ADR-029
+                      # already carries the decision this ticket would otherwise stop for.
+rework_count: 0
+chat_budget:
+  # ADR-019 retired `ba` from the loop, so the two `->ba` edges are gone. They are not listed as
+  # zeroes: an edge nobody can walk is not a budget, it is a row that invites someone to try.
+  developer->tech-lead-design: { used: 0, max: 6 }
+  # ADR-022 removed the QA stage, and the `qa->tech-lead-design` edge with it. This ticket is
+  # triaged after that date, so no `qa` key appears here and none may be added.
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  # BOTH ROWS TRANSCRIBED BY `orchestrator` AT /ship ON 2026-09-08. Neither value is claimed here —
+  # each is a copy of a gate another stage reached, read from that artifact's own front-matter.
+  # `at` values quoted, as on every ticket but BUG-002, whose unquoted row was corrected at its ship.
+  #
+  # From .ai/board/tickets/UIE-07/01-plan.md: `gate: PASS`, `blocking_reason: ""`,
+  # `produced_at: 2026-09-08T11:54:35+07:00`. ADR-019 merged the `spec` and `design` gates into one.
+  plan:   { passed: true, at: "2026-09-08T11:54:35+07:00" }
+  # From .ai/board/tickets/UIE-07/04-review.md: `gate: PASS`, `blocking_reason: ""`,
+  # `next_state: DONE`, `produced_at: 2026-09-08T14:30:38+07:00`. ONE review pass, `rework_count: 0`,
+  # no consultation, no amendment — the sixth in a row.
+  review: { passed: true, at: "2026-09-08T14:30:38+07:00" }
+  # No `qa` gate — ADR-022 removed the stage. /ship requires `plan` and `review`.
+
+# Created by `product` at /triage on 2026-09-08, on a PROMOTE verdict, from
+# .ai/board/ideas/2026-09-07-a-day-does-not-say-how-full-it-is.md. That file now carries TWO
+# verdict sections and the LIVE one is the second, `# Re-triage verdict — PROMOTE, as UIE-07`;
+# the NEEDS-ADR pass above it is discharged history and governs nothing.
+#
+# Definition of Ready items 1, 3, 4 and 6 are filled here — they are produced at BACKLOG (ADR-010).
+# Items 2 and 5 (invariants_touched, size_estimate) are deliberately left as the template ships
+# them: they belong to tech-lead-design at PLAN, and the gate sits after PLAN so that they can.
+#
+# EVERY CLAIM BELOW WAS READ ON DISK AT THIS TRIAGE. Nothing here is recalled, and nothing here is
+# a design. Where a shape is described it is quoted from a decided ADR and cited to it.
+#
+# ---------------------------------------------------------------------------------------------
+# 1. WHY THIS TICKET EXISTS, AND WHY NO ADR IS OWED
+#
+# IT IS OBLIGED BY A DECISION THAT IS ALREADY MADE, NOT BY A JUDGEMENT TAKEN AT THIS TRIAGE.
+# ADR-029 § Consequences, verbatim: "This decision does not create a ticket. On acceptance the idea
+# is re-triaged and promotes into a `UIE` row carrying the four clauses above as the substance of
+# its criteria. Nothing is built from this document alone."
+#
+# ADR-029 IS `ACCEPTED by orchestrator`, 2026-09-08. The operator delegated the decision rather
+# than making it — "tưj quyết đi" — which lifted ADR-008's envelope gate WITHOUT SAYING WHICH WAY.
+# That is why the signature is an agent's and never `ACCEPTED by the operator`, and why CODEOWNERS
+# review at merge is the approval. ADR-008's revert condition points at exactly that document: if
+# the operator disagrees with the decision at merge, RULE-09 goes back to v1 and this ticket goes
+# with it. That is the mechanism working, not a failure.
+#
+# `requires_adr: false` FOLLOWS FROM THAT AND IS NOT AN OPTIMISTIC FIRST READING. The three
+# artifacts that refused this number — CAL-05's registry row, CAL-05's 01-plan.md:95-97, and
+# UIE-04's shipped AC-13 — are the envelope ADR-029 opened. PLAN does not stop and ask; it builds
+# inside the four clauses in §2. IF PLAN CONCLUDES IT NEEDS SOMETHING OUTSIDE THEM — the overload
+# state, a team read, or an amendment to INV-04 — THE CORRECT VERDICT IS `BLOCKED` WITH
+# `requires_adr: true`, on ADR-008's test: decide inside the envelope, ask before changing it.
+#
+# WHAT THE ACCEPTANCE ALREADY OBLIGED AND WHAT IT DID NOT — verified on disk at this triage, so
+# that nothing here is duplicated and nothing is assumed done:
+#   DONE ALREADY, in the pull request that accepted the ADR, and NOT this ticket's:
+#     - CAL-05's row in .ai/registry/features.md now reads "renders the absence count for each day,
+#       from `absenceCountsFor` and no other source". DO NOT RE-AMEND IT.
+#     - UIE-04's row carries its superseding line: AC-13's FIRST clause no longer holds, its
+#       SECOND (no team read, no overload state) survives. DO NOT RE-AMEND IT.
+#   NOT DONE, AND IT IS THIS TICKET'S — §3.
+#
+# ---------------------------------------------------------------------------------------------
+# 2. THE FOUR CLAUSES, VERBATIM FROM ADR-029 § Decision — THE SUBSTANCE OF THE CRITERIA
+#
+# THEY ARE THE SUBSTANCE AND NOT THE CRITERIA. Writing them as Given/When/Then is PLAN's, from the
+# registry row (.ai/registry/features.md, `UIE-07`). `product` writes no acceptance criteria.
+#
+# The decision itself: "The week view renders, in a footer strip on each day column, the absence
+# count for that day and the team's current member count, as `n/N`." Then, quoted:
+#
+#   1. "The number is `absenceCountsFor(entries, range, roster)` and nothing else" — the same call
+#      with the same arguments the month grid makes. "A `week-row` count, a `people.length`, or any
+#      local filter or sum is forbidden." That sentence belongs in the criterion, because "a
+#      comment does not survive the next developer".
+#   2. "The denominator is `currentMemberCount(roster)`." Never a literal. The fixtures give 4, not
+#      the image's 8.
+#   3. "No threshold, no overload state, no `seam.getTeam()`." The screen still computes no
+#      overload, so the second clause of UIE-04's AC-13 survives intact and only its first clause
+#      is superseded.
+#   4. "The label may not say 'away'." WFH is counted and a WFH member is working (OPS-002 AC-7,
+#      src/lib/labels.ts:24-29). The strip names the absence count as the glossary names it, or it
+#      names nothing at all. "It is English" — .ai/standards/ui-design-system.md § Language, the
+#      operator's own instruction of 2026-09-03 — so `vắng` is not available whatever noun is
+#      chosen.
+#
+# ***CLAUSE 1 IS THE ONE THE WHOLE DECISION RESTS ON, AND ITS EXACT WORDING IS LOAD-BEARING.***
+# ADR-029:133-134: "INV-04 is satisfied by this decision rather than amended, and the invariant
+# ledger is not edited. That is a property of clause 1 and of nothing else: without it, this
+# decision becomes option 3 below." Option 3 is the chip count — a day holding one full-day and two
+# half-day entries has THREE chips and an absence count of TWO — which is INV-04's forbidden second
+# definition, reached without ever opening absence.ts. UIE-04 refused it and that refusal stands.
+# ***ONE OCCURRENCE OF A COUNT NOT PRODUCED BY `absenceCountsFor`, ANYWHERE IN THIS PRODUCT, IS
+# ADR-029's REVERT CONDITION*** — including a chip count, a `people.length` or a locally filtered
+# sum. The only thing separating the permitted number from the forbidden one is a discipline that
+# nothing in the toolchain enforces, which is why clause 1 is a criterion and not a comment.
+#
+# CLAUSE 2'S DENOMINATOR, on disk: src/lib/fixtures.ts holds FOUR unremoved members of the main
+# team (:39, :72, :149, :319; :108 is another team, :123 carries `removedAt`). The image's roster
+# of eight is fictional and NOTHING MAY BE ASSERTED FROM IT.
+#
+# THE TWO FUNCTIONS, on disk and verified rather than recalled: `absenceCountsFor(entries, range,
+# roster)` at src/lib/data/absence.ts:197 and `currentMemberCount(roster)` at :348 TAKE NO TEAM AND
+# NO THRESHOLD, and src/routes/WeekView.tsx:180 and :258 already hold `roster` and `entries` in
+# state — :180 is the `phase: "ready"` union, :258 the `setView` that fills it from the reads at
+# :252-256. ***THIS CITATION READ `:207` WHEN THIS SHELL WAS WRITTEN AND `:207` IS WRONG*** — that
+# line is a comment about the `landingDay` memoisation. Corrected here on 2026-09-08 at the fold-in;
+# the FACT was never wrong, only the address. §12.0 records the two copies that still carry it.
+#
+# ---------------------------------------------------------------------------------------------
+# 3. THE COMMENT REWRITE — ASSIGNED TO THIS TICKET BY ADR-029, WITH A REQUIREMENT ON THE REPLACEMENT
+#
+# src/routes/WeekView.tsx:11-17 STILL READS "**IT COUNTS NOTHING.**" — re-read on disk at this
+# triage, 2026-09-08, in the tree as it stands. It states, at :11-13, that no absence count, no
+# overload state and no threshold are computed and that `seam.getTeam()` is "deliberately not
+# called ... it exists to supply `overloadThreshold`, and calling it would be the first step toward
+# the number the feature row says this screen does not have", and at :14-17 that a filter written
+# in that file "would be the second definition INV-04 exists to forbid".
+#
+# TWO OF THOSE REASONS ARE FALSE AND THE DECISION SAYS SO:
+#   - A COUNT NEVER NEEDED A TEAM READ. :11-13 treats "a count" and "a `seam.getTeam()` read" as
+#     the same thing. They are not — `getTeam()` supplies `overloadThreshold`, which a bare `n/N`
+#     does not use, and the denominator comes from the roster the screen already reads.
+#   - INV-04 IS NOT THE OBSTACLE. CAL-05's own plan says so at 01-plan.md:528-531, verbatim: "INV-04
+#     forbids a second definition; this would not be one ... If a number is ever wanted here, it is
+#     a criterion on the row rather than an inference from the module being in scope."
+#
+# ***ADR-029 § Consequences REQUIRES MORE THAN DELETING THE PARAGRAPH: "the replacement must carry
+# the correction that a count never needed a team read — otherwise the next reader inherits the
+# same wrong reason in new words."*** A replacement that simply describes the new footer, without
+# saying that the old refusal rested on a reason that was not true, satisfies the letter and loses
+# the whole point of the rewrite.
+#
+# WHAT MUST SURVIVE THE REWRITE, because :11-17 is not only wrong: the third reason IS still true
+# and clause 3 preserves it — this screen computes no overload state, reads no threshold and does
+# not call `seam.getTeam()`. And :14-17's warning about a local `.filter(...)` becomes MORE
+# important rather than less, because it is now the guard rail on clause 1 rather than the reason
+# for a refusal.
+#
+# ---------------------------------------------------------------------------------------------
+# 4. ***AN OPEN DECISION HANDED TO PLAN: DOES "Everybody is in." GO?***
+#
+# ADR-029 AUTHORISES THIS TO BE *CONSIDERED*, NOT DECIDED. Its § Consequences: a footer reading
+# `0/4` "removes the ambiguity that `week-day-empty` exists to remove, so deleting 'Everybody is
+# in.' becomes defensible AND FOLLOWS FROM THIS DECISION. It is not authorised by this ADR; it is
+# authorised to be *considered* by the ticket that implements it."
+#
+# ***UNTIL THIS TICKET DECIDES, THE SENTENCE STAYS.*** Without the count, deleting it makes "an
+# ordinary Tuesday" and "we did not look" the same column — CAL-05 AC-13 and UIE-04 AC-10 — and
+# ***tests/e2e/cal-05-week-view.spec.ts:266 ASSERTS SEVEN `week-day-empty` ELEMENTS***. ADR-029's
+# test-surface note says that count is unaffected by this work UNLESS the sentence is also removed,
+# which is exactly this decision. So the spec file enters `allowed_paths` if and only if PLAN
+# deletes the sentence, and PLAN SAYS WHICH IT CHOSE and why, in 01-plan.md.
+#
+# UIE-05 IS THE REASON THIS IS STILL OPEN RATHER THAN ALREADY SPENT: its shell required
+# `week-day-empty` to keep its element, its selector and its sentence and to be de-emphasised at
+# most, precisely because the deletion was coupled to a count that was undecided at the time. The
+# count is now decided, so the coupling is resolved and the deletion is not.
+#
+# ***§14 CARRIES A RECOMMENDATION ON THIS QUESTION, FOLDED IN ON 2026-09-08 — "Everybody is in."
+# STAYS, AND THE DELETION IS DEFERRED*** — with the geometry that decides it, the one assertion it
+# would cost, and the middle path that must be refused. IT IS A RECOMMENDATION AND THE DECISION IS
+# STILL PLAN's. §12.2 is load-bearing on it: if the strip does not render at `0/N`, the `0/4` this
+# whole question turns on never appears and the question dissolves without being answered.
+#
+# ---------------------------------------------------------------------------------------------
+# 5. `depends_on` — EVALUATED, NOT ASSUMED. IT IS `[]`, AND `BUG-002` IS DELIBERATELY NOT IN IT.
+#
+# Definition of Ready item 3 requires every named ticket to be DONE, so a wrong `[]` here is a gate
+# that passes on a measurement nobody took.
+#
+# THE TWO TICKETS THAT SHIPPED THE COLUMN THIS ONE WRITES INTO ARE BOTH DONE, READ FROM
+# `ticket.yaml` RATHER THAN FROM THE BACKLOG VIEW:
+#   - UIE-04 — .ai/board/tickets/UIE-04/ticket.yaml:13 — `state: DONE`, /ship 2026-09-07, PR #66.
+#     It built the seven day columns and it is the ticket whose AC-13 this work half-supersedes.
+#   - UIE-05 — .ai/board/tickets/UIE-05/ticket.yaml:14 — `state: DONE`, /ship 2026-09-08, PR #72.
+#     It restacked the chip and gave the column its `min-h-full`, and it is the ticket that left
+#     `week-day-empty`'s sentence standing for §4 to decide.
+# Both are DONE, so NAMING THEM WOULD PASS ITEM 3 EITHER WAY — and both would then be noise in a
+# field that means "blocked on". They are `[]` for the same reason UIE-06's row gave: the work they
+# claimed is released, and `allowed_paths` is `[]` on every shell on this board, so nothing claims
+# src/routes/WeekView.tsx today. THAT IS A MEASUREMENT TAKEN ON 2026-09-08, NOT A STANDING
+# GUARANTEE — PLAN re-checks it, because whichever ticket is planned next fills its own.
+#
+# ***`BUG-002` IS `BACKLOG` AND IS NOT A DEPENDENCY. THE REASONING, SO NOBODY ADDS IT LATER:***
+#   - DIFFERENT FILES. Its scope is src/lib/domain/types.ts, both seam implementations and a new
+#     static test (.ai/board/tickets/BUG-002/ticket.yaml §6). It touches no route and nothing about
+#     the week view's rendering. Its own `allowed_paths` is `[]`, so it claims no path today.
+#   - IT IS UPSTREAM OF THE ARITHMETIC, AND ITS OWN SHELL FENCES THAT OFF: §9 of that file puts
+#     src/lib/data/absence.ts out of scope — "INV-04's single implementation sums correctly over
+#     whatever rows it is handed. The defect is UPSTREAM of it and the fix must not reach into it."
+#     This ticket displays that implementation's output and adds no arithmetic of its own.
+#   - NEITHER ORDER BREAKS THE OTHER. One working directory holds one branch (ADR-006), so exactly
+#     one is ever in flight regardless of what this field says.
+#   HONEST RESIDUE, RECORDED RATHER THAN GLOSSED: while BUG-002 is unfixed, a truncated read feeds
+#   the count on every calendar surface, and CAL-05 AC-15 already records that exposure for THIS
+#   screen's read. So the strip inherits a pre-existing defect. IT DOES NOT CREATE ONE AND IT MUST
+#   NOT FIX ONE — changing a limit constant here is BUG-002's scope, and BUG-002's §9 forbids
+#   exactly the criterion-rewriting shortcut that would make it look handled.
+#
+# Definition of Ready item 6 — one feature group per ticket — passes on `feature_ids: [UIE-07]`,
+# which is one ID in one group.
+#
+# ---------------------------------------------------------------------------------------------
+# 6. `invariants_touched` IS PLAN's. THIS SECTION NAMES WHAT TO LOOK AT AND SETTLES NOTHING.
+#
+# THE FIELD ABOVE IS THE TEMPLATE'S SHIPPED `[]` AND MUST NOT BE READ AS THIS TRIAGE'S ANSWER.
+# .ai/registry/invariants.md:63 warns that observing the safest behaviour and concluding no
+# invariant is engaged is circular reasoning, so PLAN states the MECHANISM and not the conclusion.
+#
+#   - INV-04. ADR-029:133-134 says it is ***SATISFIED BY THIS DECISION RATHER THAN AMENDED, AND THE
+#     LEDGER IS NOT EDITED*** — a property of clause 1 and of nothing else. Satisfied is not
+#     unengaged: the entire content of this ticket is that a displayed absence count must be that
+#     invariant's single definition. The registry row carries `[INV-04]` for that reason. PLAN
+#     reaches its own answer for this field; UIE-04 is the precedent both ways, being the first UIE
+#     row not to read `[]`.
+#   - INV-06 IS THE ONE MOST LIKELY TO BE MISSED. A half day weighs 0.5, so THE NUMBER IS A DECIMAL
+#     ON SOME DAYS and the operator's picture never shows one. UIE-05's row records that the portion
+#     pill is INV-06's only visible surface in the product; a strip reading `1.5/4` arguably makes
+#     it a second. That is an argument for looking, not a conclusion.
+#   - INV-05 (tentative entries still count) is engaged only as an input to the same sum and is
+#     named here so that PLAN's answer is a decision rather than an omission.
+#
+# ***AMENDING INV-04 IS OUT OF BOUNDS IN THIS TICKET.*** On the derivation ADR-029 took, the
+# invariant is satisfied. If PLAN finds it must be amended, that is a different and much larger
+# decision — `BLOCKED`, `requires_adr: true`, and .ai/registry/invariants.md is human plane under
+# RULE-01 in any case.
+#
+# ---------------------------------------------------------------------------------------------
+# 7. `schema_delta: none`, AND WHY IT IS FREE HERE
+#
+# Both functions are pure and take no team and no threshold — src/lib/data/absence.ts:197 and :348.
+# The screen already holds all three arguments in state at src/routes/WeekView.tsx:180 and :258
+# (corrected from `:207` at the fold-in of 2026-09-08 — §2 and §12.0). No query,
+# no policy, no migration, and no new seam call: clause 3 forbids the only one that was ever in
+# question. ADR-014 (a policy-only migration is not `schema_delta: none`) is not engaged, because
+# there is no migration of any kind.
+#
+# ---------------------------------------------------------------------------------------------
+# 8. ***WHAT GETS WORSE — CARRIED FROM ADR-029 § Consequences SO PLAN DOES NOT REDISCOVER IT.***
+#
+# These are the objections the decision ACCEPTED rather than answered. They are not open questions
+# and PLAN does not have to resolve them; they are here so that nothing in the plan or the review
+# reads as a discovery, and so that the plan's own Out-of-scope section can inherit them.
+#
+#   - ***THE ARITHMETIC IS NOT EXPLAINED ON THE SCREEN.*** A day with one full-day and two half-day
+#     entries shows THREE CHIPS OVER `1.5/N`. That is CAL-05's surviving objection
+#     (.ai/board/tickets/CAL-05/01-plan.md:526-528) — a decimal beside a list of names invites a
+#     comparison the screen does not explain — and ADR-029 calls it "real, unmeasured, and accepted
+#     rather than answered". ITS SECONDARY REVERT CONDITION IS THAT IF A REAL READER REPORTS THE
+#     CONFUSION, ***THE STRIP GOES RATHER THAN BEING EXPLAINED***: an explanation costs a row, and
+#     the grid is where density wins. So PLAN must not spend a row pre-emptively explaining it.
+#   - A SECOND NUMBER LANDS ON THE DENSEST SCREEN IN THE PRODUCT, where CLAUDE.md § Visual direction
+#     says information density wins every time and every row costs.
+#   - A REFUSAL TAKEN DELIBERATELY THREE TIMES IS REVERSED, "which makes the next reader trust the
+#     standing comments in that file slightly less — the cost of every correct reversal, and worth
+#     naming because it is paid by somebody who was not in this conversation." §3 is the only thing
+#     that limits that cost.
+#   - THE STRIP PINS TO THE COLUMN, NOT TO THE VIEWPORT. On a busy week it goes below the fold with
+#     the rest of its column. That is accepted; pinning to the viewport is a different feature and
+#     is not proposed.
+#   - TEST SURFACE: one new selector and its assertions. ***NOTHING EXISTING IS RENAMED***, and
+#     cal-05-week-view.spec.ts:266's count of seven is unaffected unless §4 deletes the sentence.
+#
+# ---------------------------------------------------------------------------------------------
+# 9. PATHS AND SIZING — A SIGNAL FROM TRIAGE, DELIBERATELY INCOMPLETE
+#
+# `size_estimate` above is EMPTY as the template ships it and this section does not fill it.
+#
+# WHAT THIS TRIAGE CAN SAY FROM THE DECISION ALONE: ADR-029 § Affected documents names
+# src/routes/WeekView.tsx (the :11-17 comment block and the footer strip) and "tests/e2e/ — one new
+# spec file or one new block, for the new selector". tests/e2e/cal-05-week-view.spec.ts is a
+# CONDITIONAL third, and only under §4's deletion.
+#
+# ***THAT LIST IS THE ADR's, NOT A TECHNICAL READ, AND NAMING A FILE IS NOT AUTHORISING IT.***
+# `allowed_paths` is `[]` above and PLAN fills it. `tech-lead-design` ran the technical half of this
+# triage in parallel and its findings are to be folded into this section and into the row's sizing
+# signal; UNTIL THEY ARE, THIS SECTION IS INCOMPLETE BY CONSTRUCTION and PLAN should treat it as a
+# floor rather than an enumeration.
+#
+# ***THE FOLD-IN HAPPENED ON 2026-09-08 AND THE SENTENCE ABOVE IS DISCHARGED*** — §9.1 to §9.6 below
+# are it, and §12 to §14 carry what did not fit here. THE FLOOR IS STILL A FLOOR: `allowed_paths` is
+# PLAN's, every path below is a SIGNAL, and naming a file is still not authorising it.
+#
+# EXACT PATHS, NO GLOBS, AND NO INLINE COMMENTS ON `allowed_paths` ITEMS when PLAN fills it —
+# `readYamlList` in scripts/check-allowed-paths.mjs and in .claude/hooks/guard-allowed-paths.mjs
+# strips only a leading and a trailing quote, so a trailing `# ...` is swallowed into the pattern
+# and the glob then matches nothing.
+#
+# ---------------------------------------------------------------------------------------------
+# 9.1 SIZE SIGNAL: `S`. IT IS A SIGNAL AND IT DOES NOT FILL `size_estimate` ABOVE.
+#
+# `tech-lead-design` ran the technical half of this triage and returned PROMOTE, size S, having
+# found nothing that contradicts ADR-029. Definition of Ready item 5 is still PLAN's and the field
+# above is still empty — a triage that fills it has taken PLAN's decision on a reading rather than a
+# design. The signal rests on §9.2: two files, three under one optional consolidation.
+#
+# ***BUILDABLE WITH NO NEW ANYTHING.*** No new seam read, no new state, no `getTeam()`, no new
+# module, no new token. The screen already calls a SIBLING DERIVATION over the exact three arguments
+# clause 1 needs — `absentEntriesFor(view.entries, range, view.roster)` at
+# src/routes/WeekView.tsx:280 — and the import at :115 already pulls from `@/lib/data/absence`. The
+# module is ***src/lib/data/absence.ts AND NOT src/lib/domain/***: `absenceCountsFor` is at :197 and
+# `currentMemberCount` at :348.
+#
+# ---------------------------------------------------------------------------------------------
+# 9.2 THE PATHS THAT SIGNAL SAYS `S` OVER — TWO, OR THREE UNDER §13's OPTIONAL CONSOLIDATION
+#
+#   - src/routes/WeekView.tsx
+#   - tests/e2e/uie-07-week-absence-count.spec.ts  (new)
+#   - src/hooks/useRoster.ts  — ONLY IF PLAN TAKES §13's denominator consolidation into scope
+#   - tests/e2e/cal-05-week-view.spec.ts — ONLY IF §4 DELETES THE SENTENCE, and §14 recommends it
+#     does not
+#
+# NOT DRAGGED IN, EACH WITH ITS REASON — recorded so PLAN does not add one "to be safe":
+#   - src/index.css. `--color-line` (:104) and `--color-ink-3` (:109) ALREADY EXIST, so the strip
+#     adds no token and UIE-06's collision note at :117-123 is not reopened.
+#   - The sidebar legend. Clause 3 keeps the overload state off this screen, and the overload state
+#     is the only thing that ever needed the fourth legend row.
+#   - tests/e2e/cal-05-week-view.spec.ts, ABSENT §4's deletion. Its :247-253 forbid `button`, `form`,
+#     `select`, `textarea` and `a` inside a `week-day` — a `<p>`/`<span>` strip is none of the five,
+#     so CAL-05 AC-8's ABSENCE mechanism survives untouched.
+#
+# ---------------------------------------------------------------------------------------------
+# 9.3 ***THE TRAP, AND IT MUST BECOME AN ACCEPTANCE CRITERION RATHER THAN A NOTE***
+#
+# The `absent` map is ALREADY IN SCOPE at src/routes/WeekView.tsx:280, three lines from where the
+# strip renders. A developer can sum the weights out of it in four lines. ***THAT IS A LOCAL SUM —
+# FORBIDDEN BY CLAUSE 1 AND BY ADR-029's REVERT CONDITION — AND IT WOULD PASS EVERY EXISTING TEST.***
+#
+# It is now the cheapest wrong path in this ticket, the chip count having been closed by clause 1 and
+# by UIE-04's own refusal. It is cheaper than the chip count was, because it needs no new data and
+# reads as reuse rather than as a shortcut. §9.5's two assertions are what catch it.
+#
+# ---------------------------------------------------------------------------------------------
+# 9.4 THE SELECTOR AND THE TWO ATTRIBUTES — VERIFIED FREE, AND BORROWED FROM THE MONTH BY NAME
+#
+# ***`week-day-count`. ZERO occurrences anywhere in src/ or tests/ today*** — checked at the fold-in,
+# not assumed. It matches the shipped `week-day-*` family and mirrors `month-cell-count`
+# (src/routes/MonthView.tsx:524) slot for slot.
+#
+# ALSO, AND FOR THE SAME REASON THE MONTH HAS THEM — a test reads a number without parsing text, and
+# the two screens' attributes then AGREE BY NAME rather than by luck:
+#   - `data-count` on the `week-day` section, borrowed verbatim from MonthView.tsx:474.
+#   - `data-current-members` on the strip, borrowed verbatim from MonthView.tsx:399, where it sits on
+#     `month-threshold`.
+# Neither name is invented here and neither is renamed anywhere. §8's "NOTHING EXISTING IS RENAMED"
+# is unaffected.
+#
+# ---------------------------------------------------------------------------------------------
+# 9.5 ***THE TWO ASSERTIONS THAT ACTUALLY HOLD CLAUSE 1.*** Both are reachable today.
+#
+# The shipped `declare()` helper at tests/e2e/cal-05-week-view.spec.ts:97-120 creates an entry
+# through CAL-01's form and returns to the week, all client-side, so both cases can be built without
+# a fixture change:
+#   1. A HALF-DAY ENTRY RENDERS ONE CHIP OVER `0.5/4`. This is the case the operator's image cannot
+#      show and the one CAL-05's objection is about.
+#   2. ONE MEMBER'S `am` AND `pm` ON ONE DATE RENDER TWO CHIPS OVER `1/4`. ***THIS IS THE DIRECT
+#      RENDERED REFUTATION OF THE CHIP COUNT*** — two rows, one whole day — and it is the assertion a
+#      local sum over `absent` (§9.3) fails. INV-01 is what makes it 1.0 and not 1.5
+#      (src/lib/data/absence.ts:194-195).
+# THE UNIT LEVEL ALREADY FIXES THE ARITHMETIC and is not re-done: tests/absence.test.ts:151-157 is
+# exactly case 2 against the module. What §9.5 adds is that the SCREEN shows what the module says.
+#
+# ---------------------------------------------------------------------------------------------
+# 9.6 THE STRIP SURVIVES UIE-05's LAYOUT INTACT — CHECKED ON DISK, NOT ASSUMED
+#
+# UIE-05 shipped `xl:grid xl:min-h-full xl:grid-cols-7` at src/routes/WeekView.tsx:424, with each day
+# a `flex min-w-0 flex-col` section at :454. GRID ITEMS STRETCH, so `mt-auto` pins the footer to the
+# column's bottom edge — the same treatment the header strip already gets at :464. Below `xl` the
+# stack is content-height and `mt-auto` is inert, which is the correct behaviour there.
+# ***NO NEW WRAPPER AND NO `overflow` CHANGE.*** The one cosmetic interaction: `week-empty-card`
+# floats absolutely over the grid's centre (:714-717) while the strips sit at the columns' bottom
+# edges, so they do not overlap.
+#
+# ---------------------------------------------------------------------------------------------
+# 10. OUT OF SCOPE — restated here so it survives into the plan's own Out-of-scope section
+#
+#   - ***THE OVERLOAD STATE, THE THRESHOLD, AND `seam.getTeam()`.*** Clause 3, and ADR-029 rejects
+#     bringing them as its own option 4: it drags in the sidebar's fourth legend row and is a larger
+#     decision that deserves its own terms rather than arriving as a side effect of a footer strip.
+#   - THE SIDEBAR'S `Quá tải (>50%)` LEGEND ROW. Same reason, and it is the strictly more expensive
+#     of the two because it genuinely does need the team read. UIE-02 already deferred it.
+#   - ***THE MONTH AND YEAR VIEWS. ADR-031 IS `REJECTED`, SO `month-cell-count` STAYS EXACTLY WHERE
+#     IT IS*** and this ticket must not touch it. The month grid is the surface this decision argues
+#     from — the count "provably agrees" with it because it is the same function over the same rows
+#     — and that agreement stays VISIBLE precisely because ADR-031 was declined.
+#   - AMENDING INV-04, OR EDITING .ai/registry/invariants.md AT ALL. §6.
+#   - RE-AMENDING CAL-05's OR UIE-04's REGISTRY ROWS. §1 — both landed with the ADR's acceptance and
+#     were verified on disk at this triage. A second amendment is a second thing to keep true.
+#   - VIETNAMESE COPY ANYWHERE ON THE SCREEN, including the picture's `vắng`. Clause 4, and
+#     .ai/standards/ui-design-system.md § Language is lint-enforced at eslint.config.js:84-92.
+#   - ANY OF THE FIVE CHIP FACTS UIE-05 REFUSED TO DELETE, and any shell edit. Both are settled on
+#     other tickets and neither is reopened by adding a footer.
+#   - BUG-002's ROW LIMITS. §5.
+#   - THE FOUR OTHER ITEMS THIS BOARD OWES, none of them this: the `§ Colour` / `§ Type` stubs in
+#     .ai/standards/ui-design-system.md plus UIE-04's `1280px` breakpoint, the product showing two
+#     names, the `PLAN -> READY` transition that .ai/01-operating-model.md:285 declares and no
+#     command runs, and the false three-clause comment at src/components/Sidebar.tsx:63-64 that
+#     UIE-06 deliberately left standing.
+#
+# ---------------------------------------------------------------------------------------------
+# 11. NO IMAGE, AND IT DOES NOT GET ONE
+#
+# There is no `design/` folder under this ticket and none is to be created. The operator's image was
+# attached at exactly one stage and that stage has happened — .ai/standards/ui-design-system.md
+# :121-123. It is transcribed at .ai/board/tickets/UIE-05/design/README.md § The footer strip,
+# written by hand because no image was ever on disk, and it is EVIDENCE OF INTENT RATHER THAN A
+# SPECIFICATION.
+#
+# ***IT SETTLES WHERE THE STRIP GOES AND NOTHING ABOUT WHAT THE NUMBER IS.*** It shows two full-day
+# chips and five empty days, so the one case that decides the question — what the strip reads on a
+# day holding a half-day entry — DOES NOT APPEAR IN IT. Its `n/8 vắng` is wrong twice over: on
+# clause 2 (the denominator is 4 and is computed) and on clause 4 (the word and the language).
+#
+# ---------------------------------------------------------------------------------------------
+# 12. FOLDED IN 2026-09-08 — ***FIVE THINGS ADR-029 LEFT UNDERSPECIFIED. ALL FIVE ARE PLAN's.***
+#
+# `tech-lead-design`'s technical half of this triage found nothing contradicting ADR-029 and returned
+# PROMOTE, size S (§9.1). What it DID find is five places where the decision is silent and the silence
+# has a default that is wrong. THEY ARE CARRIED HERE SO THAT PLAN DECIDES THEM RATHER THAN INHERITING
+# THEM. None of them is an acceptance criterion — writing those is PLAN's, from the registry row.
+#
+# 12.0 THE STALE CITATION, RECORDED BECAUSE TWO COPIES OF IT SURVIVE AND MUST NOT BE RE-CITED.
+#   `src/routes/WeekView.tsx:207` does not say what it was cited for anywhere in this chain: that line
+#   is a comment about the `landingDay` memoisation (:207-210). THE FACT IS TRUE AND THE ADDRESS WAS
+#   WRONG — the screen holds roster and entries at :180 (the `phase: "ready"` union) and :258 (the
+#   `setView`). Corrected in §2, in §7, and in the idea file and the registry row.
+#   ***NOT CORRECTED, DELIBERATELY, IN TWO PLACES:***
+#     - .ai/registry/decisions/ADR-029-…:87 — .ai/registry/decisions/ is HUMAN PLANE under RULE-01
+#       and an ACCEPTED ADR is not edited to fix a line number. The sentence around it stays true.
+#     - .ai/board/ideas/2026-09-07-a-busy-week-does-not-fit-…:403 — the parent idea, shipped with
+#       UIE-05 in PR #72 and not a file this run created (CLAUDE.md, additive only).
+#   PLAN AND REVIEW CITE `:180` AND `:258`. Neither ADR-029 nor the parent idea is amended for this.
+#
+# 12.1 ***ADR-029 NAMES ONE STALE COMMENT BLOCK. THERE ARE FOUR.***
+#   § Consequences obliges only the first, and REWRITING ONE WHILE LEAVING THREE INHERITS THE WRONG
+#   REASON IN THE OTHER THREE — which is the exact failure §3 says the rewrite exists to prevent.
+#   All four re-read on disk at the fold-in:
+#     - :11-17  (CAL-05) — "**IT COUNTS NOTHING.**" §3 is about this one.
+#     - :50-57  (UIE-04) — "IT STILL COUNTS NOTHING, AND AFTER THIS TICKET THAT IS A DECISION TAKEN
+#       THREE TIMES", and "there is no footer strip either: a column ends where its content ends".
+#     - :95-100 (UIE-05) — "a decision now taken FOUR times", and ***"ADR-029 is PROPOSED and
+#       awaiting the operator"***, which has been FALSE SINCE 2026-09-08.
+#     - :73-75  (UIE-05's accepted cost) — "Nothing is pinned there today", FALSE THE MOMENT THE
+#       STRIP LANDS. The rest of that paragraph — that anything pinned to the bottom of a column goes
+#       below the fold on a busy week — stays TRUE and is §8's fourth bullet.
+#   Each of the four is a comment in a file already in `allowed_paths` for this work, so no path is
+#   added by fixing them. WHAT SURVIVES EVERY REWRITE is §3's list: no overload state, no threshold,
+#   no `seam.getTeam()`, and the warning against a local filter — which becomes MORE important, not
+#   less (§9.3).
+#
+# 12.2 ***WHETHER THE STRIP RENDERS AT ZERO IS NOT STATED, AND THE MONTH's PRECEDENT IS THE OPPOSITE.***
+#   `month-cell-count` renders ONLY when `count > 0` — src/routes/MonthView.tsx:523. ADR-029's
+#   empty-state paragraph ASSUMES a footer reading `0/4` exists, but no clause says it. A developer
+#   following the month's precedent makes the strip VANISH on all seven columns of an empty week, and
+#   §4's whole question — which turns on `0/4` being visible — dissolves silently with it.
+#   ***PLAN MUST WRITE "ALWAYS, INCLUDING `0/N`" AS A CRITERION.*** It is not inheritable.
+#
+# 12.3 ***CLAUSE 4's ESCAPE HATCH COLLIDES WITH THE GLOSSARY IT POINTS AT.***
+#   The clause forbids "away" and offers THE GLOSSARY'S NAME, OR NOTHING AT ALL. The glossary's name
+#   is ***"Absence count"***, glossed *số người vắng*, at .ai/registry/glossary.md:34 — read at the
+#   fold-in. The English term of art carries the same claim about a WFH member that the clause exists
+#   to prevent, so one half of the escape hatch defeats the clause.
+#   RECOMMENDATION, AND IT IS A RECOMMENDATION: ***TAKE THE SECOND HALF — RENDER A BARE `n/N` WITH NO
+#   VISIBLE NOUN***, which also spends the least density on the screen CLAUDE.md § Visual direction is
+#   written about, and put the glossary's exact term in the ACCESSIBLE NAME only. PLAN states that as
+#   a criterion or states what it chose instead; it cannot be inherited from the ADR.
+#
+# 12.4 ***THE TRANSCRIPTION'S PINK MUST BE REFUSED.***
+#   .ai/board/tickets/UIE-05/design/README.md:96 puts `vắng` in SOFT PINK. Pink is `--color-overload`
+#   — src/index.css:174, "The whole cell background of an overloaded day". UIE-06 already refused
+#   painting it on a working day because it gives ONE COLOUR TWO MEANINGS ON ONE GRID
+#   (src/routes/MonthView.tsx:537-540). Clause 3 independently forbids anything overload-shaped on
+#   this screen. TWO REASONS, EITHER SUFFICIENT.
+#
+# 12.5 THE LAYOUT SURVIVES UIE-05 INTACT AND WAS CHECKED RATHER THAN ASSUMED — §9.6.
+#   Recorded as one of the five because ADR-029 does not say it and "the strip pins to the column"
+#   (§8) is a statement of intent rather than a mechanism. `mt-auto` in a stretched grid item is the
+#   mechanism, and it needs no new wrapper.
+#
+# ---------------------------------------------------------------------------------------------
+# 13. FOLDED IN 2026-09-08 — THE DENOMINATOR: TWO FACTS, AND ONE DECISION LEFT TO PLAN
+#
+# 13.1 ***THE DENOMINATOR IS PROVABLY THE MONTH'S, AND THAT IS THE WHOLE ARGUMENT FOR THE STRIP.***
+#   `currentMemberCount` is `roster.filter(m => m.removedAt === null).length` —
+#   src/lib/data/absence.ts:348-349. BOTH SCREENS FEED IT FROM THE SAME UNFILTERED TEAM-SCOPED
+#   `seam.listMembers()`: src/routes/WeekView.tsx:253 and src/routes/MonthView.tsx:213. The seam
+#   DELIBERATELY does not filter removed members (ADR-013), which is what makes a past date
+#   computable at all. The fixtures give ***4*** active, already asserted at tests/absence.test.ts:255
+#   against a five-member roster.
+#
+# 13.2 ***`n/0` AND `n > N` ARE REACHABLE, AND THIS STRIP IS THE FIRST PLACE THEY CAN APPEAR ON
+#   SCREEN.*** Under ADR-013 the NUMERATOR is DATE-SENSITIVE — an entry counts when its member's
+#   `removedAt` is null or STRICTLY AFTER that date (src/lib/data/absence.ts:192) — while the
+#   DENOMINATOR is READ-TIME (:333-336, "the current count, not the membership as it stood on the
+#   date being judged", recorded by INV-04 as an ACCEPTED consequence). So on a PAST week, after a
+#   removal, `n` CAN EXCEED `N`, and `N` CAN BE 0 WHILE `n` IS NOT.
+#   THE MONTH GRID NEVER JUXTAPOSES THEM: the cell renders a bare `count` (MonthView.tsx:523-527)
+#   with `N` up in the header (:399), and `isOverloaded` guards `currentMembers <= 0` before dividing
+#   (absence.ts:343). NOTHING HERE DIVIDES EITHER, so this is a DISPLAY ODDITY AND NOT A DEFECT —
+#   ***BUT PLAN SHOULD WRITE IT AS A CRITERION RATHER THAN DISCOVER IT***: two numbers and a slash,
+#   NEVER a percentage, and NO SPECIAL CASE AT `N = 0`. A percentage would divide, and dividing is
+#   where an oddity becomes a NaN on screen.
+#
+# 13.3 ***A DECISION FOR PLAN, RECOMMENDED BY `tech-lead-design` AND CONFIRMED ON DISK. RECORD BOTH
+#   HALVES.*** src/hooks/useRoster.ts:56 HAND-ROLLS `members.filter((m) => m.removedAt === null)`,
+#   and the sidebar prints `Team (4)` from it at src/components/Sidebar.tsx:167-171 — ***ABOUT 200px
+#   FROM WHERE `n/4` WILL RENDER.*** And `currentMemberCount`'s OWN DOCSTRING at
+#   src/lib/data/absence.ts:347 reads ***"INV-04's denominator, in one place"*** — and it is already
+#   in two. Replacing that filter with `currentMemberCount(roster)` is ONE LINE, NUMBER-PRESERVING,
+#   IN ONE FILE.
+#   THE RECOMMENDATION IS TO INCLUDE IT AS A NAMED ACCEPTANCE CRITERION. If PLAN would rather hold
+#   scope, ***IT BELONGS IN `01-plan.md` § Out of scope BY NAME, NOT BY SILENCE*** — a second copy of
+#   the denominator beside a screen that now renders the denominator is exactly the kind of thing a
+#   later reader assumes was never noticed. Either answer is defensible; NOT ANSWERING IS NOT.
+#   COST IF TAKEN: one more path in `allowed_paths` (§9.2), and the sidebar's number must not move —
+#   it is 4 before and 4 after, which is what "number-preserving" means and what a test would pin.
+#
+# ---------------------------------------------------------------------------------------------
+# 14. FOLDED IN 2026-09-08 — §4's OPEN DECISION: ***A RECOMMENDATION, NOT A DECISION.***
+#
+# ***`tech-lead-design` RECOMMENDS THAT "Everybody is in." STAYS, AND THAT THE DELETION IS DEFERRED.***
+# THIS IS RECORDED AS A RECOMMENDATION AND NOTHING MORE: ADR-029 authorises the ticket to CONSIDER the
+# deletion, §4 hands that to PLAN, and a triage that settled it would be taking PLAN's decision.
+#
+# THE TEST COST, MEASURED: EXACTLY ONE ASSERTION — tests/e2e/cal-05-week-view.spec.ts:266,
+# `week-day-empty` `toHaveCount(7)`, THE ONLY REFERENCE TO THAT SELECTOR OUTSIDE WeekView.tsx.
+# Removing the element takes it 7 -> 0, which drags a DONE ticket's suite into `allowed_paths` IN
+# ORDER TO WEAKEN AN ASSERTION, and reverses two shipped criteria — CAL-05 AC-13 and UIE-04 AC-10 —
+# meaning RULE-01 row amendments on TWO feature rows.
+#
+# ***BUT THE ARGUMENT THAT DECIDES IT IS GEOMETRY, NOT TEST COST.*** The sentence renders only when
+# `people.length === 0` (src/routes/WeekView.tsx:515), and the strip pins to the bottom of a column
+# UIE-05 made AT LEAST A VIEWPORT TALL (:424, §9.6) — so ***THE TWO ARE ONLY EVER CO-VISIBLE ON A
+# COLUMN WITH NOTHING ELSE IN IT.*** The redundancy costs a row EXACTLY WHERE THERE IS SPARE ROOM,
+# and costs NOTHING on the crowded columns CLAUDE.md § Visual direction is written about. THE DENSITY
+# ARGUMENT DOES NOT SURVIVE BEING LOCATED ON THE SCREEN.
+#
+# TWO CONSEQUENCES CARRIED WITH THE RECOMMENDATION RATHER THAN GLOSSED:
+#   - ON AN EMPTY WEEK THE COLUMN READS: label / "Everybody is in." / A LARGE GAP / `0/4`. That is
+#     the HONEST COST of keeping both, and it is what the operator will see on a quiet week.
+#   - ***THE MIDDLE PATH — KEEPING THE ELEMENT BUT EMPTYING IT so the count of seven survives —
+#     SHOULD BE REFUSED, FOR UIE-05's OWN RECORDED REASON***: "an empty third row is a line of
+#     padding that claims a fact exists" (src/routes/WeekView.tsx:535-537). An empty
+#     `week-day-empty` passes :266 while saying nothing, which is a green test standing over a
+#     deleted fact.

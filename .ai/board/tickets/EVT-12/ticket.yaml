@@ -1,0 +1,37 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-10-14 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: EVT-12
+title: "The creator or an admin of an *Own team* or *Limited people* event invites people by email, a member outside its reach is added to its named list, and *Named people* is relabelled *Limited people*"
+feature_ids: [EVT-12]
+group: EVT
+state: DONE
+owner: ""
+branch: ""
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting
+depends_on: [EVT-08, EVT-09]
+invariants_touched: []   # answered at PLAN, not the default - 01-plan.md § 2
+allowed_paths:
+  - ".ai/registry/glossary.md"
+  - ".ai/standards/rbac-and-security.md"
+  - "supabase/migrations/20261014090000_evt12_invite_every_scope.sql"
+  - "src/lib/data/mock.ts"
+  - "src/routes/EventDetail.tsx"
+  - "src/routes/EventEditor.tsx"
+  - "src/routes/Events.tsx"
+  - "tests/event-invitation.test.ts"
+  - "tests/event-create-invitation.test.ts"
+  - "tests/e2e/evt-01-events.spec.ts"
+  - "tests/e2e/evt-08-event-invitation.spec.ts"
+  - "tests/e2e/evt-09-create-invitation.spec.ts"
+glossary_owed: [Limited people]   # the Event row names the scopes; the label changes (idea § Evidence)
+schema_delta: "Four functions replaced in place, no table, column, index, constraint, policy or grant change (01-plan.md § 6). invite_to_event: no scope refusal, for update lock, and on team and named events resolves addresses to members, adds a member who cannot read to event_invitee and converts a team event to named with its team snapshotted; email_invitation skips a member who cannot read; notify_event_updated and notify_event_invited return early under the transaction-local setting calechip.event_conversion. Triggers changed, so not none (ADR-014). ADR-061."
+requires_adr: true    # ADR-061, ACCEPTED by the operator 2026-10-14
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-10-14T23:10:47+07:00" }
+  review: { passed: true, at: "2026-10-14T23:47:33+07:00" }

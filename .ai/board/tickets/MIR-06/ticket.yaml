@@ -1,0 +1,78 @@
+# Copied from .ai/templates/ticket.yaml by `claude` on 2026-10-12, recording item P1-2 of
+# .ai/board/plans/calechip-multi-tenancy-plan.md. Not produced by /triage: no idea file promotes it.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-06
+title: "An SQL isolation suite proves each boundary as a real authenticated role against real policies"
+feature_ids: [MIR-06]   # ADR-063 row; written by the steward on the operator's decision of 2026-10-20
+group: MIR           # ADR-063: MIR is the eighth feature group
+state: DONE           # `orchestrator` at /ship, 2026-10-23
+owner: ""
+branch: ""
+size_estimate: M      # S|M - set by tech-lead-design at PLAN; gates DoR
+size: M               # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04]   # "Blocked by" — the MIR IDs that must be DONE first
+invariants_touched: []   # tech-lead-design at PLAN: tests only, no policy/trigger/seam change (01-plan.md § 2)
+allowed_paths:
+  - "supabase/tests/_isolation.psql"
+  - "supabase/tests/001-isolation-helpers.test.sql"
+  - "supabase/tests/010-catalogue.test.sql"
+  - "supabase/tests/020-entry-reads.test.sql"
+  - "supabase/tests/030-member-reads.test.sql"
+  - "supabase/tests/040-member-self-writes.test.sql"
+  - "supabase/tests/050-cross-team-writes.test.sql"
+  - "supabase/tests/060-removed-and-pending.test.sql"
+  - "supabase/tests/070-definer-callers.test.sql"
+  - "supabase/tests/080-guest-tokens.test.sql"
+  - "supabase/tests/090-event-boundaries.test.sql"
+  - ".ai/board/tickets/MIR-06/**"
+glossary_owed: []
+schema_delta: none
+requires_adr: false
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-10-23T08:37:05+07:00" }
+  review: { passed: true, at: "2026-10-23T09:12:33+07:00" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+# Not in .ai/templates/ticket.yaml. Added for the multi-tenancy plan; nothing in scripts/ reads them.
+# Plan status lives only in .ai/board/plans/multi-tenancy-status.md. `state` above is the loop's.
+mir_phase: 1
+mir_plan_item: "P1-2"             # .ai/board/plans/calechip-multi-tenancy-plan.md:112-122
+verification_required: false   # phase 0 and phase 3 — a passing mock test is not verification
+expected_impact: []   # none
+# [predicted] at plan time. Corrected at ship in .ai/board/plans/feature-change-log.md.
+mir_detail: |
+  Short names (tea04, cal11, …) are migrations, per the File legend in
+  .ai/board/audits/multi-tenancy-audit-2026-10-12.md:38-77. "A:n" is a line of that audit;
+  "plan:n" a line of .ai/board/plans/calechip-multi-tenancy-plan.md.
+
+  Plan P1-2 (plan:112-122). Each test runs as a real authenticated role against real policies:
+  - A member cannot read another team's entries
+  - A member cannot read another team's members
+  - A member cannot alter their own role, status or team
+  - An admin cannot decide another team's entries
+  - A manager cannot decide outside their team
+  - A removed member reads nothing
+  - A pending member reads nothing
+  - Every `security definer` function rejects a caller who should not reach it
+  - Every `anon`-callable guest RPC leaks nothing beyond its token's event
+
+  Audit references (A:879-911):
+  - Mock-only isolation assertions this suite must mirror: `tests/entry-decision.test.ts:286-300`,
+    `tests/pending-entries.test.ts:182-183`, `tests/seam-parity.test.ts:84-92`, `127-136`,
+    `tests/cross-team-reads.test.ts:52`, `117-174`, `tests/cross-team-role.test.ts:76`, `86`, `100`, `138`,
+    `tests/threshold.test.ts:130-137`, `tests/approval-settings.test.ts:101-109`,
+    `tests/events.test.ts:207-221`, `485-505`, `tests/event-attendance.test.ts:367-386`,
+    `tests/guest-link.test.ts:167-174`, `tests/viewed-team.test.ts:179-183`; e2e
+    `cal-03-admin-edit-entry.spec.ts:412-427`, `cal-04-month-view.spec.ts:159-167`, `cal-12-team-picker.spec.ts:111-121`
+  - `tests/cross-team-reads.test.ts:6-8` and `tests/cross-team-role.test.ts:7-11` say the real refusals are untested
+  - Regex-only tests: `tests/cross-team-reads.test.ts` around 186-255, `draft-entry.test.ts:299-342`
+  - Definer functions to cover: audit §5 "Service role and other RLS bypasses" (A:724-738)
+  - Guest RPCs callable by `anon`: `evt06:111-112`, `evt07:495-498`
+
+  DECIDED by the operator, 2026-10-12: MIR-06 does not wait for MIR-05 ("Không cần pgTAP"), so MIR-05
+  is not in `depends_on`.

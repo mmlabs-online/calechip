@@ -1,0 +1,71 @@
+# Created by `tech-lead-design` at /plan MIR-15-b on 2026-11-06: the member-app half of MIR-15-b's
+# holidays, split by surface (.ai/board/tickets/MIR-15-b/01-plan.md § 1 and § 7; ADR-079 decision 5).
+# Not produced by /triage: no idea file promotes it. It shares MIR-15's feature row, which stays
+# PLANNED until MIR-15, -b, -c, -d and -e have all shipped.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-15-e
+title: "The member app stops offering holiday edits in Org public, and the mock seam reproduces Org public's holiday policies"
+feature_ids: [MIR-15]   # split of MIR-15 (operating model § ID scheme: splits get -a, -b)
+group: MIR
+state: DONE
+owner: ""
+branch: ""
+size_estimate: "M"   # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"            # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting (9 paths)
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-05, MIR-06, MIR-07, MIR-08, MIR-09, MIR-10, MIR-18, MIR-18-b, MIR-15, MIR-15-b]   # MIR-15-b ships the SQL this follows
+invariants_touched: []
+allowed_paths:
+  - "src/lib/data/index.ts"
+  - "src/lib/data/supabase.ts"
+  - "src/lib/data/mock.ts"
+  - "src/routes/Holidays.tsx"
+  - "src/App.tsx"
+  - "tests/holiday-writes.test.ts"
+  - "tests/e2e/adm-02-holidays.spec.ts"
+  - "tests/e2e/adm-03-holiday-writes.spec.ts"
+  - "tests/e2e/cal-08-holiday-shading.spec.ts"
+glossary_owed: []
+schema_delta: "none"   # confirmed at PLAN: calls the existing member_org_id and org_is_shared, no migration (01-plan.md § 6)
+requires_adr: false
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-11-06T09:11:12Z" }
+  review: { passed: true, at: "2026-11-06T09:40:54Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+# Not in .ai/templates/ticket.yaml. Added for the multi-tenancy plan; nothing in scripts/ reads them.
+# Plan status lives only in .ai/board/plans/multi-tenancy-status.md. `state` above is the loop's.
+mir_phase: 3
+mir_plan_item: "P3-6"             # .ai/board/plans/calechip-multi-tenancy-plan.md:209
+verification_required: true   # phase 0 and phase 3 — a passing mock test is not verification
+expected_impact:
+  - { feature: ADM-03, tag: SUPERSEDED, why: "transcribed from MIR-15-b's ticket.yaml: in Org public a team's admin no longer sees add, edit or delete on the Holidays screen" }
+  - { feature: ADM-02, tag: CHANGED, why: "a caller with no org (pending, removed, member-less) reads no holiday rows since MIR-15-b's holiday_select_own_org (ADR-079 decision 3); src/App.tsx:539-544 says otherwise" }
+# [predicted] at plan time. Corrected at ship in .ai/board/plans/feature-change-log.md.
+mir_detail: |
+  The member half of MIR-15-b, transcribed from ADR-079 decision 5 and MIR-15-b/01-plan.md § 1
+  *Out of scope*. Nothing is added except the facts found on disk at /plan MIR-15-b, each with its
+  file:line:
+
+  - After MIR-15-b, `holiday_insert_admin`, `holiday_update_admin` and `holiday_delete_admin` refuse
+    an admin of Org public, but `src/routes/Holidays.tsx:216` still sets `mayWrite` from
+    `me.role === "admin"`, so an Org public admin sees Add, Edit and Delete and is refused with
+    `HOLIDAY_ADD_REFUSED` and its two siblings (`src/lib/data/supabase.ts:1436-1438`), whose words
+    ("Only an admin can …") are then wrong.
+  - The member app does not know whether its org is shared: `Member` (`src/lib/domain/types.ts:33`)
+    carries no org, and the mock (`src/lib/data/mock.ts`) models no org at all. A dedicated org's
+    admin keeps the write (ADR-079 decision 2), so hiding the controls for every admin is rejected
+    in ADR-079 *Options considered*. How the screen learns the answer is this ticket's PLAN.
+    `public.org_is_shared(uuid)` is callable by `authenticated` (MIR-15).
+  - The mock's `addHoliday`, `updateHoliday`, `deleteHoliday` (`mock.ts:2954` onward) admit any
+    admin, and `listHolidays` (`:2901`) reads every row — looser than SQL on decisions 2 and 3.
+  - Tests that assert an Org public admin writes holidays, found by grep at /plan MIR-15-b:
+    `tests/holiday-writes.test.ts`, `tests/e2e/adm-03-holiday-writes.spec.ts`,
+    `tests/e2e/cal-08-holiday-shading.spec.ts`, `tests/manager-role.test.ts`. Count the failing
+    blocks at PLAN before sizing.
+  - Stale comments saying `holiday_select_all` is `using (true)`: `src/lib/data/supabase.ts:2883`,
+    `src/lib/data/mock.ts:550`, `:2882`, `src/routes/Holidays.tsx:6`, `src/App.tsx:541`.

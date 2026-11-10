@@ -1,0 +1,171 @@
+# Copied from .ai/templates/ticket.yaml at /triage (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: IDEA TRIAGE BACKLOG SPEC READY DESIGN IN_PROGRESS REVIEW QA REWORK ESCALATED DONE
+id: ADM-05
+title: "Approve or reject an entry, with a reason on rejection"
+feature_ids: [ADM-05]
+group: ADM
+state: DONE      # `orchestrator` at /ship, 2026-09-05, on 04-review.md `gate: PASS` /
+                 # `next_state: DONE`. ADR-022 removed the QA stage, so REVIEW -> DONE is the
+                 # whole remaining transition (.ai/01-operating-model.md:36).
+#
+# PREVIOUS VALUE, `REVIEW`, SET BY `developer` AT /implement. Their comment is kept below rather
+# than deleted. THIS IS THE FOURTH TICKET RUNNING to reach /implement still reading `BACKLOG` with
+# both gates false — CAL-08, ADM-04, and this one — and ADM-04's own metrics row predicted it in
+# terms: *"Steward work, and it will recur on ADM-05 unless something is given the write."* It
+# recurred. No command in .claude/commands/ owns the PLAN -> READY transition; the loop in
+# .ai/01-operating-model.md:284-286 has it, /next-ticket grades the Definition of Ready and writes
+# no file by design, and /ship is where `state`, `branch` and `gates.plan` are finally recorded.
+# Four occurrences is no longer a pattern to note in a shell — it is a defect with a standing
+# prediction attached, and it is named again in this ticket's metrics rows.
+# state: REVIEW  # `developer` at the end of IN_PROGRESS, 2026-09-05, on 03-impl-log.md
+                # `gate: PASS` / `next_state: REVIEW`.
+                #
+                # IT JUMPS FROM `BACKLOG`, and that is the ledger and not the ticket: `orchestrator`
+                # has not run on ADM-05 since /triage, so the READY and IN_PROGRESS transitions were
+                # never written here and `gates.plan` still reads `passed: false` while 01-plan.md's
+                # front-matter reads `gate: PASS`. Both are the orchestrator's to record and neither
+                # is this session's to invent — /implement is told to set this one field and sets
+                # this one field.
+owner: ""
+branch: "feat/ADM-05"   # `orchestrator` at /ship. Cut before /plan and never recorded here, for the
+                        # same reason `state` was not: no command owned the transition that writes it.
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR. Read from 01-plan.md
+                      # section 1. One migration replacing a function body and adding one grant, two
+                      # seam functions implemented twice, two failure codes, one new component
+                      # mounted on two screens -- and NO new table, NO new column, NO new policy,
+                      # NO new route.
+                      # Not S: twenty criteria, three invariants, and the guard ADR-016 exists for.
+                      # Not L: every policy it needs already ships, and the function it replaces is
+                      # a superset of the shipped body rather than a rewrite.
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. Counted from
+                      # the eleven allowed_paths below, 01-plan.md section 7. AGREES with
+                      # size_estimate; ADR-012 is not engaged.
+                      #
+                      # THE XL CLAUSE WAS CHECKED RATHER THAN ASSUMED, because this ticket ships a
+                      # migration. .ai/01-operating-model.md:375 lists a schema change under XL and
+                      # its own next paragraph gives the operative test -- "whether existing callers
+                      # must change, not whether the seam was touched at all". None must:
+                      # `updateEntry` keeps its six-field input, `deleteEntry` is untouched, and the
+                      # two failure codes are additions to a union no exhaustive switch consumes.
+                      # Six tickets have shipped migrations at M -- CAL-01, CAL-02, CAL-03, ADM-01,
+                      # ADM-02, ADM-03.
+depends_on: [ADM-04, CAL-02]
+invariants_touched: [INV-02, INV-03, INV-05]
+# 01-plan.md section 2. EXACTLY the three the ADM-05 row in features.md lists; this plan adds none
+# and removes none.
+#
+# INV-02: held by `entry_enforce_decision()` clause (c), which CAL-01 shipped and this ticket does
+# not alter. Listed because this ticket CREATES THE APPROVED STATE that makes the trigger observable
+# at all -- until now nothing in the product could set `status` to `approved`, so clause (c) has
+# never had a live case -- and because it amends the function that holds it. AC-12 and AC-14.
+#
+# INV-03: held by the check constraint `entry_rejection_reason_iff_rejected`, which is a
+# BICONDITIONAL (supabase/db.sql:213) and so holds both directions. This ticket is the first to write
+# the column. The interface's required-reason field is an AFFORDANCE, not the mechanism -- and
+# clause (b)'s nulling of the reason on approval is FORCED by the same constraint. AC-3 and AC-4.
+#
+# INV-05: reached indirectly and listed for it. Approval and tentativeness are two independent axes,
+# and an approval that cleared `tentative` would change what the entry contributes on the absence
+# count's own terms. Held BY ABSENCE: clause (b) touches three columns and never that one, and the
+# update grant this ticket adds names two columns and not that one. AC-6.
+#
+# INV-04 is deliberately absent -- the row says so: rejecting changes what the count READS and
+# computes no count, the argument that kept it off CAL-01 and CAL-08. INV-01 is absent for a
+# different reason worth keeping: ADR-011 makes a rejected entry still occupy its slots, which is
+# what makes AC-13's edit path the likely one, and nothing here changes the constraint.
+allowed_paths:
+  # 01-plan.md section 7. Three are new: the migration, the component, and its two test files.
+  # Eleven since the 2026-09-05 amendment; the eleventh is the last entry and carries its own note.
+  # `supabase/db.sql` is ABSENT -- ADR-026 decision point 6 says applying it discharges no
+  # migration, the target schema does not change here, and flipping its [OWED] labels is a job no
+  # ticket is assigned (01-plan.md Open questions item 3). NO FIXTURE IS ADDED: a seeded `approved`
+  # or `rejected` row would be a state no admin ever produced, and every criterion is stronger
+  # created by the write it is testing.
+  - "supabase/migrations/20260905190000_adm05_entry_decision.sql"
+  - "src/lib/data/index.ts"
+  - "src/lib/data/mock.ts"
+  - "src/lib/data/supabase.ts"
+  - "src/lib/domain/types.ts"
+  - "src/components/EntryDecision.tsx"
+  - "src/routes/PendingEntries.tsx"
+  - "src/routes/EditEntry.tsx"
+  - "tests/entry-decision.test.ts"
+  - "tests/e2e/adm-05-approve-reject.spec.ts"
+  # ELEVENTH PATH, added by amendment on 2026-09-05 -- 01-plan.md Changelog, and 99-questions.md
+  # carries the question that raised it. Not new, and was a safety net until the amendment: its
+  # AC-9 test asserts STRUCTURALLY (form/textarea/button/input all at count 0 inside the worklist)
+  # the absence of the controls the ADM-05 feature row exists to add. The permitted edit is the two
+  # surviving structural lines and nothing else -- the four selector-name assertions and the whole
+  # AC-15 vocabulary check stay untouched. Eleven against M's ceiling of twelve, so `size` is
+  # unchanged and ADR-012 stays disengaged.
+  - "tests/e2e/adm-04-worklist.spec.ts"
+# CORRECTED at PLAN, 2026-09-05. The shell was written at triage on 2026-08-31 and named three
+# objects; the first is no longer this ticket's. `entry_update_admin` was SHIPPED BY CAL-03 on
+# 2026-09-03 in supabase/migrations/20260903160000_cal03_admin_entry_writes.sql:80, with its team
+# predicate. Recreating it here would be a drop-and-create against a policy that already exists and
+# is already correct. Both remaining objects were verified against supabase/migrations/ rather than
+# read off supabase/db.sql's [OWED] labels, five of which are stale (01-plan.md Open questions
+# item 3). 01-plan.md section 6.
+schema_delta: replaces `public.entry_enforce_decision()` with the guarded form — ADR-016 §1 clauses (a) and (b) added, clause (c) transcribed unchanged — and adds `grant update (status, rejection_reason) on public.entry to authenticated` — ADR-016 Consequences
+requires_adr: true
+rework_count: 0
+chat_budget:
+  # Migrated 2026-09-04 by `steward`, together with the gates below. `ba` left the loop at ADR-019
+  # and `qa` at ADR-022, so three of the four edges this shell carried named roles nobody can
+  # dispatch. They are not kept as zeroes — `.ai/templates/ticket.yaml` says an edge nobody can walk
+  # is not a budget, it is a row that invites someone to try.
+  # ADM-05, incremented by `developer` at IN_PROGRESS on 2026-09-05 for the one question in
+  # 99-questions.md. `.claude/hooks/chat-guard.mjs` counts this field when the file is written
+  # through the Edit tool; this session wrote it with a shell heredoc, so the count is kept true by
+  # hand rather than left at a zero that would say no question was asked.
+  developer->tech-lead-design: { used: 1, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  # Migrated 2026-09-04 by `steward`. This shell was created at /triage before ADR-019 merged the
+  # `spec` and `design` gates into one `plan` gate, and before ADR-022 removed the `qa` stage and
+  # its gate — and nothing migrated it, so five earlier tickets each patched their own copy at PLAN
+  # or at /ship. Check D14 now fails any ticket that is not DONE whose gate keys disagree with
+  # `.ai/templates/ticket.yaml`, so the set cannot drift again unnoticed.
+  #
+  # No value changes here, only the key set: every gate on an unstarted shell is `passed: false`
+  # under either shape.
+  #
+  # BOTH WRITTEN BY `orchestrator` AT /ship, 2026-09-05, quoted from the artifacts' front-matter
+  # rather than re-judged — the convention CAL-06's shell states in terms.
+  #
+  # `plan`   — 01-plan.md `gate: PASS` / `next_state: READY`, produced 2026-09-05T19:05:27+07:00.
+  #            Definition of Ready graded six of six at /next-ticket, 2026-09-05 21:59 +07.
+  # `review` — 04-review.md `gate: PASS` / `next_state: DONE`, produced 2026-09-05T22:44:36+07:00.
+  #            R1-R8 all PASS with citations; all four verify commands exit 0 at REVIEW.
+  plan:   { passed: true, at: "2026-09-05T19:05:27+07:00" }
+  review: { passed: true, at: "2026-09-05T22:44:36+07:00" }
+
+# Created by `product` at /triage on 2026-08-31, promoting
+# .ai/board/ideas/2026-08-31-no-way-to-tell-a-settled-plan-from-a-typed-one.md.
+#
+# Definition of Ready items 1, 3, 4 and 6 are filled here. Items 2 and 5 belong to the BA at SPEC.
+#
+# Item 6. One group: ADM. The write path over ADM-04's surface.
+#
+# Item 3. ADM-04 for the surface -- CAL-05 says displaying who approved is not approving, so no
+# admin control reaches the calendar views and this ticket has nowhere else to land. CAL-02
+# because the guard's correctness is DEFINED against `entry_update_own` existing: it is the
+# permissive own-entry policy the guard exists to compensate for, and testing the denial without
+# it tests nothing. CAL-02 transitively carries CAL-01 and TEA-01.
+#
+# Item 4. Not `none`, and this is the ticket where the idea's claim that it "consumes the
+# permission model rather than deciding it" turned out to be false -- the model as written cannot
+# be built. An RLS `with check` sees the NEW row and has no OLD, so "status did not change" is
+# not expressible, and a column grant cannot separate admin from member because both are the same
+# PostgreSQL role, `authenticated`. ADR-016 (ACCEPTED by tech-lead-design) decides the guard is a
+# BEFORE UPDATE trigger merged into the one INV-02 already needs. ADR-014 would require the ADR
+# link for the policy alone.
+#
+# Two things the design must not lose:
+#   - CAL-01 creates public.entry_enforce_decision() in its INV-02-only form, so this ticket uses
+#     `create or replace function` and must NOT add a second BEFORE UPDATE trigger to `entry`:
+#     PostgreSQL fires same-event triggers alphabetically by name.
+#   - Clause order. The guard reads the values the client sent, before the INV-02 reset touches
+#     them; reversed, the guard sees a status change made by the reset and refuses a member's
+#     legitimate edit. ADR-016 section 1.

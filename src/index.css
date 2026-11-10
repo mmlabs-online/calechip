@@ -1,0 +1,334 @@
+/* UIE-01 — the product's first palette, first type scale and first loaded font.
+   01-plan.md § 4.1 is the contract this file implements.
+
+   Until this ticket this file was one line, `@import "tailwindcss";`. Nine tickets shipped against
+   Tailwind's defaults: a slate ground, and `font-sans` resolving to whatever the operating system
+   supplied — which is why the Vietnamese fixture names have never rendered in a face chosen for
+   them. Both facts change here, and they change for all fourteen routes, deliberately (§ 4.4). */
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------------------------
+   The faces, SELF-HOSTED. 01-plan.md § 4.1 and § 6: this is the only one of the three paths that
+   needs no ADR. A Google Fonts `@import` is a runtime third party and an integration
+   (.ai/standards/integrations.md:42 sends it through R9); `@fontsource/*` is an npm dependency that
+   R9 fails without one. The .woff2 files were fetched once, at build time, and committed under
+   public/fonts/ — nothing here reaches a third party when the page loads.
+
+   BOTH RANGES ARE DECLARED FOR EVERY FACE, and that is not padding. 01-plan.md § 4.1: declaring the
+   Vietnamese subset alone renders accented text in the product face and unaccented text in the
+   fallback, which is worse than either alone. `latin` carries U+0000-00FF — the whole English
+   interface — and `vietnamese` carries the diacritics AC-17 is about.
+
+   The unicode-range values are Google's own, copied from the css2 response rather than recalled;
+   they are the ranges the subset files were actually cut to, so narrowing or widening one here
+   would ask the browser for glyphs the file does not hold. */
+
+@font-face {
+  font-family: "Baloo 2";
+  src: url("/fonts/baloo2-700-latin.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Baloo 2";
+  src: url("/fonts/baloo2-700-vietnamese.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0,
+    U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+
+@font-face {
+  font-family: "Nunito";
+  src: url("/fonts/nunito-400-latin.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Nunito";
+  src: url("/fonts/nunito-400-vietnamese.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0,
+    U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+
+@font-face {
+  font-family: "Nunito";
+  src: url("/fonts/nunito-700-latin.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Nunito";
+  src: url("/fonts/nunito-700-vietnamese.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0,
+    U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   The tokens. Tailwind v4 (tech-stack.md: resolved 4.3.3, no config file), so `@theme` is the
+   mechanism and every name below also generates a utility: `--color-ink` gives `text-ink`,
+   `--shadow-soft` gives `shadow-soft`, and so on. That is why the components address these through
+   utilities rather than through `var()` — a utility is how Tailwind knows the token is used.
+
+   THE PALETTE IS THE PRODUCT'S OWN PROTOTYPE, NOT AN INVENTION: _figma/src/index.css:4-33. The four
+   marked NEW are originated by 01-plan.md § 4.1 because the prototype has no auth screen.
+
+   THESE VALUES HAVE NO DOCUMENT BEHIND THEM YET, and that is 01-plan.md's Open question 1, which is
+   for the operator. § Colour and § Type in .ai/standards/ui-design-system.md are bare
+   `TODO(project)` stubs, and that file is human plane under RULE-01 — a developer may write tokens
+   here and may not record them there. Until somebody does, this block is the de-facto design
+   system and the next screen has nothing to conform to. */
+@theme {
+  /* Ground and surface — _figma/src/index.css */
+  --color-bg: #f1effa;
+  --color-card: #ffffff;
+  --color-line: #e4e0f4;
+
+  /* Ink — _figma/src/index.css */
+  --color-ink: #241f45; /* titles, active labels, input text */
+  --color-ink-2: #5a5480; /* subtitle, body */
+  --color-ink-3: #8f89b3; /* field labels, inactive segment, disabled fill */
+
+  /* NEW — the auth surface the prototype does not cover */
+  --color-field: #edebf7; /* filled borderless input */
+  --color-track: #edebf9; /* segmented-control track */
+  --color-primary: #2a2145; /* primary button fill */
+  --color-danger: #be123c; /* error text — 5.9:1 on --color-card, WCAG AA */
+
+  /* `--radius-card`, NOT `--radius-lg` as 01-plan.md § 4.1 names it. The plan's name is a token
+     collision rather than a preference: `--radius-lg` is one of Tailwind's OWN theme keys, so
+     redefining it at 26px silently repaints every `rounded-lg` in the application — ten of them,
+     across BulkRejection, EntryDecision, PendingEntries, Holidays, NewEntry and TeamEntries. Those
+     screens are named in 01-plan.md § 1 Out-of-scope, so the plan's own scope statement is what
+     rules the plan's own token name out. `--radius-card` generates `rounded-card` and collides with
+     nothing. The VALUE is unchanged. */
+  --radius-card: 26px;
+  --radius-pill: 9999px;
+
+  --shadow-soft:
+    0 4px 20px -2px rgba(36, 31, 69, 0.05), 0 0 3px rgba(36, 31, 69, 0.02);
+
+  --font-display: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+  --font-sans: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* UIE-02 § 4.9 — the three legend swatches, added BESIDE UIE-01's rather than in a block of
+     their own, because they are the same @theme and a second one would be a second place to look.
+
+     THE COLOURS ARE `CLAUDE.md` § Visual direction, which is the only place in the repository that
+     carries them: "PTO is peach, WFH is mint, holidays are lavender". They are named for what they
+     MEAN and not for what they look like — `--color-pto` and not `--color-peach` — so a later
+     decision to repaint PTO changes one value here and no class anywhere.
+
+     UIE-06 § 4.7 — THIS BLOCK USED TO REFUSE `--color-overload`, ON THREE CLAUSES THAT WERE ALL
+     FALSE THE DAY THEY WERE WRITTEN. It said no calendar view computes an overload state, that
+     `seam.getTeam()` is deliberately not called by any of them, and that the token would have no
+     consumer. `src/routes/MonthView.tsx` has called `seam.getTeam()` and computed `isOverloaded`
+     since CAL-08's ticket shipped this screen on 2026-09-04 — the day BEFORE these lines were
+     written. The overload LEGEND ROW is still out of scope and UIE-02's AC-11 and AC-20 still
+     stand; UIE-06 § 1 item 7 re-states why, and adds one: a row would have to state a threshold
+     that ADM-01 lets an admin change, so `>50%` becomes a lie the moment somebody uses the
+     feature. THE TOKEN IS A DIFFERENT QUESTION, and it is answered below.
+
+     `--color-overload` IS EXACTLY TODAY'S `bg-rose-100`, #ffe4e6. UIE-06 § 4.6: this is
+     TOKENISATION AND NOT A COLOUR DECISION — no pixel changes value. Re-picking the hex is a
+     charter-level choice (`CLAUDE.md` § Visual direction: "a soft pink that is deliberately not an
+     alarming red") and it is not this ticket's. Without the token the month grid's ONE
+     domain-bearing colour would be its only raw framework default while six neighbours became
+     tokens, which is the defect UIE-06 § 1 exists to close rather than to relocate.
+
+     `src/components/Sidebar.tsx`:63-64 carries the same false claim and is LEFT STANDING. UIE-06
+     § 4.7: correcting it would put a shell file in `allowed_paths` and RULE-03's guard does not
+     distinguish a comment from a rewrite. Its CONCLUSION is still right for a reason that is still
+     true — the shell makes no team read — so what is wrong there is the stated reason, not the
+     decision. UIE-06 01-plan.md Open question 2 reports the line.
+
+     LIKE UIE-01's, THESE VALUES HAVE NO DOCUMENT BEHIND THEM. § Colour in
+     .ai/standards/ui-design-system.md is still a bare `TODO(project)` and is human plane under
+     RULE-01 — a developer may write a token here and may not record it there. Each is picked to sit
+     on `--color-field` in the legend card and to read as the pastel the charter names. */
+  --color-pto: #ffcbaa; /* peach */
+  --color-wfh: #a9e2cd; /* mint */
+  --color-holiday: #c9bff0; /* lavender */
+
+  /* SOLO 2026-09-10 — the INK that goes ON those fills, for the week grid's type caption. The
+     operator's screenshot draws that caption in a darkened version of the chip's own colour, and
+     the three fills above are backgrounds: #a9e2cd as text on a mint chip is unreadable. Named for
+     what they mean, like their fills — `-ink` is the same suffix scheme `--color-ink-2` already
+     uses for "the darker one you write with".
+
+     EACH IS PICKED FOR CONTRAST ON ITS OWN FILL AT THE OPACITY THE CHIP USES, not sampled from the
+     screenshot: the chip is `bg-wfh/50` over `--color-card`, so the caption sits on roughly #d4f0e6
+     and #ffe5d4 respectively. There is no holiday equivalent because no holiday surface writes on
+     its own fill today; add one when something does rather than now. */
+  --color-pto-ink: #a0491a;
+  --color-wfh-ink: #17694e;
+
+  /* UIE-06 § 4.6 and AC-7. The whole cell background of an overloaded day, drawn by
+     MonthView.tsx — not a legend swatch. Same value as the `bg-rose-100` it replaces. */
+  --color-overload: #ffe4e6; /* soft pink */
+
+  /* SOLO, 2026-09-11. The busy day — somebody who is AT WORK with their hands full.
+     A FIFTH TOKEN AND NOT A REUSE OF ONE OF THE FOUR, and the four are why: peach and mint already
+     mean away-on-leave and working-from-home, lavender means the nation is not working, and pink
+     means the day is crowded with ABSENCES. A busy person is none of those, and giving one colour
+     two meanings on one grid is the specific mistake UIE-06 § 4.6 refused when it declined to paint
+     pink on a working day.
+     Butter yellow: warm, legible against the peach and mint chips beside it, and the one warm hue
+     the palette had not spent. It reads as attention rather than as alarm, which is the charter's
+     standing instruction about `--color-overload` applied to a milder fact.
+     LIKE THE FOUR ABOVE IT HAS NO DOCUMENT BEHIND IT. § Colour in .ai/standards/ui-design-system.md
+     is human plane under RULE-01 — a developer may write a token here and may not record it there.
+     The line for that file is printed in the reply for the operator to paste. */
+  /* SOLO, 2026-09-13. RECOLOURED BUTTER -> CORAL RED at the operator's instruction: busy should read
+     red on the calendar. Coral and not an alarm red, and clearly deeper than `--color-overload`'s soft
+     pink so the two stay distinguishable on one grid. `-ink` is the text on it, the suffix scheme
+     `--color-pto-ink` uses. The butter this token was is no longer spent by busy; the manager badge
+     that briefly borrowed it now carries its own amber (`src/lib/roles.ts`). */
+  --color-busy: #ffb3a7; /* coral red */
+  --color-busy-ink: #9f1d1d;
+  /* EVT-03, ADR-049 decision 7. An event — a gathering, not an absence and not a busy day.
+     Coral at the operator's word (*"sử dụng màu coral"*). Deeper and more saturated than
+     `--color-busy` (#ffb3a7) and separated from it by shape too: a full-width bar, never a pill. */
+  --color-event: #ff7f50; /* coral */
+  --color-event-ink: #6b230a;
+}
+
+/* -------------------------------------------------------------------------------------------
+   SOLO, 2026-09-11 — THE LOADING MARK. The operator: *"thay đổi text lúc loading như 'loading the
+   week...' bằng loading ví dụ như icon ở loading.html"*, and then, an hour later, *"tôi mới update
+   lại loading.html"*.
+
+   **THE SKETCH CHANGED FROM AN ORBIT TO A SWEEP, AND THIS FILE FOLLOWED IT RATHER THAN KEEPING
+   BOTH.** The first version of these rules reproduced a 50px core with two dots orbiting it; the
+   operator replaced that sketch with a 120×20 bar whose highlight travels left to right. Keeping the
+   orbit beside the bar would leave the product with two answers to "is something happening", which
+   is the same mistake as two definitions of a count. The class names are unchanged, so the fourteen
+   call sites and `Loader.tsx` did not move.
+
+   **IT IS PLAIN CSS AND NOT UTILITIES, WHICH IS A LIMIT RATHER THAN A PREFERENCE.** The mark is one
+   element whose BACKGROUND POSITION is animated — a gradient layer sliding across a flat layer.
+   Tailwind has no class for a multi-layer background shorthand and none for animating its position,
+   and the arbitrary-value form would be longer than the rules below and unreadable at the call site.
+   `src/components/Loader.tsx` is the only thing that names these classes.
+
+   **THE GEOMETRY IS `loading.html`'s, EXPRESSED AGAINST ONE WIDTH VARIABLE.** The sketch hard-codes
+   120px, 20px and 50px; below, the height is a sixth of the width and the highlight is five twelfths
+   of it, so `--cc-size` changes the mark's size and nothing else. The animation is the sketch's
+   exactly: the highlight starts one highlight-width off the left edge and ends one off the right, so
+   the bar is empty at both ends of every cycle rather than snapping.
+
+   **THE COLOURS ARE NOT THE SKETCH's LIGHTBLUE AND PURPLE, AND THAT IS THE OPERATOR'S STANDING
+   DECISION**, taken 2026-09-11 about the previous sketch and unchanged by the new one: the mark is
+   painted in the product's own tokens. It is `--color-line` under `--color-ink-2`, which are the two
+   here that carry NO domain meaning — peach, mint, lavender, pink and butter each mean something on
+   the calendar (on leave, working from home, a national holiday, a crowded day, busy), and UIE-06
+   § 4.6 refused to give one colour two meanings on one grid. A spinner in peach would be a leave
+   colour on a screen that has no entries on it yet.
+
+   **IT IS ROUNDED WHERE THE SKETCH IS SQUARE.** `CLAUDE.md` § Visual direction is "pastel and
+   rounded on the surface", and every other surface in the product carries a radius; a hard-cornered
+   rectangle in the middle of a 26px card would be the only square thing on screen. The radius clips
+   the highlight for free — a background is painted inside the border box, so no `overflow` rule is
+   needed. */
+@keyframes cc-sweep {
+  100% {
+    background-position: right calc(var(--cc-size) * -0.417) top 0;
+  }
+}
+
+.cc-loader {
+  --cc-size: 7.5rem; /* 120px — the sketch's own width */
+  width: var(--cc-size);
+  height: calc(var(--cc-size) / 6);
+  border-radius: var(--radius-pill);
+  background:
+    linear-gradient(90deg, transparent, var(--color-ink-2))
+      left calc(var(--cc-size) * -0.417) top 0 / calc(var(--cc-size) * 0.417) 100% no-repeat,
+    var(--color-line);
+  animation: cc-sweep 1s infinite linear;
+}
+
+/* The sidebar's roster line is 10px uppercase type in a narrow column, where a 120px bar is wider
+   than the label above it. Half size, same proportions — one modifier rather than a prop that writes
+   a style attribute, so every size in the product is one of two values. */
+.cc-loader-sm {
+  --cc-size: 3.75rem;
+}
+
+/* The mark is decorative and the sentence beside it is the announcement, so a reader who asked the
+   system for less motion loses nothing by the bar standing still — `Loader.tsx` records that the
+   text is always present and is only ever visually hidden. The highlight rests off the left edge,
+   which leaves a plain track rather than a bar frozen mid-sweep pretending to be a progress figure:
+   this mark has never known how far along anything is. */
+@media (prefers-reduced-motion: reduce) {
+  .cc-loader {
+    animation: none;
+  }
+}
+
+/* A highlight that runs round a card — the guest page's sign-in prompt. The wrapper is a 2px frame
+   with the card radius; behind its content a square, larger than the card, carries a conic sweep of
+   the three entry pastels and turns once every 2.4s. The frame's radius and `overflow` clip it to a
+   ring, and the content's own fill covers the middle, so the child must have a background of its
+   own and a radius 2px smaller (`rounded-3xl`, 24px, inside the 26px card). Charm, so it stands
+   still for a reader who asked for less motion: the ring stays, coloured, without turning. Not for
+   a `sticky` element — its `position: relative` would undo the stickiness; wrap the inside instead. */
+@keyframes cc-orbit {
+  to {
+    rotate: 1turn;
+  }
+}
+
+.cc-orbit {
+  position: relative;
+  isolation: isolate;
+  display: block;
+  padding: 2px;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.cc-orbit::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  top: 50%;
+  width: max(300%, 12rem);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 55%,
+    var(--color-pto),
+    var(--color-wfh),
+    var(--color-holiday),
+    transparent 95%
+  );
+  animation: cc-orbit 2.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cc-orbit::before {
+    animation: none;
+  }
+}

@@ -1,0 +1,52 @@
+# Created by `tech-lead-design` at /plan MIR-18-b on 2026-11-05: the exposure-hardening half of
+# MIR-18-b, split by operation (.ai/board/tickets/MIR-18-b/01-plan.md § 1 and § 7; ADR-074 decision 8).
+# Not produced by /triage: no idea file promotes it. It shares MIR-18's feature row, which stays
+# PLANNED until this ticket ships.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-18-c
+title: "The system panel is served unindexed at an unguessable path, with rate limiting and failed-login logging on its second factor"
+feature_ids: [MIR-18]   # split of MIR-18 (operating model § ID scheme: splits get -a, -b)
+group: MIR
+state: BACKLOG
+owner: ""
+branch: ""
+size_estimate: ""     # S|M - set by tech-lead-design at PLAN; gates DoR
+size: ""              # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-05, MIR-06, MIR-07, MIR-08, MIR-09, MIR-10, MIR-12, MIR-18, MIR-18-b]   # MIR-18-b rewrites src/system/main.tsx, which the path change serves
+invariants_touched: []
+allowed_paths: []
+glossary_owed: []
+schema_delta: "TODO(plan): set at PLAN — likely a failed-login log table for the panel's second factor"
+requires_adr: false
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: false, at: null }
+  review: { passed: false, at: null }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+# Not in .ai/templates/ticket.yaml. Added for the multi-tenancy plan; nothing in scripts/ reads them.
+# Plan status lives only in .ai/board/plans/multi-tenancy-status.md. `state` above is the loop's.
+mir_phase: 3
+mir_plan_item: "P4-3"             # .ai/board/plans/calechip-multi-tenancy-plan.md:246-251
+verification_required: true   # phase 0 and phase 3 — a passing mock test is not verification
+expected_impact: []   # none
+# [predicted] at plan time. Corrected at ship in .ai/board/plans/feature-change-log.md.
+mir_detail: |
+  The exposure-hardening half of MIR-18-b, transcribed from MIR-18-b's ticket.yaml `mir_detail`
+  (written at /plan MIR-18 from plan P4-3, plan:246-251). Nothing is added.
+
+  - `X-Robots-Tag: noindex, nofollow` on the panel's responses, in docker/nginx.conf — never
+    robots.txt (plan:247).
+  - An unguessable path instead of /system.html (ADR-059 decision 1). The path must not be in the
+    repository or the member bundle; nginx.conf is committed and Dockerfile bakes VITE_* at build, so
+    the path likely comes from the container's environment at start, as CALECHIP_VERSION does.
+    /system.html itself must then stop being served directly.
+  - Rate limiting and failed-login logging (plan:250). Password sign-in already has Supabase Auth's
+    own limit; the second factor's failures are the open part.
+  - IP allow-list "if feasible" (plan:249). Feasibility is unverified (the browser talks to PostgREST
+    directly, so an nginx allow-list hides only the HTML), and the address list is a fact only the
+    operator holds.

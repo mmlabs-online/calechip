@@ -1,0 +1,65 @@
+# Created by `tech-lead-design` at /plan MIR-15 on 2026-11-05: the holiday half of MIR-15, split by
+# operation (.ai/board/tickets/MIR-15/01-plan.md § 1 and § 7; ADR-076 decision 6).
+# Not produced by /triage: no idea file promotes it. It shares MIR-15's feature row, which stays
+# PLANNED until MIR-15, -b, -c and -d have all shipped.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-15-b
+title: "Only a system admin sets Org public's holidays, from the system panel, and each org reads only its own holiday calendar"
+feature_ids: [MIR-15]   # split of MIR-15 (operating model § ID scheme: splits get -a, -b)
+group: MIR
+state: DONE   # `orchestrator` at /ship, 2026-11-06
+owner: ""
+branch: ""
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting (9 paths, after the MIR-15-e split)
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-05, MIR-06, MIR-07, MIR-08, MIR-09, MIR-10, MIR-18, MIR-18-b, MIR-15]   # MIR-15 rewrites the same read path; MIR-18-b's panel is where the screen goes
+invariants_touched: []   # reasoned at PLAN, 01-plan.md § 2: a holiday is not an entry
+allowed_paths:
+  - ".ai/registry/decisions/ADR-079-org-public-holidays-are-written-through-four-system-admin-rpcs-and-each-org-reads-only-its-own.md"
+  - ".ai/board/tickets/MIR-15-e/ticket.yaml"
+  - "supabase/migrations/20261106120000_mir15b_org_public_holidays.sql"
+  - "supabase/tests/240-org-public-holidays.test.sql"
+  - "supabase/tests/150-write-path-org-bound.test.sql"
+  - "supabase/tests/010-catalogue.test.sql"
+  - "src/lib/data/system.ts"
+  - "src/system/main.tsx"
+  - "tests/e2e/mir-15-b-national-holidays.spec.ts"
+glossary_owed: []
+schema_delta: "holiday_select_all dropped, holiday_select_own_org created; holiday_insert_admin, holiday_update_admin, holiday_delete_admin replaced; four security definer RPCs added (list_/add_/update_/delete_national_holiday). ADR-079 (ADR-014: not none)"
+requires_adr: true   # ADR-079, accepted under ADR-067 at /plan
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-11-06T08:04:03Z" }
+  review: { passed: true, at: "2026-11-06T08:42:55Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+# Not in .ai/templates/ticket.yaml. Added for the multi-tenancy plan; nothing in scripts/ reads them.
+# Plan status lives only in .ai/board/plans/multi-tenancy-status.md. `state` above is the loop's.
+mir_phase: 3
+mir_plan_item: "P3-6"             # .ai/board/plans/calechip-multi-tenancy-plan.md:206-211
+verification_required: true   # phase 0 and phase 3 — a passing mock test is not verification
+expected_impact:
+  - { feature: ADM-03, tag: SUPERSEDED, why: "transcribed from MIR-15's ticket.yaml: a team's admin no longer edits the holiday calendar for Org public. Replaced by: only `system_admin` sets holidays for Org public — and every existing team lands there (MIR-12)" }
+# [predicted] at plan time. Corrected at ship in .ai/board/plans/feature-change-log.md.
+mir_detail: |
+  The holiday item of MIR-15, transcribed from MIR-15's ticket.yaml `mir_detail` (plan P3-6,
+  plan:209) and ADR-070 § 4's `holiday` bullet. Nothing is added except the two facts found on disk
+  at /plan MIR-15, each with its file:line:
+
+  - Only `system_admin` sets holidays for Org public (plan:209; ADR-070 § 4: "In Org public
+    (`is_shared_tenant = true`), holiday rows are the system-owned national set and may be written
+    only by `system_admin` (MIR-15)").
+  - Today `holiday_insert_admin` / `holiday_update_admin` / `holiday_delete_admin` admit any
+    `is_admin` caller on their own org (supabase/migrations/20261103120000_mir13_write_path_org_bound.sql:830-856),
+    and every member today is in Org public, so every admin still writes the national set.
+  - FOUND AT /plan MIR-15: `holiday_select_all` is still `using (true)`
+    (supabase/migrations/20260905120000_adm02_holiday.sql:58-59) and `listHolidays` filters by date
+    only. Since MIR-18-b's `create_org` copies Org public's rows into a new org, a date then has one
+    row per org and every member reads all of them. ADR-059 decision 1 ("its own holidays") and
+    ADM-03's `unique (date)` rationale (one status per date) both need the read bounded by org.
+  - A system admin has no member row (ADR-074), so the write needs a door the panel can use, and the
+    member app's Holidays screen needs to stop offering edits an Org public admin can no longer make.

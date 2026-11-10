@@ -1,0 +1,66 @@
+# Created by `tech-lead-design` at /plan MIR-16-f on 2026-11-08: the removal of 'manager' from
+# public.member_role, split off because MIR-16-f as ADR-085 described it counted L
+# (ADR-086 decision 2; .ai/board/tickets/MIR-16-f/01-plan.md § 1 and § 7).
+# Not produced by /triage: no idea file promotes it. It shares MIR-16's feature row, which stays
+# PLANNED until MIR-16 and MIR-16-b to MIR-16-g have all shipped.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-16-g
+title: "`'manager'` leaves `public.member_role`: the column is re-typed, the audit history keeps its words as text, and the fixtures follow"
+feature_ids: [MIR-16]   # split of MIR-16 (operating model § ID scheme: splits get -a, -b)
+group: MIR
+state: DONE
+owner: ""
+branch: ""
+size_estimate: "M"   # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"            # S|M|L|XL - 11 allowed_paths at /plan MIR-16-g; as ADR-086 described it, ~13 (L), so the type change split to MIR-16-h (ADR-087)
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-10, MIR-11, MIR-12, MIR-13, MIR-14, MIR-15, MIR-18, MIR-21, MIR-21-b, MIR-21-c, MIR-21-d, MIR-21-e, MIR-21-f, MIR-16, MIR-16-b, MIR-16-d, MIR-16-e, MIR-16-c, MIR-16-f]
+invariants_touched: []
+allowed_paths:
+  - ".ai/registry/decisions/ADR-087-the-fixtures-stop-deriving-a-team-role-from-member-role-before-manager-is-removed.md"
+  - ".ai/board/tickets/MIR-16-h/ticket.yaml"
+  - ".ai/board/tickets/MIR-17/ticket.yaml"
+  - "supabase/tests/_isolation.psql"
+  - "supabase/tests/040-member-self-writes.test.sql"
+  - "supabase/tests/100-mock-parity.test.sql"
+  - "supabase/tests/250-membership-self-lock.test.sql"
+  - "supabase/tests/270-member-team-id-dropped.test.sql"
+  - "supabase/tests/300-org-admin-rename.test.sql"
+  - "supabase/tests/310-manager-read-from-membership.test.sql"
+  - "supabase/tests/320-set-member-role-team-role.test.sql"
+glossary_owed: []
+schema_delta: "none"   # confirmed at PLAN: pgTAP harness and fixtures only, no migration (ADR-087; 01-plan.md § 6)
+requires_adr: true    # ADR-087, written at this PLAN under ADR-067, narrows ADR-086 decision 2
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-11-08T06:12:17Z" }
+  review: { passed: true, at: "2026-11-08T06:20:41Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+mir_phase: 4
+mir_plan_item: "P4-1"             # .ai/board/plans/calechip-multi-tenancy-plan.md:230-236
+verification_required: false
+expected_impact:
+  - { feature: TEA-08, tag: CHANGED, why: "transcribed from MIR-16-f's ticket.yaml: ranks become `org_admin` | `member` on `member.role`, with manager per team" }
+  - { feature: TEA-12, tag: SUPERSEDED, why: "transcribed from MIR-16-f's ticket.yaml: manager is no longer one global value on `member.role`" }
+mir_detail: |
+  Slice of P4-1 (ADR-086 decision 2). Moved here from MIR-16-f at /plan MIR-16-f on 2026-11-08.
+  After MIR-16-f no function writes 'manager' to member.role; legacy rows still hold it.
+  - the type: rename the old one aside, create public.member_role ('member', 'org_admin'), re-type
+    member.role `using (case when role::text = 'manager' then 'member' else role::text end)`, which
+    fires no row trigger; drop and re-set the column default around it; drop the old type
+  - member_role_change.from_role / to_role become text with a check in ('member', 'manager',
+    'org_admin'); member_record_role_change writes `::text`
+  - set_member_role(uuid, public.member_role) re-created against the new type: a 'manager' argument
+    must still be accepted, so its parameter type changes (text, or public.team_role plus the
+    org_admin refusal) — decide at PLAN; 010's census follows
+  - tests.member_role's 'manager' branch, tests.put_on_team taking the team role, tests.seed()
+    managers inserted as 'member' plus team_role 'manager', seed.sql (:489-490)
+  - pgTAP files that insert or assert 'manager' on member.role, found by grep at /plan MIR-16-f:
+    040, 100, 250 (:124, :219 cast), 290, 300 (:17, :31), 310 (:28, :100), and any written since
+  - the hosted check before applying (RULE-09): no object outside the local catalogue depends on
+    the type
+  Not counted at /plan MIR-16-f. Expected to split again at its own PLAN.

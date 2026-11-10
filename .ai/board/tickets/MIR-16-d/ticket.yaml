@@ -1,0 +1,54 @@
+# Created by `tech-lead-design` at /plan MIR-16-b on 2026-11-07: the rename half of what ADR-082
+# called MIR-16-b, split off because it counted L (ADR-083 decision 2; .ai/board/tickets/MIR-16-b/01-plan.md § 1 and § 7).
+# Not produced by /triage: no idea file promotes it. It shares MIR-16's feature row, which stays
+# PLANNED until MIR-16, MIR-16-b, MIR-16-c and MIR-16-d have all shipped.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-16-d
+title: "The pgTAP fixtures name the admin role through one helper, `tests.member_role`: the harness and seven files"
+feature_ids: [MIR-16]   # split of MIR-16 (operating model § ID scheme: splits get -a, -b)
+group: MIR
+state: DONE   # `orchestrator` at /ship, 2026-11-07
+owner: ""
+branch: ""
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"             # S|M|L|XL - counted at /plan MIR-16-d from 12 allowed_paths; as ADR-083 described it, ~18 (L), so the rename split to MIR-16-e (ADR-084)
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-10, MIR-11, MIR-12, MIR-13, MIR-14, MIR-15, MIR-18, MIR-21, MIR-21-b, MIR-21-c, MIR-21-d, MIR-21-e, MIR-21-f, MIR-16, MIR-16-b]
+invariants_touched: []   # test code only: no migration, function, policy, trigger or row changes (01-plan.md § 2)
+allowed_paths:
+  - ".ai/registry/decisions/ADR-084-the-fixtures-name-the-admin-role-through-one-helper-before-the-value-is-renamed-in-place.md"
+  - ".ai/board/tickets/MIR-16-e/ticket.yaml"
+  - ".ai/board/tickets/MIR-16-c/ticket.yaml"
+  - "supabase/tests/_isolation.psql"
+  - "supabase/tests/290-member-role-helper.test.sql"
+  - "supabase/tests/040-member-self-writes.test.sql"
+  - "supabase/tests/100-mock-parity.test.sql"
+  - "supabase/tests/120-composite-fks.test.sql"
+  - "supabase/tests/140-org-stamping-and-membership-mirror.test.sql"
+  - "supabase/tests/220-roster-team-from-membership.test.sql"
+  - "supabase/tests/230-writers-write-membership.test.sql"
+  - "supabase/tests/240-org-public-holidays.test.sql"
+glossary_owed: []
+schema_delta: "none — test code only; the helper lives in the rolled-back `tests` schema. The rename is MIR-16-e's (ADR-084)"
+requires_adr: true    # ADR-084, written at this PLAN, records the split
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-11-07T13:08:02Z" }
+  review: { passed: true, at: "2026-11-07T13:26:01Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+mir_phase: 4
+mir_plan_item: "P4-1"             # .ai/board/plans/calechip-multi-tenancy-plan.md:230-236
+verification_required: false
+expected_impact: []   # no behaviour changes in this slice; TEA-04 CHANGED moved to MIR-16-e (ADR-084)
+mir_detail: |
+  Slice 4 of P4-1 (ADR-084 decision 1). Narrowed at /plan MIR-16-d; the rename moved to MIR-16-e.
+  - `tests.member_role(text)`, created in `supabase/tests/_isolation.psql`, maps the application's
+    role word to the `public.member_role` value. It is the one place a test spells the admin value.
+  - `tests.seed()` and the files 040, 100, 120, 140, 220, 230 and 240 name the admin role only
+    through it. 250, 260, both 270s and 280 go to MIR-16-e, by count.
+  - `290-member-role-helper.test.sql`, new: its assertions hold on both sides of the rename.
+  - no migration, no `src/`, no seed or bootstrap change

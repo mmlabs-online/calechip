@@ -1,0 +1,82 @@
+# Copied from .ai/templates/ticket.yaml by `claude` on 2026-10-12, recording item P4-2 of
+# .ai/board/plans/calechip-multi-tenancy-plan.md. Not produced by /triage: no idea file promotes it.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-17
+title: "Client role checks take a team or org, every admin-only guard is replaced, and the router gains role guards"
+feature_ids: [MIR-17]   # ADR-063 row; written by the steward on the operator's decision of 2026-10-20
+group: MIR           # ADR-063: MIR is the eighth feature group
+state: DONE
+owner: ""
+branch: ""
+size_estimate: "M"   # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"            # S|M|L|XL - 12 allowed_paths at /plan MIR-17; P4-2 whole touches ~26 src files (L), so the rest split to MIR-17-b (ADR-088)
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-10, MIR-11, MIR-12, MIR-13, MIR-14, MIR-15, MIR-18, MIR-21, MIR-21-b, MIR-21-c, MIR-21-d, MIR-21-e, MIR-21-f, MIR-16, MIR-16-b, MIR-16-c, MIR-16-d, MIR-16-f, MIR-16-g, MIR-16-h]   # MIR-16-h added 2026-11-08 at /plan MIR-16-g (ADR-087 decision 3). MIR-16-g added 2026-11-08 at /plan MIR-16-f (ADR-086 decision 4). MIR-16-f added 2026-11-08 at /plan MIR-16-c (ADR-085 decision 3).MIR-16, -b and -c added 2026-11-07 at /plan MIR-16 (ADR-082 decision 5). MIR-16-d added 2026-11-07 at /plan MIR-16-b (ADR-083 decision 4). "Blocked by" — the MIR IDs that must be DONE first. MIR-21-b added 2026-11-05 at /plan MIR-21 (ADR-077 decision 6). MIR-21-c added 2026-11-05 at /plan MIR-21-b (ADR-078 decision 7). MIR-21-d, -e and -f added 2026-11-06 at /plan MIR-21-c (ADR-080 decision 6)
+invariants_touched: []
+allowed_paths:
+  - ".ai/registry/decisions/ADR-088-issue-reports-leave-the-member-app-first-and-the-rest-of-p4-2-is-mir-17-b.md"
+  - ".ai/board/tickets/MIR-17-b/ticket.yaml"
+  - ".ai/board/tickets/MIR-20/ticket.yaml"
+  - "src/routes/IssueReports.tsx"
+  - "src/components/AdminTabs.tsx"
+  - "src/components/AdminLayout.tsx"
+  - "src/components/ReportIssueButton.tsx"
+  - "src/lib/data/mock.ts"
+  - "tests/issue-reports.test.ts"
+  - "tests/e2e/solo-report-issue.spec.ts"
+  - "tests/e2e/uie-09-admin-hub.spec.ts"
+  - "tests/e2e/solo-admin-tabs.spec.ts"
+glossary_owed: []
+schema_delta: none   # confirmed at PLAN: client, mock and tests only (01-plan.md § 6)
+requires_adr: true   # ADR-088, written at this PLAN under ADR-067
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-11-08T07:13:19Z" }
+  review: { passed: true, at: "2026-11-08T07:37:20Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+# Not in .ai/templates/ticket.yaml. Added for the multi-tenancy plan; nothing in scripts/ reads them.
+# Plan status lives only in .ai/board/plans/multi-tenancy-status.md. `state` above is the loop's.
+mir_phase: 4
+mir_plan_item: "P4-2"             # .ai/board/plans/calechip-multi-tenancy-plan.md:238-244
+verification_required: false   # phase 0 and phase 3 — a passing mock test is not verification
+expected_impact:
+  - { feature: UIE-09, tag: CHANGED, why: "the hub's guard `me.role !== \"admin\"` is replaced (`AdminHub.tsx:72`)" }
+  - { feature: TEA-06, tag: CHANGED, why: "`canRemove`, `canPromote`, `canSetManager` are scoped (`MemberList.tsx:349-366`)" }
+  - { feature: TEA-11, tag: CHANGED, why: "the Teams guard is replaced (`Teams.tsx:81`) and managers stop being labelled \"Member\" (`Teams.tsx:337`)" }
+  - { feature: TEA-09, tag: CHANGED, why: "the sign-up screen guard is replaced (`NewSignups.tsx:76`)" }
+  - { feature: ADM-01, tag: CHANGED, why: "the threshold screen guard is replaced (`Threshold.tsx:125`)" }
+  - { feature: ADM-03, tag: CHANGED, why: "the holidays screen guard is replaced (`Holidays.tsx:216`)" }
+  - { feature: ADM-04, tag: CHANGED, why: "`mayDecide` / `mayDecideEntriesOf` take a team (`roles.ts:36-49`, `PendingEntries.tsx:245`, `:621`)" }
+  - { feature: ADM-07, tag: CHANGED, why: "the reports screen guard is replaced (`IssueReports.tsx:94`)" }
+  - { feature: CAL-03, tag: CHANGED, why: "the team-entries guard is replaced (`TeamEntries.tsx:82`)" }
+  - { feature: CAL-12, tag: CHANGED, why: "the admin-only team picker is re-keyed (`viewed-team.ts:61`, `:85`, `useViewedTeam.tsx:56,76`)" }
+  - { feature: EVT-01, tag: CHANGED, why: "`mayEditEvent` gains a team comparison (`EventDetail.tsx:51-53`)" }
+# [predicted] at plan time. Corrected at ship in .ai/board/plans/feature-change-log.md.
+mir_detail: |
+  Short names (tea04, cal11, …) are migrations, per the File legend in
+  .ai/board/audits/multi-tenancy-audit-2026-10-12.md:38-77. "A:n" is a line of that audit;
+  "plan:n" a line of .ai/board/plans/calechip-multi-tenancy-plan.md.
+
+  Plan P4-2 (plan:238-244):
+  - `mayAdminister`, `mayDecide`, `mayDecideEntriesOf` all take a team or org parameter (`src/lib/roles.ts`)
+  - Replace every `me.role !== "admin"` guard — `AdminHub`, `NewSignups`, `Threshold`, `Teams`,
+    `IssueReports`, `TeamEntries`, `Holidays`
+  - `canRemove`, `canPromote`, `canSetManager` scoped correctly (`MemberList.tsx:349-366`)
+  - `mayEditEvent` currently has no team comparison (`EventDetail.tsx:51-53`)
+  - `Teams.tsx:337` labels managers as "Member" — fix
+  - Router has no role guards at all; add them
+
+  Audit references (A:504-536, A:956-963):
+  - `src/lib/roles.ts:24`, `:36-37`, `:46-49`, `:59`; `MemberRole` `src/lib/domain/types.ts:21`
+  - `src/lib/viewed-team.ts:61`, `:85`; `src/hooks/useViewedTeam.tsx:56,76`
+  - `src/components/AdminLayout.tsx:133-137`, `:190-192`; `AdminTabs.tsx:323`; `TopBar.tsx:274-283`
+  - `AdminHub.tsx:72`, `NewSignups.tsx:76`, `Threshold.tsx:125`, `Teams.tsx:81`, `IssueReports.tsx:94`,
+    `TeamEntries.tsx:82`, `Holidays.tsx:216`
+  - `PendingEntries.tsx:245`, `:621`; `EditEntry.tsx:88-91`; `MemberList.tsx:148-153`, `349-366`
+  - `EventDetail.tsx:51-53`; `EventAttendancePanel.tsx:68-79` (`named` branch keyed on admin, `:77`)
+  - `Teams.tsx:337`; router `src/App.tsx` has no role guards
+  - Mock: `currentAdmin`, `eventIsAdmin`, `setRank` — `src/lib/data/mock.ts:366-369`, `661-662`, `413-431`

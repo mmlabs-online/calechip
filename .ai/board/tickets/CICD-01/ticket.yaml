@@ -1,0 +1,52 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-10-13 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: CICD-01
+title: "The pull-request gate is green on `main` again, with each failing end-to-end test quarantined against a ticket in a register"
+feature_ids: [CICD-01]
+group: CICD
+state: DONE
+owner: ""
+branch: "claude/epic-hawking-g9l2n8"   # SESSION-LEVEL OVERRIDE of /plan Step 0, 2026-10-13: the
+                                      # cloud session must stay on this branch, so feat/CICD-01 was
+                                      # neither created nor switched to. 01-plan.md § 7 records it.
+                                      # check-allowed-paths.mjs resolves a ticket only from feat/<ID>,
+                                      # so the path guard is INACTIVE on this branch; review R1 is
+                                      # the remaining control.
+size_estimate: "L"    # S|M - set by tech-lead-design at PLAN; gates DoR. L is honest, not a typo:
+                      # section 1's scope already names eight spec files. 01-plan.md § 7.
+size: "L"             # S|M|L|XL - nineteen allowed_paths. L must split at PLAN; it is not split,
+                      # and the operator accepted L unsplit on 2026-10-13 ("Accept L unsplit"),
+                      # waiving DoR item 5 for this ticket. 01-plan.md Changelog.
+depends_on: []
+invariants_touched: []   # considered: INV-01..INV-07 all constrain entries; no src/** change here
+allowed_paths:        # Enumerated by tech-lead-design at /plan, 2026-10-13 - 01-plan.md § 7.
+  - ".ai/registry/glossary.md"
+  - ".ai/standards/testing-standards.md"
+  - ".github/workflows/verify.yml"
+  - ".github/workflows/allowed-paths.yml"
+  - ".github/workflows/mir-tracking.yml"
+  - "scripts/check-docs.mjs"
+  - "scripts/tests/check-docs.test.mjs"
+  - "docs/ops/e2e-quarantine.md"
+  - "tests/e2e/adm-01-threshold.spec.ts"
+  - "tests/e2e/adm-02-holidays.spec.ts"
+  - "tests/e2e/adm-03-holiday-writes.spec.ts"
+  - "tests/e2e/adm-04-worklist.spec.ts"
+  - "tests/e2e/cal-06-year-view.spec.ts"
+  - "tests/e2e/uie-09-admin-hub.spec.ts"
+  - "tests/e2e/uie-10-sidebar.spec.ts"
+  - "tests/e2e/evt-09-create-invitation.spec.ts"
+  - ".ai/board/tickets/BUG-003/ticket.yaml"
+  - ".ai/board/tickets/BUG-004/ticket.yaml"
+  - ".ai/board/tickets/BUG-005/ticket.yaml"
+glossary_owed: [Quarantine]
+schema_delta: none
+requires_adr: true    # ADR-059 (the CICD group), ADR-060 (the quarantine), ACCEPTED by the operator 2026-10-13
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-10-13T10:01:57+00:00" }
+  review: { passed: true, at: "2026-10-13T14:37:06+00:00" }

@@ -1,0 +1,117 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git status)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git fetch:*)",
+      "Bash(git pull --ff-only)",
+      "Bash(git rev-parse:*)",
+      "Bash(git show-ref:*)",
+      "Bash(git add:*)",
+      "Bash(git rm:*)",
+      "Bash(git commit:*)",
+      "Bash(git switch:*)",
+      "Bash(git push origin feat/*)",
+      "Bash(git push -u origin feat/*)",
+      "Bash(git checkout -b feat/*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh auth status)",
+      "mcp__clickup__clickup_get_task",
+      "mcp__clickup__clickup_update_task",
+      "mcp__clickup__clickup_get_custom_fields",
+      "mcp__clickup__clickup_create_comment",
+      "mcp__clickup__clickup_filter_tasks",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(tree:*)",
+      "Bash(pwd)",
+      "Bash(echo:*)",
+      "Bash(date:*)",
+      "Bash(node --version)",
+      "Bash(pnpm --version)",
+      "Bash(node --test:*)",
+      "Bash(node scripts/check-docs.mjs)",
+      "Bash(node scripts/check-allowed-paths.mjs)",
+      "Bash(node scripts/check-allowed-paths.mjs:*)",
+      "Bash(node scripts/check-carry.mjs:*)",
+      "Bash(pnpm typecheck)",
+      "Bash(pnpm lint)",
+      "Bash(pnpm test)",
+      "Bash(pnpm exec tsc:*)",
+      "Bash(pnpm exec eslint:*)",
+      "Bash(pnpm exec vitest:*)",
+      "Bash(pnpm exec playwright:*)",
+      "Bash(pnpm exec vite:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm db:test)",
+      "Bash(pnpm exec supabase:*)",
+      "Bash(node_modules/.bin/supabase:*)",
+      "Bash(git push *)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git push origin main:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(gh pr merge:*)",
+      "mcp__clickup__clickup_delete_task",
+      "mcp__clickup__clickup_merge_tasks",
+      "mcp__clickup__clickup_move_task",
+      "mcp__clickup__clickup_send_chat_message",
+      "mcp__clickup__clickup_search",
+      "mcp__clickup__clickup_get_workspace_hierarchy"
+    ],
+    "additionalDirectories": []
+  },
+  "disableClaudeAiConnectors": true,
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/chat-guard.mjs\""
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__clickup__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-tracker-scope.mjs\""
+          }
+        ]
+      },
+      {
+        "matcher": "Agent|Task|SendMessage",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/chat-guard.mjs\""
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Grep|Glob|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-read-scope.mjs\""
+          }
+        ]
+      }
+    ]
+  }
+}

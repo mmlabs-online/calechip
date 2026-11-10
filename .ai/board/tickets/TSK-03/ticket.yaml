@@ -1,0 +1,31 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-10-12 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: TSK-03
+title: "A member declaring PTO is warned about their own tasks on those days, without being stopped"
+feature_ids: [TSK-03]
+group: TSK
+state: DONE         # `orchestrator` at /ship, 2026-10-17, on 04-review.md `gate: PASS` / `verdict: PASS`
+owner: ""
+branch: ""
+size_estimate: "S"    # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "S"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting
+depends_on: [TSK-01]
+invariants_touched: []
+allowed_paths:
+  - "src/lib/pto-tasks.ts"
+  - "src/components/PtoTaskWarning.tsx"
+  - "src/components/EntryForm.tsx"
+  - "src/routes/Tasks.tsx"
+  - "tests/pto-tasks.test.ts"
+  - "tests/e2e/tsk-03-pto-task-warning.spec.ts"
+glossary_owed: []     # considered; "Task" and "Overdue" are owed by TSK-01
+schema_delta: none
+requires_adr: true    # ADR-057, ACCEPTED by the operator 2026-10-12
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-10-17T23:17:11+07:00" }
+  review: { passed: true, at: "2026-10-17T23:33:03+07:00" }

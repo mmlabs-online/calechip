@@ -1,0 +1,28 @@
+# Tracker binding. Registry plane — human-only (RULE-01).
+# Empty allowed_list_ids means BLOCKED, not unrestricted (RULE-18).
+#
+# TODO(project): fill every id below from the tracker's own UI, by ID, never by name.
+# guard-tracker-scope.mjs refuses any call whose target is not resolvable against this file, and it
+# fails closed: while allowed_list_ids is empty every tracker call is blocked. That is the intended
+# shipping state, not a misconfiguration - a project with no tracker never touches these lines and
+# leaves sync_enabled false on every ticket.
+provider: ""                       # the MCP server itself is declared in .mcp.json
+
+workspace_id: ""
+space_id: ""
+folder_id: ""
+allowed_list_ids: []
+intake_list_id: ""
+
+custom_fields:                     # blank until created in the tracker UI; do not guess
+  feature_id: ""
+  gate_state: ""
+  rework_count: ""
+  invariants_touched: ""
+  escalation_reason: ""
+  pr_url: ""
+
+rules:
+  id_only: true
+  read_scope: allowed_list_ids
+  write_scope: allowed_list_ids

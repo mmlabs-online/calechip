@@ -1,0 +1,37 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-10-08 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: EVT-04
+title: "A person is notified in the app when an event concerns them"
+feature_ids: [EVT-04]
+group: EVT
+state: DONE
+owner: ""
+branch: "feat/EVT-04"
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; twelve paths, 01-plan.md § 7
+depends_on: []        # EVT-01 and EVT-02 are DONE and merged
+invariants_touched: []  # PLAN answered it: none reachable — 01-plan.md § 2, Invariants touched
+allowed_paths:
+  - ".ai/registry/glossary.md"
+  - ".ai/standards/data-model.md"
+  - ".ai/standards/rbac-and-security.md"
+  - "supabase/migrations/20261008120000_evt04_notification.sql"
+  - "src/lib/domain/types.ts"
+  - "src/lib/data/index.ts"
+  - "src/lib/data/supabase.ts"
+  - "src/lib/data/mock.ts"
+  - "src/components/NotificationBell.tsx"
+  - "src/components/TopBar.tsx"
+  - "tests/notifications.test.ts"
+  - "tests/e2e/evt-04-notifications.spec.ts"
+glossary_owed: [Notification]
+schema_delta: "A notification table, its row-level policies, and triggers on the event and attendance tables — ADR-050"
+requires_adr: true    # ADR-050, ACCEPTED by product 2026-10-08
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-10-08T14:12:06+0000" }
+  review: { passed: true, at: "2026-10-08T14:35:54+0000" }

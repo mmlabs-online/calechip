@@ -1,0 +1,72 @@
+# Copied from .ai/templates/ticket.yaml by `claude` on 2026-10-12, recording item P0-2 of
+# .ai/board/plans/calechip-multi-tenancy-plan.md. Not produced by /triage: no idea file promotes it.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-02
+title: "A member's own role, status and team can be changed only through bounded, definer-checked paths"
+feature_ids: [MIR-02]   # ADR-063 row; written by the steward on the operator's decision of 2026-10-20
+group: MIR           # ADR-063: MIR is the eighth feature group
+state: DONE
+owner: ""
+branch: ""
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting
+depends_on: []   # "Blocked by" — the MIR IDs that must be DONE first
+invariants_touched: [INV-04, INV-07]
+allowed_paths:
+  - "supabase/migrations/20261020120000_mir02_member_self_writes.sql"
+  - "supabase/migrations/20260910093000_solo_profile_self_update.sql"   # comment lines only, 01-plan.md § 4.2
+  - "src/lib/data/supabase.ts"
+  - "src/lib/data/mock.ts"
+  - "src/lib/data/index.ts"
+  - "tests/member-self-writes.test.ts"
+  - ".ai/registry/decisions/ADR-064-a-person-cannot-change-their-own-role-status-or-team.md"
+  - ".ai/board/tickets/MIR-02/**"
+glossary_owed: []
+schema_delta: "REPLACE FUNCTION member_enforce_role_and_removal (self clause) + REVOKE update (role, status, team_id) on member from authenticated + CREATE definer functions reject_member(uuid), set_member_team(uuid, uuid) (ADR-064)"
+requires_adr: true    # .ai/registry/decisions/ADR-064-a-person-cannot-change-their-own-role-status-or-team.md, ACCEPTED by the operator 2026-10-20 ("a")
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-10-20T13:51:39+07:00" }
+  review: { passed: true, at: "2026-10-20T14:36:13+07:00" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+# Not in .ai/templates/ticket.yaml. Added for the multi-tenancy plan; nothing in scripts/ reads them.
+# Plan status lives only in .ai/board/plans/multi-tenancy-status.md. `state` above is the loop's.
+mir_phase: 0
+mir_plan_item: "P0-2"             # .ai/board/plans/calechip-multi-tenancy-plan.md:76-81
+verification_required: true   # phase 0 and phase 3 — a passing mock test is not verification
+expected_impact:
+  - { feature: TEA-10, tag: CHANGED, why: "the profile write keeps name and avatar; the grant it shares no longer carries `role`, `status` or `team_id`" }
+  - { feature: TEA-04, tag: CHANGED, why: "role and removal writes move behind definer RPCs instead of the column grant" }
+  - { feature: TEA-09, tag: CHANGED, why: "rejecting a sign-up writes `status` / `team_id` through an RPC instead of a plain update (`supabase.ts:1476-1481`)" }
+  - { feature: TEA-11, tag: CHANGED, why: "moving a member writes `team_id` through an RPC instead of a plain update (`supabase.ts:1609-1614`)" }
+# [predicted] at plan time. Corrected at ship in .ai/board/plans/feature-change-log.md.
+mir_detail: |
+  Short names (tea04, cal11, …) are migrations, per the File legend in
+  .ai/board/audits/multi-tenancy-audit-2026-10-12.md:38-77. "A:n" is a line of that audit;
+  "plan:n" a line of .ai/board/plans/calechip-multi-tenancy-plan.md.
+
+  Plan P0-2 (plan:76-81):
+  - Record a reproduction against the real database first — steps in
+    `.ai/board/audits/multi-tenancy-audit-2026-10-12-repro.md` § MIR-02
+  - Extend trigger `member_enforce_role_and_removal` to refuse a member changing their own `role`,
+    `status` or `team_id`
+  - Revoke `update (role, status, team_id)` from `authenticated` where the column is not needed;
+    route those writes through definer RPCs instead
+  - Reconcile the stale comment at `profile_self_update.sql:13-17`
+  - Add a pgTAP test proving the change. **That step depends on MIR-05 (P1-1); until MIR-05 is DONE
+    the verification is a manual check recorded in the PR** (plan:81)
+
+  Audit references (A:11-36, A:750-758):
+  - Column grants to `authenticated`: `tea04:29` `update (role, removed_at)`,
+    `profile_self_update:39` `update (display_name, avatar)`, `member_approval:173`
+    `update (status, team_id)`
+  - Policy `member_update_own` at `profile_self_update:61-64`
+  - Trigger `member_enforce_role_and_removal`, final version `profile_self_update:117-204`
+  - Stale comment `profile_self_update.sql:13-17` (made untrue by `member_approval.sql`)
+  - The mock's `updateOwnProfile` writes only name and avatar, so no current test covers this (A:35-36)
+  - `setMemberTeam` `supabase.ts:1609-1614` relies on `member_update_admin` plus `member_update_own` (A:386)

@@ -1,0 +1,66 @@
+# Copied from .ai/templates/ticket.yaml by `claude` on 2026-10-12, recording item P0-3 of
+# .ai/board/plans/calechip-multi-tenancy-plan.md. Not produced by /triage: no idea file promotes it.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-03
+title: "Role changes are bounded to members the admin administers, promotion to admin is a separately gated action, and every role change records its actor"
+feature_ids: [MIR-03]   # ADR-063 row; written by the steward on the operator's decision of 2026-10-20
+group: MIR           # ADR-063: MIR is the eighth feature group
+state: DONE
+owner: ""
+branch: ""
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting
+depends_on: []   # "Blocked by" — the MIR IDs that must be DONE first
+invariants_touched: [INV-07]
+allowed_paths:
+  - "supabase/migrations/20261020150000_mir03_bounded_role_changes.sql"
+  - "src/lib/data/supabase.ts"
+  - "src/lib/data/mock.ts"
+  - "src/lib/data/index.ts"
+  - "src/routes/MemberList.tsx"
+  - "tests/role-change-bounds.test.ts"
+  - "tests/cross-team-role.test.ts"
+  - "tests/notifications.test.ts"   # beforeAll fixture setup only (99-questions.md round 1)
+  - "tests/tasks.test.ts"           # beforeAll fixture setup only (99-questions.md round 1)
+  - ".ai/registry/decisions/ADR-065-role-changes-are-own-team-promotion-is-its-own-action-and-every-change-is-recorded.md"
+  - ".ai/registry/decisions/ADR-044-an-admin-sets-a-rank-on-any-team.md"   # supersession note under § Status only
+  - ".ai/board/tickets/MIR-03/**"
+glossary_owed: []
+schema_delta: "REPLACE FUNCTION set_member_role (own-team conjunct, refuses admin) + CREATE definer function promote_member_to_admin(uuid) + CREATE TABLE member_role_change (RLS on, no policy, no grant) + CREATE trigger function member_record_role_change and AFTER UPDATE OF role trigger on member (ADR-065)"
+requires_adr: true    # .ai/registry/decisions/ADR-065-role-changes-are-own-team-promotion-is-its-own-action-and-every-change-is-recorded.md, ACCEPTED by the operator 2026-10-20 ("Q1. A / Q2. A")
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 1, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-10-20T15:03:32+07:00" }
+  review: { passed: true, at: "2026-10-20T15:19:15+07:00" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+# Not in .ai/templates/ticket.yaml. Added for the multi-tenancy plan; nothing in scripts/ reads them.
+# Plan status lives only in .ai/board/plans/multi-tenancy-status.md. `state` above is the loop's.
+mir_phase: 0
+mir_plan_item: "P0-3"             # .ai/board/plans/calechip-multi-tenancy-plan.md:83-86
+verification_required: true   # phase 0 and phase 3 — a passing mock test is not verification
+expected_impact:
+  - { feature: TEA-08, tag: SUPERSEDED, why: "an admin no longer sets a rank on *any* team. Replaced by: a rank is set only for members the admin actually administers, and promotion to admin is a separate, separately gated action" }
+  - { feature: TEA-04, tag: CHANGED, why: "promoting a member to admin no longer goes through `set_member_role` (`promoteMember` → `setRankThroughRpc`, `supabase.ts:1628-1634`)" }
+  - { feature: TEA-12, tag: CHANGED, why: "making someone a manager is bounded to members the admin administers" }
+# [predicted] at plan time. Corrected at ship in .ai/board/plans/feature-change-log.md.
+mir_detail: |
+  Short names (tea04, cal11, …) are migrations, per the File legend in
+  .ai/board/audits/multi-tenancy-audit-2026-10-12.md:38-77. "A:n" is a line of that audit;
+  "plan:n" a line of .ai/board/plans/calechip-multi-tenancy-plan.md.
+
+  Plan P0-3 (plan:83-86):
+  - Add a team/org condition — an admin may only change roles for members they actually administer
+  - Refuse promotion to `admin` through this path entirely; make it a deliberate, separately-gated action
+  - Record the actor of every role change
+
+  Audit references:
+  - `set_member_role`, `cross_team_role:92-120`: `security definer`, gate `if not public.is_admin(...)`
+    at `cross_team_role:98`, predicate with no team condition, `m.role <> 'admin'` at `cross_team_role:108`
+    (A:572-576, A:393)
+  - Client entry points `supabase.ts:977` and `promoteMember` → `setRankThroughRpc`, `supabase.ts:1628-1634` (A:583-584)
+  - The only actor fields today are `approved_by` and `notification.actor_id` (A:1019)

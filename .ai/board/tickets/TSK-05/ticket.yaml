@@ -1,0 +1,37 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-10-15 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: TSK-05
+title: "Ticking a task done or not done changes on screen at once, and the server's answer confirms or undoes it"
+feature_ids: [TSK-05]
+group: TSK
+state: DONE
+owner: ""
+branch: ""
+size_estimate: S     # S|M - set by tech-lead-design at PLAN; gates DoR
+size: S              # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting
+depends_on: [TSK-01]
+invariants_touched: []   # written explicitly at PLAN, 01-plan.md § 2
+allowed_paths:
+  - "src/lib/task-tick.ts"
+  - "src/routes/Tasks.tsx"
+  - "tests/task-tick.test.ts"
+  - "tests/e2e/tsk-05-optimistic-tick.spec.ts"
+  - "tests/e2e/tsk-01-tasks.spec.ts"
+glossary_owed: []     # terms /triage found missing from .ai/registry/glossary.md; PLAN writes the rows (ADR-047)
+schema_delta: none
+requires_adr: false
+rework_count: 0
+chat_budget:
+  # ADR-019 retired `ba` from the loop, so the two `->ba` edges are gone. They are not listed as
+  # zeroes: an edge nobody can walk is not a budget, it is a row that invites someone to try.
+  developer->tech-lead-design: { used: 0, max: 6 }
+  # ADR-022 removed the QA stage, and the `qa->tech-lead-design` edge with it.
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-10-16T07:47:24+07:00" }   # ADR-019 merged the `spec` and `design` gates into one
+  review: { passed: true, at: "2026-10-16T08:11:59+07:00" }
+  # There is no `qa` gate. ADR-017 waived it on 2026-09-01, ADR-021 reverted that the same
+  # afternoon, and ADR-022 removed the stage outright. Tickets planned before that date carry a
+  # `qa` key; three of them carry `waived: true`. `/ship` requires `plan` and `review`.
+

@@ -1,0 +1,126 @@
+# Copied from .ai/templates/ticket.yaml at /triage (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: IDEA TRIAGE BACKLOG SPEC READY DESIGN IN_PROGRESS REVIEW QA REWORK ESCALATED DONE
+id: CAL-03
+title: "Edit or delete another member's entry, as an admin"
+feature_ids: [CAL-03]
+group: CAL
+state: DONE      # orchestrator at /ship, 2026-09-03, on 04-review.md `gate: PASS` /
+                 # `next_state: DONE`. ADR-022 removed the QA stage, so REVIEW -> DONE is the whole
+                 # remaining transition (.ai/01-operating-model.md:36)
+owner: ""
+branch: "feat/CAL-03"
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR. Read from 01-plan.md
+                      # section 1. Twelve files, two new. The migration is the smallest this board
+                      # has produced - two policies, no grant, no new object - and the weight is on
+                      # the surface: an admin needs a way to REACH another member's entry and no
+                      # such read exists yet.
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. Counted from
+                      # the twelve allowed_paths below, 01-plan.md section 7. AGREES with
+                      # size_estimate; ADR-012 is not engaged. Twelve is M's ceiling - the figure
+                      # TEA-05 fixed - so nothing splits, but there is no headroom left.
+depends_on: [CAL-02]
+invariants_touched: [INV-01, INV-02, INV-06, INV-07]
+# 01-plan.md section 2. The four the CAL-03 row in features.md lists; this plan adds none.
+#
+# INV-01: held by the exclusion constraint CAL-01 shipped. THE SUBTLETY THIS TICKET INTRODUCES is
+# WHOSE entries it compares - the constraint keys on `member_id`, so an admin editing somebody
+# else's row collides with THAT MEMBER's other entries and never with the admin's own (AC-9). That
+# is the case an implementation written from the admin's point of view gets wrong.
+# INV-02: held by public.entry_enforce_decision(), which is ACTOR-BLIND BY DECISION (ADR-016 s2).
+# This ticket changes the function NOT AT ALL and must not add an actor carve-out; AC-3 and AC-4
+# exist to observe that an admin's edit produces the owner's reset and the owner's note carve-out.
+# INV-06: column shape, untouched.
+# INV-07: held by THREE things together - `member_id` absent from CAL-02's update grant, the new
+# admin policy's `with check` on team, and the not-null reference. AC-8 IS THE ONE WITH NO MECHANISM
+# OF ITS OWN if the team predicate is omitted: `using (public.is_admin(auth.uid()))` alone reads
+# correct, passes every test a one-team fixture can carry, and lets an admin of any team edit every
+# entry in the product at P2. ADR-016 Consequences names that exact shape.
+#
+# INV-03, INV-04 and INV-05 are DELIBERATELY ABSENT, stated rather than omitted. INV-03 is
+# unreachable: `rejection_reason` is not in the update grant and this ticket does not widen it.
+# INV-04 and INV-05 are the absence count - this ticket computes none, reads no threshold, reads no
+# roster.
+# allowed_paths - 01-plan.md section 7. Twelve globs, twelve files; two are new (the migration and
+# src/routes/TeamEntries.tsx).
+#
+# NO INLINE COMMENTS ON THE ITEMS. `readYamlList` in scripts/check-allowed-paths.mjs and in
+# .claude/hooks/guard-allowed-paths.mjs strips only a LEADING and a TRAILING quote, so a trailing
+# `# ...` is swallowed into the pattern and the glob then matches nothing.
+#
+# DELIBERATELY ABSENT, each with its reason in 01-plan.md section 7: tests/e2e/cal-02-edit-delete-
+# entry.spec.ts (THE SAFETY NET for the EditEntry.tsx change - must pass UNEDITED); tests/e2e/cal-01-
+# create-entry.spec.ts (AC-6's create path is CAL-01's policy unmodified and that suite proves it
+# still refuses); tests/seam-parity.test.ts (follows the seam unedited); the other three e2e specs;
+# src/components/EntryForm.tsx (CAL-02's extraction used unchanged - a form that behaved differently
+# for an admin would be a second place the permission model is expressed); src/routes/NewEntry.tsx
+# (the own-entry list is unchanged); src/routes/MemberList.tsx and AllowList.tsx (the admin-refusal
+# shape is COPIED from them, not edited into them); every shipped migration;
+# .ai/standards/rbac-and-security.md (known weakness 3 is MADE REAL by this ticket and its text is
+# owed a HUMAN amendment - standards plane, RULE-01).
+allowed_paths:
+  - "supabase/migrations/20260903*_cal03_admin_entry_writes.sql"
+  - "supabase/seed.sql"
+  - "src/lib/fixtures.ts"
+  - "src/lib/domain/types.ts"
+  - "src/lib/data/index.ts"
+  - "src/lib/data/supabase.ts"
+  - "src/lib/data/mock.ts"
+  - "src/routes/TeamEntries.tsx"
+  - "src/routes/EditEntry.tsx"
+  - "src/routes/Home.tsx"
+  - "src/App.tsx"
+  - "tests/e2e/cal-03-admin-edit-entry.spec.ts"
+schema_delta: adds `entry_update_admin` and `entry_delete_admin`, both `using (is_admin(uid) and the entry's member is on the caller's team)`, the update policy additionally `with check` on team — **not `none`** per ADR-014. TWO POLICIES AND NOTHING ELSE: no grant (CAL-02's are role-blind and already held), no insert policy ever, no change to entry_enforce_decision(), no edit to CAL-02's policies. Linked and approved: ADR-005, ADR-014, ADR-016, ADR-018. 01-plan.md section 6.
+requires_adr: true   # CORRECTED from `false` by tech-lead-design at PLAN. It sat beside a
+                     # schema_delta that was already NOT `none`, the same contradiction CAL-02's
+                     # shell carried. NO NEW ADR IS WRITTEN: every decision in section 6 sits inside
+                     # ADR-005, ADR-014, ADR-016 and ADR-018, all four already ACCEPTED, and
+                     # Definition of Ready item 4 asks for an approved ADR to be LINKED rather than
+                     # for a new one to be authored. ADR-016 Consequences predicts this ticket's
+                     # policy by name and states the failure it must avoid.
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+  developer->ba:               { used: 0, max: 6 }
+  qa->ba:                      { used: 0, max: 6 }
+  qa->tech-lead-design:        { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  # MIGRATED by `orchestrator` at /ship on 2026-09-03, from the four pre-ADR-019 keys `spec`,
+  # `design`, `review`, `qa`. ADR-019 merged the first two into one `plan` gate; ADR-022 removed the
+  # QA stage. This shell was created on 2026-08-31 and predates both.
+  #
+  # FOURTH TICKET RUNNING, AND STILL NOBODY OWNS THIS. TEA-05 was migrated by `tech-lead-design` at
+  # PLAN, CAL-01 by `developer` at /implement, CAL-02 and CAL-03 by `orchestrator` at /ship. Four
+  # tickets, three roles, none of them instructed to do it — and /ship reads `gates.plan` as a
+  # precondition, so a shell that reaches it unmigrated presents a key that does not exist. Every
+  # remaining shell created before 2026-09-01 carries the same four keys. Recorded here for the
+  # fourth time rather than fixed, because fixing it is a change to a command or a D-check and that
+  # is steward work on an `ops/` branch, not something /ship decides while shipping.
+  #
+  # Neither value is inferred. Each gate is QUOTED from the artifact that carries it:
+  #   plan   -> 01-plan.md:5   `produced_at: 2026-09-03T14:22:53+07:00`, `gate: PASS`
+  #   review -> 04-review.md:5 `produced_at: 2026-09-03T15:05:22+07:00`, `gate: PASS`
+  plan:   { passed: true, at: 2026-09-03T14:22:53+07:00 }
+  review: { passed: true, at: 2026-09-03T15:05:22+07:00 }
+  qa:     { passed: false, at: null }
+  #
+  # `qa` STAYS false AND IS NOT REQUIRED — ADR-022 removed the stage, nothing produces this gate,
+  # and /ship must never write one that no stage produces. Not a waiver; there is no QA artifact.
+  #
+  # THE DEFINITION OF READY WAS GRADED, and this comment is its only record. `orchestrator` graded
+  # all six items at /next-ticket on 2026-09-03, between PLAN and /implement, six of six PASS. Item 4
+  # is the one worth naming: it FAILED at BACKLOG — `schema_delta` is not `none` and no ADR was
+  # linked — and PLAN discharged it by linking four already-approved decisions rather than authoring
+  # a fifth: ADR-005, ADR-014, ADR-016 and ADR-018. PLAN also corrected `requires_adr` false -> true.
+  # /next-ticket writes no file, so without this the grade leaves no trace in the tree.
+
+# Created by `product` at /triage on 2026-08-31, promoting
+# .ai/board/ideas/2026-08-31-a-plan-has-nowhere-to-be-written-down.md.
+#
+# Definition of Ready items 1, 3, 4 and 6 are filled here. Items 2 and 5 belong to the BA at SPEC.
+#
+# Its own row in the permission table and its own policy, separate from CAL-02. It is the only
+# ticket carrying known weakness 3 in .ai/standards/rbac-and-security.md — v1 records no trace that
+# an admin edited somebody else's entry.

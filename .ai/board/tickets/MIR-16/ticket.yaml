@@ -1,0 +1,83 @@
+# Copied from .ai/templates/ticket.yaml by `claude` on 2026-10-12, recording item P4-1 of
+# .ai/board/plans/calechip-multi-tenancy-plan.md. Not produced by /triage: no idea file promotes it.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-16
+title: "The database splits admin into system_admin, org_admin and a per-team manager"
+feature_ids: [MIR-16]   # ADR-063 row; written by the steward on the operator's decision of 2026-10-20
+group: MIR           # ADR-063: MIR is the eighth feature group
+state: DONE   # `orchestrator` at /ship, 2026-11-07
+owner: ""
+branch: ""
+size_estimate: "M"   # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"            # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. 12 paths after ADR-082's split and the re-plan of 2026-11-07 (060 in, MIR-20's ticket.yaml out); whole, P4-1 is more than 12 (L) — 01-plan.md § 7
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-10, MIR-11, MIR-12, MIR-13, MIR-14, MIR-15, MIR-18, MIR-21, MIR-21-b, MIR-21-c, MIR-21-d, MIR-21-e, MIR-21-f]   # "Blocked by" — the MIR IDs that must be DONE first. MIR-21-b added 2026-11-05 at /plan MIR-21 (ADR-077 decision 6). MIR-21-c added 2026-11-05 at /plan MIR-21-b (ADR-078 decision 7). MIR-21-d, -e and -f added 2026-11-06 at /plan MIR-21-c (ADR-080 decision 6)
+invariants_touched: []
+allowed_paths:
+  - ".ai/registry/decisions/ADR-082-the-role-split-goes-in-three-slices-and-issue-reports-go-to-the-system-panel-first.md"
+  - ".ai/board/tickets/MIR-16-b/ticket.yaml"
+  - ".ai/board/tickets/MIR-16-c/ticket.yaml"
+  - ".ai/board/tickets/MIR-17/ticket.yaml"
+  - "supabase/migrations/20261107210000_mir16_issue_reports_system_scope.sql"
+  - "supabase/tests/270-issue-reports-system-scope.test.sql"
+  - "supabase/tests/010-catalogue.test.sql"
+  - "supabase/tests/160-read-path-org-bound.test.sql"
+  - "supabase/tests/060-removed-and-pending.test.sql"
+  - "src/lib/data/system.ts"
+  - "src/system/main.tsx"
+  - "tests/e2e/mir-16-issue-reports.spec.ts"
+glossary_owed: []
+schema_delta: "20261107210000_mir16_issue_reports_system_scope.sql — drops issue_report_select_admin, issue_report_update_admin and the storage policy issue_image_select_admin; adds issue_image_select_system and two aal2-gated definer RPCs, list_issue_reports() and set_issue_report_status(uuid, public.issue_status). No table, column or grant change (ADR-082; 01-plan.md § 6)"
+requires_adr: true    # ADR-082, written at this PLAN under ADR-067
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-11-07T08:42:01Z" }
+  review: { passed: true, at: "2026-11-07T08:49:34Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+# Not in .ai/templates/ticket.yaml. Added for the multi-tenancy plan; nothing in scripts/ reads them.
+# Plan status lives only in .ai/board/plans/multi-tenancy-status.md. `state` above is the loop's.
+mir_phase: 4
+mir_plan_item: "P4-1"             # .ai/board/plans/calechip-multi-tenancy-plan.md:230-236
+verification_required: false   # phase 0 and phase 3 — a passing mock test is not verification
+expected_impact:
+  - { feature: TEA-12, tag: SUPERSEDED, why: "manager is no longer one global value on `member.role`. Replaced by: `membership.role_in_team`, a manager of one team who approves and sets team config (plan:26)" }
+  - { feature: TEA-09, tag: CHANGED, why: "the sign-up queue is decided by `org_admin` (operator, 2026-10-12) — today's admin, bounded to their org — instead of by any admin across the system" }
+  - { feature: ADM-07, tag: SUPERSEDED, why: "an admin no longer reads every report. Replaced by: issue reports re-pointed to system scope" }
+  - { feature: TEA-04, tag: CHANGED, why: "promotion is to `org_admin`; `admin` is no longer a value" }
+  - { feature: TEA-08, tag: CHANGED, why: "ranks become `org_admin` | `member` on `member.role`, with manager per team" }
+  - { feature: ADM-03, tag: CHANGED, why: "holiday writes re-pointed: national set system-owned, org days layered (plan:41-42, 47)" }
+  - { feature: ADM-05, tag: CHANGED, why: "`may_decide` gains a team parameter (`manager_role:62`)" }
+  - { feature: EVT-01, tag: CHANGED, why: "the admin override over every event is re-pointed (`evt01:134-142`, `evt02:332-346`)" }
+  - { feature: EVT-02, tag: CHANGED, why: "an admin's decision on any event's attendance is re-pointed (`may_manage_event`)" }
+  - { feature: EVT-06, tag: CHANGED, why: "an admin opening any event to guests is re-pointed (`may_manage_event`, rbac-and-security.md:81)" }
+# [predicted] at plan time. Corrected at ship in .ai/board/plans/feature-change-log.md.
+mir_detail: |
+  Short names (tea04, cal11, …) are migrations, per the File legend in
+  .ai/board/audits/multi-tenancy-audit-2026-10-12.md:38-77. "A:n" is a line of that audit;
+  "plan:n" a line of .ai/board/plans/calechip-multi-tenancy-plan.md.
+
+  Plan P4-1 (plan:230-236). The audit's count — 4 checks mean team, 3 groups org, 4 groups system — is the
+  migration map (plan:228, A:494-502):
+  - `system_admin` as a separate account type, not a value on `member.role`
+  - `member.role` becomes `org_admin` | `member`; team-level `manager` moves to `membership.role_in_team`
+  - Replace `is_admin(uid)` with `is_org_admin(uid, org_id)` and `is_system_admin(uid)` across ~25 call sites
+  - `may_decide(uid)` gains a team parameter (`manager_role:62` hardcodes the role list)
+  - Re-point the four system-scope groups: sign-up queue, holidays, issue reports, event override
+    DECIDED by the operator, 2026-10-12: the sign-up queue is decided by `org_admin`, not `system_admin`.
+  - Resolve the demotion trigger's ambiguity between the two admin kinds (`profile_self_update:165`)
+
+  Audit references (A:941-963):
+  - Enum `'admin'` and rank order — `tea01:22`, `manager_role:36`
+  - `is_admin` — `member_approval:69-78`, ~25 policies and functions
+  - `may_decide` — `manager_role:62`
+  - Demotion trigger — `profile_self_update:165`
+  - `set_member_role` — `cross_team_role:108`, `supabase.ts:1628-1634`
+  - Bootstrap writes `'admin'` — `supabase/bootstrap.sql:193`
+  - A `system_admin` with no `member` row lands on NotOnATeam — `src/hooks/useSession.ts:89-93`
+  - System-scope groups: sign-up `member_approval:138-167`; holidays `adm03:35-50`; issue reports
+    `issue:108-132`, `issue_img:148-153`; event override `evt01:134-142`, `evt02:332-346`
+  - Org-scope groups: `many_teams:53-206`, `cal11:33-65`, `cross_team_role:92-120`

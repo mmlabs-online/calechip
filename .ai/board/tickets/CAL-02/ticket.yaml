@@ -1,0 +1,117 @@
+# Copied from .ai/templates/ticket.yaml at /triage (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: IDEA TRIAGE BACKLOG SPEC READY DESIGN IN_PROGRESS REVIEW QA REWORK ESCALATED DONE
+id: CAL-02
+title: "Edit or delete their own entry"
+feature_ids: [CAL-02]
+group: CAL
+state: DONE      # orchestrator at /ship, 2026-09-03, on 04-review.md `gate: PASS` /
+                 # `next_state: DONE`. ADR-022 removed the QA stage, so REVIEW -> DONE is the whole
+                 # remaining transition (.ai/01-operating-model.md:36)
+# Set by developer at /implement on 2026-09-03, 03-impl-log.md gate PASS.
+# IT WAS STILL `BACKLOG` WHEN /implement STARTED, though 01-plan.md carries gate PASS and
+# next_state READY - PLAN wrote every other field of this shell and left this one. Recorded rather
+# than backfilled: this command owns the transition INTO REVIEW and not the two before it, and the
+# gates block below is the orchestrator's.
+owner: ""
+branch: "feat/CAL-02"
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR. Read from 01-plan.md
+                      # section 1. Eleven files, three new, one migration adding two policies, one
+                      # column grant and one `create or replace` of an existing function.
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. Counted from
+                      # the eleven allowed_paths below, 01-plan.md section 7. AGREES with
+                      # size_estimate; ADR-012 is not engaged and nothing splits.
+depends_on: [CAL-01]
+invariants_touched: [INV-01, INV-02, INV-06, INV-07]
+# 01-plan.md section 2. The same four the CAL-02 row in features.md lists; this plan adds none.
+# INV-01 and INV-02 are held by the constraint and the trigger CAL-01 SHIPPED - this ticket opens
+# the update path that reaches them for the first time and OBSERVES them (AC-4, AC-5, AC-6, AC-7)
+# rather than reimplementing either. INV-02's trigger is `create or replace`d here for `updated_at`
+# (section 6), so clause (c) must come through character-identical: a replacement that quietly
+# changes the reset is a broken invariant with a passing diff, and R8 reads it line by line against
+# 20260903103000_cal01_entry.sql.
+#
+# INV-03, INV-04 and INV-05 are DELIBERATELY ABSENT, stated rather than omitted. INV-03 is
+# unreachable: `rejection_reason` is not in this ticket's update grant, so no permitted statement
+# moves it. INV-04 and INV-05 are the absence count - this ticket computes none, reads no threshold
+# and reads no roster. Changing rows the count will later sum is what every write ticket does.
+# allowed_paths - 01-plan.md section 7. Eleven globs, eleven files; three are new (the migration,
+# src/components/EntryForm.tsx, src/routes/EditEntry.tsx).
+#
+# NO INLINE COMMENTS ON THE ITEMS. `readYamlList` in scripts/check-allowed-paths.mjs and in
+# .claude/hooks/guard-allowed-paths.mjs strips only a LEADING and a TRAILING quote, so a trailing
+# `# ...` is swallowed into the pattern and the glob then matches nothing.
+#
+# DELIBERATELY ABSENT, each with its reason in 01-plan.md section 7: src/lib/domain/types.ts (CAL-01
+# already carries Entry, the three enums and the three failure codes); tests/e2e/cal-01-create-
+# entry.spec.ts (IT IS THE SAFETY NET for the EntryForm extraction and must pass UNEDITED);
+# tests/seam-parity.test.ts (follows the seam unedited); the other three e2e specs (untouched);
+# supabase/migrations/20260903103000_cal01_entry.sql (a SHIPPED migration is never edited - the
+# function change is a `create or replace` in this ticket's own file); .ai/standards/data-model.md
+# (standards plane, RULE-01, owed a human edit).
+allowed_paths:
+  - "supabase/migrations/20260903*_cal02_own_entry_writes.sql"
+  - "supabase/seed.sql"
+  - "src/lib/fixtures.ts"
+  - "src/lib/data/index.ts"
+  - "src/lib/data/supabase.ts"
+  - "src/lib/data/mock.ts"
+  - "src/components/EntryForm.tsx"
+  - "src/routes/NewEntry.tsx"
+  - "src/routes/EditEntry.tsx"
+  - "src/App.tsx"
+  - "tests/e2e/cal-02-edit-delete-entry.spec.ts"
+schema_delta: adds `entry_update_own` and `entry_delete_own`, the column-scoped update grant excluding `member_id`, `status` and `rejection_reason`, the table-level delete grant, and a `create or replace` of `public.entry_enforce_decision()` adding `updated_at` — **not `none`** per ADR-014. Linked and approved: ADR-005, ADR-014, ADR-016. 01-plan.md section 6.
+requires_adr: true   # CORRECTED from `false` by tech-lead-design at PLAN. It sat beside a
+                     # schema_delta that was already NOT `none`, which is the contradiction the
+                     # shell's own text named. NO NEW ADR IS WRITTEN: every decision in section 6
+                     # sits inside ADR-005, ADR-014 and ADR-016, all three already ACCEPTED, and
+                     # Definition of Ready item 4 asks for an approved ADR to be LINKED rather than
+                     # for a new one to be authored. ADR-016 Consequences assigns the column grant
+                     # excluding `member_id` to this ticket by name.
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+  developer->ba:               { used: 0, max: 6 }
+  qa->ba:                      { used: 0, max: 6 }
+  qa->tech-lead-design:        { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  # MIGRATED by `orchestrator` at /ship on 2026-09-03, from the four pre-ADR-019 keys `spec`,
+  # `design`, `review`, `qa`. ADR-019 Decision point 4 merged the first two into one `plan` gate and
+  # ADR-022 removed the QA stage; this shell was created on 2026-08-31 and predates both.
+  #
+  # THIS MIGRATION HAS NO OWNER, AND CAL-02 IS THE THIRD TICKET TO NEED IT. A different role did it
+  # each time and none of them was told to: `tech-lead-design` at PLAN for TEA-05, `developer` at
+  # /implement for CAL-01, and here nobody did until /ship — which reads `gates.plan` as a
+  # precondition and would have found no such key. Recorded rather than just fixed, because the
+  # remaining shells created before 2026-09-01 all carry the same four keys and the next ticket
+  # reproduces this exactly. Worth a D-check or a step in one named command.
+  #
+  # Neither value is inferred. Each `at` is the `produced_at` of the artifact carrying the gate, and
+  # each gate is QUOTED from that artifact's front-matter rather than re-judged:
+  #   plan   -> 01-plan.md:5   `produced_at: 2026-09-03T11:55:53+07:00`, `gate: PASS`
+  #   review -> 04-review.md:5 `produced_at: 2026-09-03T14:00:23+07:00`, `gate: PASS`
+  plan:   { passed: true, at: 2026-09-03T11:55:53+07:00 }
+  review: { passed: true, at: 2026-09-03T14:00:23+07:00 }
+  qa:     { passed: false, at: null }
+  #
+  # `qa` STAYS false AND IS NOT REQUIRED — ADR-022 removed the stage, no stage produces this gate,
+  # and /ship must never write one that none does. It is not a waiver and there is no QA artifact.
+  #
+  # THE DEFINITION OF READY WAS GRADED, and this is the only record of it. `orchestrator` graded all
+  # six items at /next-ticket on 2026-09-03, between PLAN and /implement, and all six passed. Item 4
+  # is the one worth naming: it FAILED at BACKLOG — `schema_delta` is not `none` and no ADR was
+  # linked — and PLAN discharged it by linking three already-approved decisions rather than
+  # authoring a fourth: ADR-005 and ADR-014 (`ACCEPTED by the operator`) and ADR-016 (`ACCEPTED by
+  # tech-lead-design`). PLAN also corrected `requires_adr` from `false` to `true`. /next-ticket
+  # writes no file, so without this comment the grade leaves no trace in the tree.
+
+# Created by `product` at /triage on 2026-08-31, promoting
+# .ai/board/ideas/2026-08-31-a-plan-has-nowhere-to-be-written-down.md.
+#
+# Definition of Ready items 1, 3, 4 and 6 are filled here. Items 2 and 5 belong to the BA at SPEC.
+#
+# schema_delta is `none` because CAL-01 creates the table, the constraint and the INV-02 trigger.
+# This ticket adds the update and delete policies and observes the trigger; if DESIGN concludes
+# otherwise it may contradict this field, which is its right.

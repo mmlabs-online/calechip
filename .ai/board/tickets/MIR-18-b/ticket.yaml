@@ -1,0 +1,80 @@
+# Created by `tech-lead-design` at /plan MIR-18 on 2026-11-04: the remainder of feature MIR-18 after
+# the door slice, split by operation then surface (ADR-074 decision 8;
+# .ai/board/tickets/MIR-18/01-plan.md § 1 and § 7). Not produced by /triage: no idea file promotes it.
+# It shares MIR-18's feature row, which stays PLANNED until this ticket (and any split of it) ships.
+# EXPECTED TO SPLIT AGAIN AT ITS OWN PLAN: it carries two operations — org management, and the
+# panel's exposure hardening — and together they are L.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-18-b
+title: "A system admin lists, creates and edits orgs — caps and licence state — from the panel, which is served unindexed at an unguessable path with rate limiting and failed-login logging"
+feature_ids: [MIR-18]   # split of MIR-18 (operating model § ID scheme: splits get -a, -b)
+group: MIR
+state: DONE
+owner: ""
+branch: ""
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR. This slice; as triaged it was L
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. 9 paths; the hardening split to MIR-18-c
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-05, MIR-06, MIR-07, MIR-08, MIR-09, MIR-10, MIR-12, MIR-18]   # MIR-18 writes public.system_admin, is_system_admin() and the panel entry
+invariants_touched: []
+allowed_paths:
+  - ".ai/registry/decisions/ADR-075-a-system-admin-manages-orgs-through-three-aal2-gated-rpcs.md"
+  - ".ai/standards/rbac-and-security.md"
+  - ".ai/board/tickets/MIR-18-c/ticket.yaml"
+  - "supabase/migrations/20261105120000_mir18b_org_management.sql"
+  - "supabase/tests/200-org-management.test.sql"
+  - "supabase/tests/010-catalogue.test.sql"
+  - "src/lib/data/system.ts"
+  - "src/system/main.tsx"
+  - "tests/e2e/mir-18-b-org-management.spec.ts"
+glossary_owed: []
+schema_delta: "non-none — new nullable column public.org.licence_expires_at; security definer functions list_orgs(), create_org(text,text,text), update_org(uuid,text,integer,integer,text,date), each gated on is_system_admin(); create_org copies Org public's holiday rows. ADR-075"
+requires_adr: true    # ADR-075, ACCEPTED under ADR-067 at /plan MIR-18-b
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-11-05T01:43:16Z" }
+  review: { passed: true, at: "2026-11-05T05:06:03Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+# Not in .ai/templates/ticket.yaml. Added for the multi-tenancy plan; nothing in scripts/ reads them.
+# Plan status lives only in .ai/board/plans/multi-tenancy-status.md. `state` above is the loop's.
+mir_phase: 3
+mir_plan_item: "P4-3"             # .ai/board/plans/calechip-multi-tenancy-plan.md:246-251
+verification_required: true   # phase 0 and phase 3 — a passing mock test is not verification
+expected_impact: []   # none
+# [predicted] at plan time. Corrected at ship in .ai/board/plans/feature-change-log.md.
+mir_detail: |
+  What MIR-18 (the door slice) left, by ADR-074 decision 8. Every item below is from plan P4-3
+  (plan:246-251) or ADR-070 § 4; nothing is added.
+
+  Org management (the panel's first content; replaces the signed-in empty state of MIR-18 § 2b):
+  - List orgs. `public.org` is closed to `authenticated` and asserted so by
+    supabase/tests/120-composite-fks.test.sql:64-66 and 130-backfill-org-public.test.sql:74-76; a read
+    either goes through a `security definer` RPC gated on `public.is_system_admin()` (census in
+    010-catalogue.test.sql) or changes those two tests.
+  - Create an org: `org_code` (immutable, reserved words refused — ADR-070 § 2), name, timezone.
+    Seed its holidays from the national set on creation (ADR-070 § 4, `holiday` bullet).
+  - Edit an org: name, caps (`max_members`, `max_teams`), licence state (`plan`,
+    `licence_expires_at`). These are nullable placeholders; what a cap or an expiry DOES is deferred by
+    the operator (ADR-059 § Out of scope, items 1-4 and 7). Store and show them; enforce nothing.
+  - Deleting or suspending an org: ADR-070 has no suspended state, and per-tenant deletion is
+    deferred (ADR-059 § Out of scope, item 6). Decide at PLAN what "CRUD" covers without inventing
+    either.
+  - NOT move-team-between-orgs: MIR-15 owns it (features.md:304; multi-tenancy-status.md:11-13),
+    built as a screen in this panel.
+
+  Exposure hardening:
+  - `X-Robots-Tag: noindex, nofollow` on the panel's responses, in docker/nginx.conf — never
+    robots.txt (plan:247).
+  - An unguessable path instead of /system.html (ADR-059 decision 1). The path must not be in the
+    repository or the member bundle; nginx.conf is committed and Dockerfile bakes VITE_* at build, so
+    the path likely comes from the container's environment at start, as CALECHIP_VERSION does.
+    /system.html itself must then stop being served directly.
+  - Rate limiting and failed-login logging (plan:250). Password sign-in already has Supabase Auth's
+    own limit; the second factor's failures are the open part.
+  - IP allow-list "if feasible" (plan:249). Feasibility is unverified (the browser talks to PostgREST
+    directly, so an nginx allow-list hides only the HTML), and the address list is a fact only the
+    operator holds.

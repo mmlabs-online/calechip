@@ -1,0 +1,124 @@
+# Copied from .ai/templates/ticket.yaml at /triage (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: IDEA TRIAGE BACKLOG SPEC READY DESIGN IN_PROGRESS REVIEW QA REWORK ESCALATED DONE
+id: CAL-05
+title: "Week view — per-person detail for one week, with half-days, notes and who approved"
+feature_ids: [CAL-05]
+group: CAL
+state: DONE      # orchestrator at /ship, 2026-09-04, on 04-review.md `gate: PASS` /
+                 # `next_state: DONE`. ADR-022 removed the QA stage, so REVIEW -> DONE is the whole
+                 # remaining transition (.ai/01-operating-model.md:36)
+owner: ""
+branch: "feat/CAL-05"
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR. Read from 01-plan.md
+                      # section 1. Eight files, two new, NO migration, NO seam function and NO new
+                      # read. Not S: fourteen criteria, a new derivation inside INV-04's module and
+                      # its own unit tests. Not L: everything it reads already exists.
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. Counted from
+                      # the eight allowed_paths below, 01-plan.md section 7. AGREES with
+                      # size_estimate; ADR-012 is not engaged. Eight is well inside M's ceiling of
+                      # twelve, and that is CAL-04's boundary rather than this ticket's restraint.
+depends_on: [CAL-04]
+invariants_touched: [INV-04, INV-05, INV-07]
+# 01-plan.md section 2. EXACTLY the three the CAL-05 row in features.md lists; this plan adds none
+# and removes none.
+#
+# INV-04: listed on a view that may render NO NUMBER, and the row says why - "it presents the same
+# set the count sums". Held by CONSUMING CAL-04's module rather than filtering entries in the view.
+# 01-plan.md section 4.1 adds a THIRD DERIVATION FROM THE SAME SINGLE PASS that already produces the
+# counts and the avatars, so a week list and a month cell cannot disagree without `walk` itself being
+# wrong. AC-12 is the one that matters: the failure the row names - four names against 3.5 - is
+# INVISIBLE ON EITHER SCREEN ALONE.
+# INV-05: same pass, which never reads `tentative`. AC-9. The marking is visual and changes nothing
+# about membership of the list.
+# INV-07: held by entry_select_team and member_select_team, both already shipped. The mechanism is
+# that this ticket introduces NO READ OF ITS OWN, and the approver's name resolves against the same
+# team-scoped roster.
+#
+# INV-06 IS RELIED ON AND NOT CHOSEN HERE, which is why it is absent - the row states this directly,
+# and CAL-07's row uses the same formula. A read-only view cannot produce a per-day portion. AC-4 is
+# still this ticket's, because the row calls this THE ONLY SURFACE WHERE INV-06 IS VISIBLE: a
+# five-day `pm` entry is five afternoons, and what is checked is that the rendering does not
+# contradict the invariant the column shape holds.
+#
+# INV-01, INV-02, INV-03 are absent and UNREACHABLE: nothing on this surface writes. AC-8 keeps that
+# true - no approve, reject, edit or delete control, for either role.
+# allowed_paths - 01-plan.md section 7. Eight globs, eight files; two are new (src/routes/WeekView.tsx
+# and the spec).
+#
+# NO INLINE COMMENTS ON THE ITEMS. `readYamlList` in scripts/check-allowed-paths.mjs and in
+# .claude/hooks/guard-allowed-paths.mjs strips only a LEADING and a TRAILING quote, so a trailing
+# `# ...` is swallowed into the pattern and the glob then matches nothing.
+#
+# NO COLLISION WITH OPS-002. Its five remaining copyDebt files are src/components/EntryForm.tsx,
+# src/lib/data/mock.ts, src/lib/data/supabase.ts, src/routes/EditEntry.tsx and NewEntry.tsx - none
+# appears below. src/routes/Home.tsx was OPS-001's and OPS-001 is DONE, so it is out of copyDebt,
+# already English and free to edit.
+#
+# DELIBERATELY ABSENT, each with its reason in 01-plan.md section 7: ui-language.json (nothing is
+# translated and nothing de-listed; WeekView.tsx is NEW so the rule covers it from its first line and
+# it must NEVER be added to copyDebt); src/lib/data/index.ts, supabase.ts, mock.ts (no seam change at
+# all - section 5); tests/e2e/cal-04-month-view.spec.ts (THE SAFETY NET for the one-line MonthView
+# header link - must pass UNEDITED); tests/seam-parity.test.ts and tests/ui-language.test.ts (both
+# pass unedited); every migration; .ai/standards/ui-design-system.md (§ Visual specification is
+# FOLLOWED, never amended - RULE-01); .ai/registry/features.md (CAL-04's TODO(project) about drawing
+# rejected entries is answered for this surface in Open questions 1 and the row is NOT edited).
+allowed_paths:
+  - "src/lib/domain/types.ts"
+  - "src/lib/data/absence.ts"
+  - "src/routes/WeekView.tsx"
+  - "src/routes/MonthView.tsx"
+  - "src/routes/Home.tsx"
+  - "src/App.tsx"
+  - "tests/absence.test.ts"
+  - "tests/e2e/cal-05-week-view.spec.ts"
+schema_delta: none
+requires_adr: false
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+  developer->ba:               { used: 0, max: 6 }
+  qa->ba:                      { used: 0, max: 6 }
+  qa->tech-lead-design:        { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  # MIGRATED by `orchestrator` at /ship on 2026-09-04, from the four pre-ADR-019 keys `spec`,
+  # `design`, `review`, `qa`. ADR-019 merged the first two into one `plan` gate; ADR-022 removed the
+  # QA stage. This shell was created on 2026-08-31 and predates both.
+  #
+  # SIXTH TICKET TO NEED THIS AND STILL NOBODY OWNS IT. TEA-05 was migrated by `tech-lead-design` at
+  # PLAN, CAL-01 by `developer` at /implement, CAL-02, CAL-03 and CAL-05 by `orchestrator` at /ship.
+  # CAL-04 arrived already migrated with `plan` pre-set, so the treatment is now inconsistent from
+  # one ticket to the next as well as unowned. Every remaining shell created before 2026-09-01
+  # carries the same four keys, so CAL-06, CAL-07, CAL-08 and the six ADM rows will each reproduce
+  # it. Fixing it is a change to a command or a D-check — steward work on an `ops/` branch, not
+  # something /ship decides while shipping.
+  #
+  # Both values are QUOTED from the artifact that carries them, not re-judged:
+  #   plan   -> 01-plan.md:5   `produced_at: 2026-09-04T14:29:10+07:00`, `gate: PASS`
+  #   review -> 04-review.md:5 `produced_at: 2026-09-04T15:04:37+07:00`, `gate: PASS`
+  plan:   { passed: true,  at: "2026-09-04T14:29:10+07:00" }
+  review: { passed: true,  at: "2026-09-04T15:04:37+07:00" }
+  #
+  # NO `qa` KEY AND NONE IS OWED — ADR-022 removed the stage, nothing produces that gate, and /ship
+  # must never write one no stage produces. Not a waiver; there is no QA artifact.
+  #
+  # THE DEFINITION OF READY WAS GRADED and this is its only record: `orchestrator` graded all six
+  # items at /next-ticket on 2026-09-04, six of six PASS. Item 4 passed outright — `schema_delta` is
+  # genuinely `none` and no ADR was owed, the second ticket running after five where it had to be
+  # discharged at PLAN by linking. /next-ticket writes no file, so without this the grade leaves no
+  # trace in the tree.
+
+# Created by `product` at /triage on 2026-08-31, promoting
+# .ai/board/ideas/2026-08-31-the-team-cannot-see-its-own-shape.md.
+#
+# Definition of Ready items 1, 3, 4 and 6 are filled here — they are produced at BACKLOG.
+# Items 2 and 5 (invariants_touched, size_estimate) are deliberately empty: they belong to the BA
+# at SPEC, and the gate sits after SPEC so that they can.
+#
+# Item 3: CAL-04 alone, and it carries CAL-01 and TEA-03 transitively. CAL-04 owns the URL time
+# anchor, the view switcher and the one absence-count function inside the seam; this view consumes
+# all three and builds none of them.
+#
+# Item 4: `schema_delta: none`. Every field it renders — `portion`, `note`, `approved_by` — is
+# already in data-model.md at doc_version 3.

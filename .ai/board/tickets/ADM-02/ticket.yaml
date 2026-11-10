@@ -1,0 +1,173 @@
+# Copied from .ai/templates/ticket.yaml at /triage (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: IDEA TRIAGE BACKLOG SPEC READY DESIGN IN_PROGRESS REVIEW QA REWORK ESCALATED DONE
+id: ADM-02
+title: "The national holiday calendar, seeded and readable"
+feature_ids: [ADM-02]
+group: ADM
+state: DONE      # orchestrator at /ship, 2026-09-05, on 04-review.md `gate: PASS` /
+                 # `next_state: DONE`. ADR-022 removed the QA stage, so REVIEW -> DONE is the whole
+                 # remaining transition (.ai/01-operating-model.md:36).
+                 #
+                 # THIS REVIEWER GOT `next_state` RIGHT WHERE CAL-07'S DID NOT, and said why: it
+                 # names `.ai/templates/review-report.md` as still shipping `next_state: QA` and
+                 # defers to the operating model. Three reviews have now met that template and two
+                 # corrected it; CAL-07's copied `QA` through. The template is still the defect.
+# PREVIOUS VALUE, `REVIEW`:
+# MOVED TO REVIEW BY `developer` AT /implement, 2026-09-05. 03-impl-log.md carries `gate: PASS` and
+# `next_state: REVIEW`.
+#
+# It was still `BACKLOG` on arrival: /plan filled `branch`, the two sizes, `invariants_touched` and
+# `allowed_paths` and left the board move to the orchestrator, which has not run since. The `plan`
+# gate below is therefore untouched here — 01-plan.md's own front-matter carries `gate: PASS` and it
+# is not this stage's record to write.
+owner: ""
+branch: "feat/ADM-02"
+# `branch` FILLED BY `tech-lead-design` AT PLAN, 2026-09-05. /plan is the only command permitted to
+# create a `feat/` branch and it created this one from `origin/main`; every later stage stops when it
+# arrives at a missing branch. A fact about the tree, not a state change — the orchestrator grades
+# DoR and moves the board.
+size_estimate: M      # 01-plan.md section 1. Written by tech-lead-design at PLAN under ADR-019,
+                      # which moved this field here from the retired SPEC stage. A table, one policy,
+                      # one seam read, one screen and two seeded row sets that must agree with each
+                      # other — but no arithmetic, no second read path and no write.
+size: M               # 01-plan.md section 7, counted from the TWELVE allowed_paths below. AGREES
+                      # with size_estimate; ADR-012 is not engaged and nothing splits.
+                      #
+                      # TWELVE IS THE TOP OF THE M BAND and one path above it is L, so what is NOT
+                      # in the list is doing the work: ADR-015 section 4's bridge-day module and its
+                      # unit test are CAL-08's by the registry row, and ADM-03's four write objects
+                      # were split out at triage by operation. Neither exclusion is a sizing
+                      # judgement made here.
+depends_on: [TEA-01, ADM-01]
+invariants_touched: []   # 01-plan.md section 2. AGREES with the ADM-02 row in features.md.
+                         # Explicit, not absent: A HOLIDAY IS NOT AN ENTRY. INV-04 is a sum over
+                         # entries and this table has none; INV-01, INV-02 and INV-03 all constrain
+                         # `entry`; INV-05 is the tentative flag, which this table has no column
+                         # for; INV-06 is an entry's portion.
+                         #
+                         # INV-07 IS THE ONE WORTH NAMING because it is the one an agent would reach
+                         # for and it does not hold: it constrains entries and the members they
+                         # belong to, and a holiday row has neither. That step — "INV-07 makes team
+                         # a real property of the data" — is the load-bearing claim in the case for
+                         # a `team_id`, and ADR-015 Rationale is where it was examined and refused.
+# allowed_paths — 01-plan.md section 7. Twelve globs, twelve files, three of them new.
+#
+# NO INLINE COMMENTS ON THE ITEMS. `readYamlList` in scripts/check-allowed-paths.mjs and in
+# .claude/hooks/guard-allowed-paths.mjs strips only a LEADING and a TRAILING quote, so a trailing
+# `# ...` is swallowed into the pattern and the glob then matches nothing.
+#
+# TWO ENTRIES THAT NEED A WORD BEFORE A REVIEWER MEETS THEM:
+#   * ..._adm02_holiday.sql carries the SELECT HALF ONLY. holiday_insert_admin,
+#     holiday_update_admin, holiday_delete_admin and `grant insert, update, delete` are ADM-03's,
+#     and supabase/db.sql already marks them `[OWED] ADM-03`. On this branch neither role can
+#     change the calendar — AC-13, and that is the read-path-then-write-path split working.
+#   * ..._adm02_holiday_seed.sql SHIPS WITH ITS SHAPE COMPLETE AND ITS ROWS EMPTY, and is not
+#     applied until a human fills it. supabase/db.sql:985-989 already records that no agent may
+#     write those dates: they are facts about government announcements, and this is the one table
+#     where a wrong date silently and NON-LOCALLY moves bridge-day detection. 01-plan.md Open
+#     question 1 and section 8.
+#
+# DELIBERATELY ABSENT, with the rest in 01-plan.md section 7:
+# tests/seam-parity.test.ts (must pass unedited with the one function added);
+# src/lib/data/absence.ts (CAL-04's — a holiday is not an entry);
+# src/routes/MonthView.tsx, WeekView.tsx, YearView.tsx (no view draws a holiday until CAL-08);
+# supabase/db.sql (Open question 4, on the CAL-04 and ADM-01 precedent).
+allowed_paths:
+  - "supabase/migrations/20260905120000_adm02_holiday.sql"
+  - "supabase/migrations/20260905120100_adm02_holiday_seed.sql"
+  - "supabase/seed.sql"
+  - "src/lib/domain/types.ts"
+  - "src/lib/data/index.ts"
+  - "src/lib/data/supabase.ts"
+  - "src/lib/data/mock.ts"
+  - "src/lib/fixtures.ts"
+  - "src/routes/Holidays.tsx"
+  - "src/routes/Home.tsx"
+  - "src/App.tsx"
+  - "tests/e2e/adm-02-holidays.spec.ts"
+schema_delta: >-
+  NOT none under any reading, and unchanged in substance from triage — a new enum, a new table with
+  a `unique` constraint, row-level security, a `revoke`, a `grant select` and the
+  `holiday_select_all` policy. ADR-014 would require the link for the policy alone. ADR-015 is
+  LINKED and is `ACCEPTED by tech-lead-design`; it closes data-model.md OPEN QUESTIONS items 1 and
+  2, which had declared themselves blocking on "the first story touching holidays, and the
+  `holiday` foreign key" — this is that story and the answer is that there is no foreign key.
+  NO NEW ADR IS AUTHORED: every statement is transcribed from ADR-015 section 3, and
+  supabase/db.sql already carries the same ones under ADR-026 decision point 2, which admits an
+  object only when an accepted ADR writes it out in full. TWO migrations, not one: the schema above,
+  and the data migration whose rows a human supplies (see the allowed_paths note). Applying both is
+  human, RULE-09. Full statements in 01-plan.md section 6.
+requires_adr: true    # Unchanged from triage. ADR-015 is linked; nothing new is authored here.
+rework_count: 0
+chat_budget:
+  # Migrated 2026-09-04 by `steward`, together with the gates below. `ba` left the loop at ADR-019
+  # and `qa` at ADR-022, so three of the four edges this shell carried named roles nobody can
+  # dispatch. They are not kept as zeroes — `.ai/templates/ticket.yaml` says an edge nobody can walk
+  # is not a budget, it is a row that invites someone to try.
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  # Migrated 2026-09-04 by `steward`. This shell was created at /triage before ADR-019 merged the
+  # `spec` and `design` gates into one `plan` gate, and before ADR-022 removed the `qa` stage and
+  # its gate — and nothing migrated it, so five earlier tickets each patched their own copy at PLAN
+  # or at /ship. Check D14 now fails any ticket that is not DONE whose gate keys disagree with
+  # `.ai/templates/ticket.yaml`, so the set cannot drift again unnoticed.
+  #
+  # No value changes here, only the key set: every gate on an unstarted shell is `passed: false`
+  # under either shape.
+  #
+  # BOTH WRITTEN BY `orchestrator` AT /ship, 2026-09-05, quoted from the artifacts' front-matter
+  # rather than re-judged — the convention CAL-06's shell states in terms.
+  #
+  # `plan`   — 01-plan.md `gate: PASS` / `next_state: READY`, produced 2026-09-05T08:25:57+07:00.
+  # `review` — 04-review.md `gate: PASS` / `next_state: DONE`, produced 2026-09-05T08:53:04+07:00.
+  #            R1-R8 all PASS with citations.
+  plan:   { passed: true, at: "2026-09-05T08:25:57+07:00" }
+  review: { passed: true, at: "2026-09-05T08:53:04+07:00" }
+  #
+  # THE DEFINITION OF READY WAS GRADED: `orchestrator`, /next-ticket, 2026-09-05 08:34, six of six
+  # PASS. Item 4 passed on an ADR linked at /triage rather than discharged at PLAN — ADR-015, which
+  # closed data-model.md OPEN QUESTIONS items 1 and 2 back on 2026-08-31. /next-ticket writes no
+  # file, so this comment is the grade's only record.
+  #
+  # THE BRANCH WAS MERGED WITH `main` AT /ship BEFORE THE BOARD WAS WRITTEN. feat/ADM-02 was cut
+  # from 2515a84, one ship before CAL-07 merged as #53, so its backlog.md and features.md were the
+  # pre-CAL-07 versions. Writing this transition on that base would have produced a pull request
+  # that reverts CAL-07's archive row and its `Status: DONE`. No incoming file was dirty, so the
+  # merge was clean. Recorded here because it is the first ship to need it and nothing in
+  # .claude/commands/ship.md contemplates the case.
+
+# Created by `product` at /triage on 2026-08-31, promoting
+# .ai/board/ideas/2026-08-31-everyone-computes-the-bridge-day-alone.md.
+#
+# Definition of Ready items 1, 3, 4 and 6 are filled here. Items 2 and 5 (invariants_touched,
+# size_estimate) are deliberately empty: they belong to the BA at SPEC, and the gate sits after
+# SPEC so that they can.
+#
+# Item 6. One group: ADM. The split from ADM-03 is by operation rather than by surface, per the
+# operating model's "split by operation first (read path, then write path), then by surface".
+# This ticket makes the calendar exist and be readable; ADM-03 makes it editable. Each is
+# exercisable end to end at its own QA gate.
+#
+# Item 3. TEA-01 for the admin session, the `member` row with `role = admin` and the
+# `public.is_admin(uuid)` helper the later write policies consult. ADM-01 because its own Notes
+# say the later admin rows inherit its screen-versus-settings-area answer — a real edge, not a
+# courtesy, since this ticket ships the product's second admin screen.
+#
+# Item 4. Not `none` under any reading: a new table, a new enum and a select policy. ADR-015 is
+# linked and is `ACCEPTED by tech-lead-design` — it closes data-model.md OPEN QUESTIONS items 1
+# and 2, which had declared themselves blocking on "the first story touching holidays, and the
+# `holiday` foreign key". The answer is that there is no foreign key: the calendar is national.
+#
+# Two file facts verified against the implemented TEA-01 migration rather than recalled:
+#   - `revoke all on public.team, public.member, public.allowed_email from anon, authenticated`
+#     at supabase/migrations/20260831150024_tea01_membership.sql:145. `holiday`'s table grant is
+#     therefore genuinely not inherited and must be written beside the policy.
+#   - `grant execute on function public.is_admin(uuid) ... to authenticated` at line 71 of the
+#     same file, so no function grant is needed here or on ADM-03.
+#
+# The seed is data, not a capability: an idempotent data migration with
+# `on conflict (date) do nothing`, applied by a human (RULE-09), on the TEA-01 precedent that a
+# seed gets no feature row of its own. `do nothing` and not `do update`, so that an admin's
+# correction from the actual government announcement survives re-application.

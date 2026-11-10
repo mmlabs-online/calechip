@@ -1,0 +1,37 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-10-12 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: EVT-08
+title: "The creator or an admin of a public event invites people by email from the event's page, and each address is mailed once"
+feature_ids: [EVT-08]
+group: EVT
+state: DONE
+owner: ""
+branch: ""
+size_estimate: "M"   # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"            # S|M|L|XL - set by tech-lead-design at PLAN; twelve allowed_paths
+depends_on: [EVT-05, EVT-06]
+invariants_touched: []  # 01-plan.md § 2 — no entry, no member row, no policy on member changes
+allowed_paths:
+  - ".ai/registry/glossary.md"
+  - ".ai/standards/rbac-and-security.md"
+  - "supabase/migrations/20261012100000_evt08_event_email_invitation.sql"
+  - "supabase/functions/send-event-email/template.ts"
+  - "supabase/functions/send-event-email/index.ts"
+  - "src/lib/domain/types.ts"
+  - "src/lib/data/index.ts"
+  - "src/lib/data/supabase.ts"
+  - "src/lib/data/mock.ts"
+  - "src/routes/EventDetail.tsx"
+  - "tests/event-invitation.test.ts"
+  - "tests/e2e/evt-08-event-invitation.spec.ts"
+glossary_owed: [Email invitation]     # distinct from the existing "Invitation" (named-people event); ADR-047
+schema_delta: "An invited-address table (event_email_invitation: one row per address per event, unique on lower(email), event reference set null not cascade, read by creator and admin only, never deleted); a security definer function invite_to_event that checks may_manage_event and public scope, opens the event guest link with on conflict do nothing, dedupes and returns sent/ignored without reading member; an after-insert trigger email_invitation posting through pg_net to send-event-email with a new request shape — ADR-055. Amended at PLAN, 01-plan.md § 6"
+requires_adr: true    # ADR-055, ACCEPTED by the operator 2026-10-12
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-10-12T20:58:38+07:00" }
+  review: { passed: true, at: "2026-10-12T22:19:06+07:00" }

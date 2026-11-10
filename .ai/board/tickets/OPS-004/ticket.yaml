@@ -1,0 +1,332 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-09-07 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: OPS-004
+title: "A password-free bootstrap file that creates the first team and the first admin"
+feature_ids: [TEA-01]   # see §5 — item 1 constrains THIS field, not the ticket `id`
+group: TEA              # single group, so Definition of Ready item 6 needs no split rationale
+state: DONE      # `orchestrator` at /ship, 2026-09-07, on 04-review.md `gate: PASS` /
+                 # `next_state: DONE`. ADR-022 removed the QA stage, so REVIEW -> DONE is the whole
+                 # remaining transition (.ai/01-operating-model.md:36).
+#
+# PREVIOUS VALUE, `REVIEW`, set by `developer` at /implement on 2026-09-07. The ticket went
+# BACKLOG -> REVIEW: no command owns PLAN -> READY and none owns READY -> IN_PROGRESS, so neither
+# was ever written here. SEVENTH TICKET RUNNING. Both the developer (03-impl-log.md:145-155) and the
+# reviewer (04-review.md § Verdict item 1) named it in their artifacts rather than editing this file,
+# which is correct — the board is the orchestrator's — and this ship is where it closes. The
+# Definition of Ready WAS graded, six of six, at /next-ticket on 2026-09-07.
+owner: ""
+branch: "feat/OPS-004"  # NOT `ops/<slug>`. See §7 — deliberate, and weaker here than on OPS-001/002.
+size_estimate: "S"    # S|M - set by tech-lead-design at PLAN; gates DoR. 01-plan.md §1.
+size: "S"             # S|M|L|XL - counted from allowed_paths. 01-plan.md §7; agrees with size_estimate.
+depends_on: []        # MEASURED, NOT INHERITED. See §6.
+invariants_touched: [INV-07]   # 01-plan.md §2. The first team row and the first member's team_id.
+allowed_paths:
+  # the whole ticket. 01-plan.md §7.
+  #
+  # THE COMMENT IS ON ITS OWN LINE AND MUST STAY THERE. `scripts/check-allowed-paths.mjs:61-66`
+  # captures the rest of the list item and strips only a leading and a trailing quote, so an inline
+  # `# ...` after the closing quote becomes part of the path and the glob matches nothing. This
+  # ticket is the first to write one and it failed the check at /ship over a file that was in fact
+  # declared. The path itself is unchanged; only where the comment sits.
+  - "supabase/bootstrap.sql"
+schema_delta: none    # DECIDED, NOT DEFAULTED. See §4.
+requires_adr: false   # The ADR EXISTS — ADR-030, written in the same /triage run. See §0.
+rework_count: 0
+chat_budget:
+  # ADR-019 retired `ba` from the loop, so the two `->ba` edges are gone. They are not listed as
+  # zeroes: an edge nobody can walk is not a budget, it is a row that invites someone to try.
+  developer->tech-lead-design: { used: 0, max: 6 }
+  # ADR-022 removed the QA stage, and the `qa->tech-lead-design` edge with it.
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  # BOTH ROWS TRANSCRIBED by `orchestrator` at /ship from the artifacts' own front-matter, because
+  # no stage before this one writes to this file. They are copies of gates somebody else reached,
+  # not gates claimed here — 01-plan.md `gate: PASS` / `produced_at: 2026-09-07T20:42:15+07:00`, and
+  # 04-review.md `gate: PASS` / `produced_at: 2026-09-07T22:17:26+07:00`.
+  plan:   { passed: true, at: "2026-09-07T20:42:15+07:00" }   # ADR-019 merged `spec` and `design`
+  review: { passed: true, at: "2026-09-07T22:17:26+07:00" }
+  # There is no `qa` key. ADR-022 removed the stage, and this shell is created after that date.
+  # /ship requires `plan` and `review`.
+
+# Created by `product` at /triage on 2026-09-07, on a NEEDS-ADR verdict followed by a re-triage of
+# the half of it that is unblocked, from
+# .ai/board/ideas/2026-09-07-a-new-project-admits-nobody-and-has-no-way-in.md
+# That file's `## Triage verdict: NEEDS-ADR` and `## Re-triage verdict` sections are the reasoning;
+# this block carries only what binds PLAN.
+#
+# Definition of Ready items 1, 3, 4 and 6 are filled here — they are produced at BACKLOG (ADR-010).
+# Items 2 and 5 (`invariants_touched`, `size_estimate`) are deliberately left as the template ships
+# them: they belong to tech-lead-design at PLAN, and the gate sits after PLAN so that they can.
+#
+# ---------------------------------------------------------------------------------------------
+# 0. ***THE DECISION THIS TICKET RESTS ON, AND IT IS NOT `depends_on`.***
+#
+# ADR-030 — .ai/registry/decisions/ADR-030-the-first-admin-arrives-by-a-password-free-bootstrap-file.md
+#
+# Written by `tech-lead-design` in the SAME /triage run that created this shell, carrying
+# `ACCEPTED by tech-lead-design` under ADR-008 on the ADR-024 precedent. `product` did not write it
+# and did not read it; it is cited by path because that is what the re-triage verdict rests on.
+#
+# IF THAT FILE IS NOT ON DISK, its absence is a fact about ordering within one run, not about the
+# decision. It is not on `main` until this ticket ships — ADR-023 puts the ADR, the board row, the
+# registry sentence and the work in ONE pull request on THIS branch.
+#
+# ***IF THE OPERATOR DECLINES ADR-030 AT MERGE, THIS TICKET IS INVALID RATHER THAN BLOCKED*** and the
+# correct action is to close it. That cannot be `depends_on`, which names TICKETS and is graded by
+# Definition of Ready item 3 against ticket state. Nothing in the loop will ask, which is why it is
+# prose — the same shape as the PR #37 precondition OPS-001 and OPS-002 carried.
+#
+# ---------------------------------------------------------------------------------------------
+# 1. ***THE PROBLEM, IN ONE PARAGRAPH, SO PLAN DOES NOT HAVE TO RECONSTRUCT IT.***
+#
+# On a Supabase project this repository has just been pointed at, NOBODY CAN EVER BECOME A MEMBER.
+# The cycle is closed at TWO independent links, and the second is the one usually missed:
+#
+#   added_by -> member -> allowed_email    an allow-list row needs an ADMIN member
+#                                          (`added_by uuid not null references public.member (id)`,
+#                                          supabase/migrations/20260831150024_tea01_membership.sql:44;
+#                                          `allowed_email_insert_admin` requires `is_admin`,
+#                                          20260901090000_tea02_allow_list_writes.sql:26-33)
+#   team_id  -> team     -> NOTHING        `allowed_email.team_id not null references public.team`
+#                                          (…tea01:43) against a table with ZERO ROWS and NO INSERT
+#                                          PATH ANYWHERE. Only three tables in the whole schema have
+#                                          an insert grant — allowed_email, holiday, entry.
+#
+# A member arrives ONLY through the trigger at …tea01:78-136, which returns having inserted nothing
+# when there is no matching allow-list row (`if v_team_id is null then return new;`, :107-109). And
+# `member` MAY NEVER GAIN AN INSERT POLICY — stated as permanent at …tea01:166-173 and repeated at
+# supabase/db.sql:740.
+#
+# THE ONLY EXIT THE REPOSITORY EVER DOCUMENTED WAS `supabase/seed.sql`, AND IT NOW REFUSES TO RUN
+# WHERE IT IS NEEDED. Its guard (`supabase/seed.sql:37-49`; :39 is the
+# `current_setting('calechip.seed_target', true) <> 'local'` test, and :16-36 is the comment
+# explaining it) was added under ADR-024 because every password in that file is PUBLISHED in this
+# repository and the file had already been hand-applied to the hosted project.
+#
+# supabase/db.sql:996-999 says the consequence in its own words: "Standing up a usable project needs
+# one team row and one admin member row, by hand."
+#
+# ---------------------------------------------------------------------------------------------
+# 2. SCOPE — ONE HUMAN-APPLIED SQL FILE, PARAMETERISED, WITH NO CREDENTIAL IN IT.
+#
+# The shape ADR-030 accepted, restated here as the boundary and NOT as a design:
+#
+#   - A new file under `supabase/`. ADR-030 names it; this shell does not rename it. The technical
+#     half's working name was `supabase/bootstrap.sql`.
+#   - It reads its inputs from settings the applying human supplies — an EXISTING auth user id and a
+#     team name — rather than creating any account. `current_setting(...)` is the mechanism
+#     `supabase/seed.sql:39` already uses, so it is not a new one.
+#   - It inserts ONE `public.team` row and ONE `public.member` row with `role = 'admin'` for that
+#     uid, `on conflict do nothing`.
+#   - The sequence it serves: admin zero SIGNS UP THROUGH THE SHIPPED INTERFACE and lands on the
+#     member-less state, which ADR-009:78-81 already documents as correct behaviour and TEA-05
+#     shipped as `src/routes/NotOnATeam.tsx`. A human then runs this file once. That admin
+#     allow-lists everybody else and the ordinary ADR-009 flow runs from there.
+#
+# ***IT CONTAINS NO PASSWORD AND CREATES NO AUTH USER. THAT IS THE WHOLE DIFFERENCE FROM seed.sql***
+# and it is the reason this file may be pointed at a real project while that one may not. If PLAN
+# finds itself writing an `encrypted_password` literal, the plan has become `seed.sql` and is wrong.
+#
+# TWO THINGS ADR-024 REQUIRES OF ANY FILE THAT CREATES ROWS ON A HOSTED PROJECT, and they are
+# obligations on this ticket rather than background:
+#   - HUMAN-APPLIED AND NAMED, NEVER PERFORMED. RULE-09. `/ship` names the owed operator action; no
+#     agent runs this against anything (ADR-024 decision point 2, :81-93).
+#   - CONVERGE-ONLY, and preceded by a READ-ONLY LISTING if the project may already hold rows
+#     (ADR-024 decision point 4's hazard, :112-124). NOBODY CAN CONFIRM WHAT THE HOSTED PROJECT
+#     CONTAINS from this repository — ADR-024 declined a drift detector and the anon key cannot read
+#     `auth.users` (…tea01:145). Any plan that assumes the project is empty is assuming.
+#
+# ---------------------------------------------------------------------------------------------
+# 3. ***OUT OF SCOPE, AND MOST OF IT IS NEGATIVE REQUIREMENT — THE KIND NOBODY CHECKS.***
+#
+#   - ***THE ATTACHED IMAGE, ENTIRELY.*** The verdict is NEEDS-ADR, so per
+#     .claude/commands/triage.md:68-69 and .ai/standards/ui-design-system.md § Visual specification
+#     the image STAYS WITH THE IDEA AND SPECIFIES NOTHING. There is no `design/` directory on this
+#     ticket and none is to be created. THIS TICKET BUILDS NO SCREEN AT ALL.
+#   - ***THE SIGN-UP APPROVAL QUEUE (`YÊU CẦU ĐĂNG KÝ MỚI`). NOT DECIDED, AND NOT THIS TICKET'S.***
+#     It reverses ADR-009 decision points 1 and 3, which carry `ACCEPTED by the operator`. One
+#     question went back to the operator at this triage and is unanswered. IF ANY PART OF PLAN OR
+#     IMPLEMENTATION FINDS ITSELF ADDING A PENDING STATE, A REQUESTS TABLE, OR A TRIGGER THAT FILES
+#     A SIGN-UP, IT HAS CROSSED INTO THAT DECISION AND MUST STOP AND ASK.
+#   - WEAKENING OR REMOVING THE `supabase/seed.sql` GUARD, or republishing its credentials. The
+#     passwords are in this repository's history and stay unusable on a real project. This ticket
+#     adds a file beside it; it does not touch it.
+#   - MAKING `allowed_email.added_by` NULLABLE. Refused twice — on cost at
+#     2026-08-31-nobody-can-join-the-board.md:372, and mechanically in this triage's technical half,
+#     which found IT UNBLOCKS NOTHING: the insert still fails `allowed_email_insert_admin`, and
+#     `team_id` still points at a table with no rows.
+#   - A `security definer` FIRST-ADMIN FUNCTION callable from the product. Costed and refused at
+#     this triage on proportion: a permanent privileged surface, a new row in a human-only standard,
+#     and a race that needs a lock to be correct — bought to perform a ONE-TIME act.
+#   - AN EDGE FUNCTION OR ANY COMPONENT HOLDING THE SERVICE-ROLE KEY. ADR-005 forbids it; ADR-009:87-89
+#     says reaching for it requires superseding ADR-005 on its own terms first; ADR-027, the one
+#     document that would have created a server, is WITHDRAWN and NEVER WAS IN FORCE.
+#   - ***.ai/standards/data-model.md § Seed data (:187-203). HUMAN PLANE — NOT THIS TICKET'S.***
+#     See §8. It is named because the technical half costed it INTO this exit, and a plan that
+#     inherits that costing will try to write it.
+#   - APPENDIX A OF .ai/board/tickets/TEA-01/02-design.md:840 — provisioning a disposable Supabase
+#     database for tests. Related by neighbourhood only. See §6.
+#   - REPAIRING supabase/db.sql § 9.1 and § 9.2, which the technical half found STALE (they say
+#     `public.team` has no select policy and no update policy, while 20260904100000_cal04_team_select.sql
+#     and 20260905000000_adm01_team_threshold.sql both shipped). A real defect, in the file this
+#     ticket's reader will be standing next to, and a SEPARATE chore that has no row yet.
+#
+# ---------------------------------------------------------------------------------------------
+# 4. `schema_delta: none` — DECIDED HONESTLY, NOT TAKEN FROM THE TEMPLATE
+#
+# Definition of Ready item 4 (.ai/01-operating-model.md:334) reads "`schema_delta` is `none`, or an
+# approved ADR is linked", and warns in bold that A MIGRATION TOUCHING A POLICY, TRIGGER OR
+# CONSTRAINT IS NOT `none` — ADR-014. That warning is why this field is argued rather than set.
+#
+# THE ANSWER IS `none`, AND THE REASON IS THAT THIS TICKET WRITES NO MIGRATION AT ALL. The file it
+# adds creates ROWS. It adds no table, no column, no policy, no trigger, no constraint, no grant and
+# no function, so ADR-014 does not fire on it. The precedent is exact: ADR-024 governs `seed.sql`,
+# which also creates rows and is also not a migration.
+#
+# ADR-030 IS LINKED IN §0 REGARDLESS — as the decision the whole ticket rests on, NOT as the
+# schema-delta ADR item 4 asks for. Those are two different reasons to link an ADR and conflating
+# them would make this field look graded when it is not.
+#
+# ***IF PLAN CONCLUDES OTHERWISE IT STOPS AND ASKS*** rather than correcting this field quietly. The
+# two ways it could: a plan that reaches for a `security definer` helper (§3 forbids it), or one that
+# denormalises anything onto `member` (a trigger change, and ADR-014 makes that not `none`).
+#
+# ---------------------------------------------------------------------------------------------
+# 5. `feature_ids: [TEA-01]` — ARGUED, BECAUSE `[]` WAS THE OTHER CANDIDATE
+#
+# THE CASE FOR `[]` IS REAL AND IS WHY THIS PARAGRAPH EXISTS. This ticket delivers no capability. The
+# 2026-08-31 verdict ruled that establishing the first admin is NOT something the product offers
+# (2026-08-31-nobody-can-join-the-board.md:358-361), TEA-01's own row says the bootstrap "is not a
+# capability of this feature", and naming TEA-01 here can be misread as claiming this work completes
+# that feature. It does not: TEA-01 ships SIGN-UP, and this file is applied by a human afterwards.
+#
+# `[TEA-01]` WINS ON TWO GROUNDS, EITHER ALONE SUFFICIENT.
+#
+#   1. `[]` FAILS DEFINITION OF READY ITEM 1 OUTRIGHT — the item requires the field NON-EMPTY with
+#      every ID present in .ai/registry/features.md (.ai/01-operating-model.md:331). An empty list is
+#      not a stricter answer, it is a ticket that cannot reach READY.
+#   2. TEA-01 IS THE RIGHT ROW RATHER THAN THE CONVENIENT ONE. Its `Notes` cell carries the
+#      `TODO(project):` this chore exists to close — "the first-team and first-admin bootstrap is not
+#      a capability of this feature — a human applies a seed" (.ai/registry/features.md:126) — and
+#      its trigger is the mechanism the bootstrap steps around. No other row in the registry mentions
+#      the bootstrap at all.
+#
+# ***DEFINITION OF READY ITEM 1 CONSTRAINS `feature_ids`, NOT THE TICKET `id`.*** That is what lets a
+# `TEA` feature list sit under an `OPS` ticket without contradiction, and it is BUG-001's precedent
+# stated in the registry itself: "The ticket carries `id: BUG-001` with `feature_ids: [TEA-01]` —
+# Definition of Ready item 1 constrains `feature_ids` and not the ticket `id`" (features.md:126).
+#
+# ITEM 6 IS SATISFIED WITHOUT A SPLIT RATIONALE. One ID, one group, `group: TEA`.
+#
+# CHECK D1 IS NOT TRIPPED BY `OPS-004`. scripts/check-docs.mjs builds its pattern from the declared
+# prefixes at features.md:66 — `CAL ADM TEA UIE`. `OPS` is not one of them, and
+# .ai/01-operating-model.md:317 declares the scheme: "Defects are `BUG-nnn`, chores are `OPS-nnn`".
+#
+# ---------------------------------------------------------------------------------------------
+# 6. `depends_on: []` — MEASURED ON 2026-09-07, NOT INHERITED
+#
+# EVERY TICKET ON THIS BOARD IS `DONE`. `.ai/board/backlog.md` § BACKLOG was an EMPTY TABLE before
+# this row — the first time in the product's life — and § READY is empty too. So NO LIVE TICKET
+# CLAIMS A PATH, and there is no file collision to encode. That is a measurement taken today, not a
+# standing guarantee; whichever row is planned next fills its own `allowed_paths`. RE-CHECK AT PLAN.
+#
+# ***APPENDIX A'S PROVISIONING CHORE IS NOT A PREREQUISITE, AND THIS WAS MEASURED RATHER THAN
+# ASSUMED.*** Appendix A (.ai/board/tickets/TEA-01/02-design.md:840, title at :848) provisions a
+# DISPOSABLE Supabase database for TESTS to run against — a container runtime and CI wiring. This
+# ticket's file is applied to a REAL, hosted project, and `tech-lead-design` found that while that
+# chore is unlanded THE SUPABASE SQL EDITOR IS THE ONLY SURFACE AVAILABLE ON A HOSTED PROJECT —
+# which is precisely the surface this file is applied through. `supabase/config.toml` does not exist
+# and there is no local stack, so the seed guard's own hint (`seed.sql:44-46`) already points at a
+# psql invocation against a database the operator must supply. Landing Appendix A would give this
+# ticket a place to REHEARSE, which is a convenience and not a dependency.
+#
+# IT COULD NOT GO IN THIS FIELD IN ANY CASE: `depends_on` names TICKETS, and Appendix A has no ticket
+# and no ID. TEA-05's row already records why an `OPS-nnn` invented for it would be the dangling
+# citation D1 exists to report (features.md:130).
+#
+# ---------------------------------------------------------------------------------------------
+# 7. `branch: "feat/OPS-004"` — NOT `ops/<slug>`, AND THE ARGUMENT IS WEAKER HERE THAN IT WAS
+#
+# THE PRECEDENT: scripts/check-allowed-paths.mjs:96-98 exits 0 with "nothing to check" on any branch
+# that does not begin `feat/`; :101-103 slices `feat/` off and resolves the remainder to
+# .ai/board/tickets/<ID>/ticket.yaml. So an `ops/` name runs RULE-03 UNENFORCED. The operator settled
+# that trade-off for `feat/BUG-001` on 2026-09-03 with the contradiction in front of them, and
+# OPS-001 and OPS-002 followed it.
+#
+# WHAT IT COSTS: .ai/standards/git-conventions.md:36 says `<FEATURE-ID>` is a row in
+# .ai/registry/features.md and nothing else — and OPS-004 IS NOT A ROW (§9). That residual
+# contradiction is standards plane under RULE-01, it is unresolved, and it is NOT REOPENED HERE.
+#
+# ***WHERE THIS DIFFERS FROM OPS-001 AND OPS-002, AND `product` FLAGS IT RATHER THAN GLOSSING IT:***
+# those two edited SHIPPED APPLICATION FILES INCLUDING BOTH HALVES OF THE DATA-ACCESS SEAM, which is
+# what made an unenforced RULE-03 unacceptable. This ticket adds ONE NEW FILE under `supabase/` and
+# touches no `src/` file at all, so the guard has much less to guard. The argument for `feat/` is
+# therefore thinner — but it is not nothing, because the file this ticket adds is the ONLY file in
+# the repository intended to be applied BY HAND TO A PRODUCTION DATABASE, and an unguarded branch is
+# how something else arrives beside it unnoticed. `product` chose the enforced guard. A human may
+# overrule it to `ops/<slug>` at no cost to the work; if they do, RULE-03 is unenforced in CI for
+# this ticket and that is the whole of what changes.
+#
+# ---------------------------------------------------------------------------------------------
+# 8. ***THE DOCUMENTATION THIS EXIT WAS COSTED WITH IS HUMAN PLANE, AND THAT IS A TRAP FOR PLAN.***
+#
+# `tech-lead-design`'s costing of this exit includes "one paragraph in .ai/standards/data-model.md
+# § Seed data distinguishing it from the two things already there (:188-200)". THAT FILE IS HUMAN
+# PLANE — CLAUDE.md § Two planes: ".ai/registry/ and .ai/standards/ are permanent and human-only",
+# and RULE-01. NO AGENT MAY EDIT IT AND IT MUST NOT ENTER `allowed_paths`.
+#
+# A plan that inherits the costing without noticing the plane will try to write it, and the path
+# guard will refuse — after the plan is written. Recorded here so it is refused at PLAN instead.
+#
+# THE CONSEQUENCE, WHICH IS NOT THIS TICKET'S TO RESOLVE: § Seed data will describe TWO things while
+# `supabase/` holds THREE, and ADR-025/ADR-026's "never a second source" reading of that directory
+# will be one file out of date. The standards edit belongs to `/thuki` on an `ops/<slug>` branch, and
+# it is the THIRD item now waiting on that session — the other two are § Colour / § Type
+# (.ai/standards/ui-design-system.md) and the `PLAN -> READY` gap, both recorded in
+# .ai/board/backlog.md.
+#
+# WHAT PLAN MAY WRITE INSTEAD: the procedure belongs somewhere a human standing up a project will
+# find it. `SETUP.md` is board-adjacent and agent-writable and is the obvious candidate; the file
+# itself can carry its own instructions in a comment header, as `supabase/seed.sql:16-36` does.
+# PLAN CHOOSES; this shell asserts only that `.ai/standards/**` is not available to it.
+#
+# ---------------------------------------------------------------------------------------------
+# 9. WHY THERE IS NO NEW ROW IN .ai/registry/features.md
+#
+# THIS IS AN OPERATIONAL PROCEDURE, NOT A CAPABILITY. A row reading "the first admin comes to exist"
+# would file a thing a human does with a SQL editor as something the product CONTAINS, in the file
+# CLAUDE.md calls "the only valid source of feature IDs". The 2026-08-31 verdict already ruled this
+# — "So the first admin gets no feature row"
+# (.ai/board/ideas/2026-08-31-nobody-can-join-the-board.md:358-361) — and NOTHING FOUND IN THIS
+# TRIAGE OVERTURNS IT. What changed is only that the operational step it pointed at stopped
+# executing, which is a fact about the seed guard rather than about what the product offers.
+#
+# A DELIBERATE DEPARTURE FROM ADR-007'S PROMOTE DEFAULT, and the same one BUG-001, OPS-001 and
+# OPS-002 took. .ai/01-operating-model.md:317: "chores are `OPS-nnn`".
+#
+# WHAT WAS WRITTEN INSTEAD: one sentence appended to the `Notes` of TEA-01 in
+# .ai/registry/features.md, in the form the UI-copy and visual-restyle chores already use on that
+# same cell. That plus the idea filename in this header is THE WHOLE PROVENANCE A REVIEWER GETS.
+# RULE-01 permits a feature-row edit with no ADR; CODEOWNERS review at merge is the approval.
+#
+# ***THE TODO(project) ON TEA-01 IS NOT MARKED CLOSED, AND MUST NOT BE UNTIL THIS TICKET SHIPS.***
+# It closes when the file exists on `main`, not when a ticket points at it. `/ship` is where that
+# happens, if it happens.
+#
+# ONE CAVEAT, RECORDED BECAUSE THIS EXACT ARGUMENT WAS OVERRULED ONCE BEFORE. ADR-028 overruled it
+# for visual work: the restyle chore was written as `OPS-003` with no row, the operator instructed
+# that UI enhancement get a feature group, and it became `UIE-01` WITH a row. That overruling turned
+# on the operator declaring a GROUP for a class of work. No group exists for operational bootstrap
+# procedures, declaring one is an ADR and the operator's, and if they want one this is the decision
+# to overrule.
+#
+# ---------------------------------------------------------------------------------------------
+# 10. WHY THE ID IS `OPS-004` AND `OPS-003` IS SKIPPED
+#
+# `OPS-003` WAS ISSUED AND THEN VACATED. It was created on 2026-09-05 for the visual-restyle chore
+# and renumbered to `UIE-01` the same day under
+# .ai/registry/decisions/ADR-028-uie-is-a-fourth-feature-group.md. REUSING IT WOULD MAKE TWO
+# DOCUMENTS MEAN DIFFERENT THINGS BY THE SAME TOKEN: .ai/board/backlog.md and the `Notes` cells of
+# TEA-01 and TEA-05 in .ai/registry/features.md all still say `OPS-003` and all mean the restyle.
+# A vacated ID stays vacated. The series is OPS-001, OPS-002, (OPS-003 vacated), OPS-004.

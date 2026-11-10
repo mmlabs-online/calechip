@@ -1,0 +1,64 @@
+# Created by `tech-lead-design` at /plan MIR-13 on 2026-11-03: the read slice of feature MIR-13,
+# split by operation (ADR-071 decision 5; .ai/board/tickets/MIR-13/01-plan.md § 1 and § 7).
+# Not produced by /triage: no idea file promotes it. It shares MIR-13's feature row, which stays
+# PLANNED until this ticket ships.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-13-b
+title: "Every read policy and read definer function resolves teams through `member_team_ids` and is bounded by `org_id`, and `getTeam()` and the overload warning survive a member on several teams"
+feature_ids: [MIR-13]   # split of MIR-13 (operating model § ID scheme: splits get -a, -b)
+group: MIR
+state: DONE
+owner: tech-lead-design
+branch: feat/MIR-13-b
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "S"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. 3 paths; estimate M assumed client changes ADR-072 removed
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-05, MIR-06, MIR-07, MIR-08, MIR-09, MIR-10, MIR-12, MIR-13]   # "Blocked by" — MIR-13 writes the helpers and keeps membership true
+invariants_touched: [INV-04, INV-07]
+allowed_paths:
+  - ".ai/registry/decisions/ADR-072-reads-that-feed-the-absence-count-resolve-to-the-primary-team.md"
+  - "supabase/migrations/20261103180000_mir13b_read_path_org_bound.sql"
+  - "supabase/tests/160-read-path-org-bound.test.sql"
+glossary_owed: []
+schema_delta: "non-none — select policies and read definer functions rewritten off member_team_id(), count-feeding reads on the primary team, admin and public reads bounded by org; no table, column, constraint or trigger change. ADR-072 (amends ADR-071 decision 5), ADR-070"
+requires_adr: true    # ADR-072, ACCEPTED under ADR-067
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-11-03T06:55:22Z" }
+  review: { passed: true, at: "2026-11-03T07:32:04Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+mir_phase: 3
+mir_plan_item: "P3-4"             # .ai/board/plans/calechip-multi-tenancy-plan.md:189-194, read half
+verification_required: true
+expected_impact:   # [predicted]; the read-side rows of MIR-13's list
+  - { feature: CAL-11, tag: SUPERSEDED, why: "cross-team reads bounded by the caller's org, with no trust in the client-supplied `p_team_id` alone" }
+  - { feature: CAL-12, tag: CHANGED, why: "the teams offered are bounded by the caller's org" }
+  - { feature: TEA-03, tag: CHANGED, why: "the member list spans every team the caller belongs to (`member_select_team`, `tea03:34-36`)" }
+  - { feature: CAL-04, tag: CHANGED, why: "entries readable for every team the caller belongs to (`entry_select_team`, `cal01:203-207`)" }
+  - { feature: CAL-05, tag: CHANGED, why: "as CAL-04" }
+  - { feature: CAL-10, tag: CHANGED, why: "as CAL-04" }
+  - { feature: CAL-07, tag: CHANGED, why: "`getTeam()` no longer assumes one team (`supabase.ts:2313-2321`; warning source `usePageOverload.ts:118-135`)" }
+  - { feature: CAL-13, tag: CHANGED, why: "busy days readable across the caller's teams (`busy_day:97-105`)" }
+  - { feature: EVT-01, tag: CHANGED, why: "team-scoped visibility resolves through all of the caller's teams (`evt02:332-346`)" }
+mir_detail: |
+  The read slice of P3-4. MIR-13 (the write slice) ships first and leaves, in the database:
+  `member_org_id`, `member_team_ids`, `member_primary_team_id`, `shares_active_team`, the
+  `member_sync_membership` mirror, and `org_id NOT NULL` everywhere (MIR-13/01-plan.md § 4).
+
+  In scope, from MIR-13/01-plan.md § 1 *Out of scope*:
+  - select policies: member_select_team, member_select_pending_admin, team_select_own,
+    entry_select_team, busy_day_select_team, issue_report_select_admin, issue_image_select_admin,
+    event_select_visible, event_attendance_select_visible, event_guest_select_visible,
+    notification_select_own
+  - read definer functions, each gaining an org condition and none trusting `p_team_id` alone:
+    list_teams, list_all_members, list_members_for_team, list_team_entries_for_team,
+    list_team_entries_overlapping_for_team (`cal11:33-65`, `many_teams:53-70`),
+    list_member_directory (`mir04`), may_read_event, is_event_participant, notify_event_created
+  - `getTeam()` `.maybeSingle()` (`supabase.ts:2313-2321`; A:980, A:996), and the mock if it changes
+  - the overload warning while another team is viewed (`usePageOverload.ts:118-135`,
+    `OverloadWarning.tsx:199`; A:995)
+  - after this ticket, no reader of `member_team_id()` remains; MIR-21 drops it with `member.team_id`

@@ -1,0 +1,28 @@
+# CODEOWNERS — the mechanism behind RULE-01 and RULE-09.
+#
+# Since ADR-004 unwired guard-registry.mjs, this file is what makes "the registry is human-only" true
+# of a pull request. It moved the control from before the write to before the merge; it did not
+# remove it. Deleting a line here removes a control, and nothing else will report that it is gone.
+#
+# Owner stamped by scripts/init-project.mjs.
+#
+# TODO(project): branch protection requiring CODEOWNERS review is a GitHub repository setting and no
+# script can turn it on. Until it is on, this file is documentation rather than a control, RULE-01
+# has no mechanism, and the enforcement map in .ai/registry/rules.md is claiming something untrue.
+
+/.ai/registry/    @didi-code0980
+/.ai/standards/   @didi-code0980
+/.claude/         @didi-code0980
+/.github/         @didi-code0980
+/scripts/         @didi-code0980
+/.mcp.json        @didi-code0980
+
+# `scripts/` was added on 2026-09-06, with `OWED_PATHS` in `scripts/check-docs.mjs`. That register
+# tells check D6 that a named-but-absent path is owed rather than broken, which is a waiver on the
+# audit — and a waiver an agent can grant itself to clear its own gate is not a control. The rest of
+# the directory earns the same review for the same reason: `check-docs.mjs` and `check-allowed-paths.mjs`
+# ARE the audit, and `.claude/hooks/**` has been behind owner review since this file was written.
+
+# TODO(project): add the schema or migrations directory once the datastore is chosen. Applying a
+# migration is permanently human under RULE-09, and this is where that becomes true of a pull
+# request rather than only of a sentence.

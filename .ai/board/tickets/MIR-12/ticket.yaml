@@ -1,0 +1,93 @@
+# Copied from .ai/templates/ticket.yaml by `claude` on 2026-10-12, recording item P3-3 of
+# .ai/board/plans/calechip-multi-tenancy-plan.md. Not produced by /triage: no idea file promotes it.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-12
+title: "`org_id` is added and backfilled into Org public, `membership` is backfilled from `member.team_id`, and `member.team_id` is dropped last"
+feature_ids: [MIR-12]   # ADR-063 row; written by the steward on the operator's decision of 2026-10-20
+group: MIR           # ADR-063: MIR is the eighth feature group
+state: DONE          # `orchestrator` at /ship, 2026-11-01
+owner: tech-lead-design
+branch: feat/MIR-12
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "S"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-05, MIR-06, MIR-07, MIR-08, MIR-09, MIR-10]   # "Blocked by" — the MIR IDs that must be DONE first
+invariants_touched: [INV-04, INV-07]
+allowed_paths:
+  - "supabase/migrations/20261031120000_mir12_backfill_org_public.sql"
+  - "supabase/bootstrap.sql"
+  - "supabase/tests/120-composite-fks.test.sql"
+  - "supabase/tests/130-backfill-org-public.test.sql"
+glossary_owed: []
+schema_delta: "non-none — ADR-070: create Org public, backfill org_id and primary_team_id, populate membership; columns stay nullable. SET NOT NULL and the holiday unique swap moved to MIR-13 (01-plan.md Changelog 2026-10-31T12:17:00Z)"
+requires_adr: false
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 1, max: 6 }   # 99-questions.md, 2026-10-31T12:14:50Z
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-10-31T12:06:00Z" }
+  review: { passed: true, at: "2026-10-31T21:30:03+07:00" }   # orchestrator at /advance, from 04-review.md verdict: PASS
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+# Not in .ai/templates/ticket.yaml. Added for the multi-tenancy plan; nothing in scripts/ reads them.
+# Plan status lives only in .ai/board/plans/multi-tenancy-status.md. `state` above is the loop's.
+mir_phase: 3
+mir_plan_item: "P3-3"             # .ai/board/plans/calechip-multi-tenancy-plan.md:182-187
+verification_required: true   # phase 0 and phase 3 — a passing mock test is not verification
+expected_impact:
+  - { feature: TEA-01, tag: CHANGED, why: "the admission trigger must write `org_id` (`avatar_images:63-79`)" }
+  - { feature: TEA-09, tag: CHANGED, why: "a pending sign-up has no team to derive an org from (`member_approval:50`, `avatar_images:66`)" }
+  - { feature: TEA-11, tag: CHANGED, why: "`create_team` must write `org_id` (`many_teams:93`)" }
+  - { feature: CAL-01, tag: CHANGED, why: "an entry carries `org_id` and `primary_team_id`; the insert grant is column-scoped (`supabase.ts:1865-1877`, `cal01:192`)" }
+  - { feature: CAL-08, tag: CHANGED, why: "the holidays shown are the national set plus org days, per org" }
+  - { feature: CAL-13, tag: CHANGED, why: "a busy day carries `org_id`; the insert grant is `insert (date)` only (`busy_day:81`)" }
+  - { feature: ADM-02, tag: CHANGED, why: "the calendar becomes `unique (org_id, date)` instead of one global row per date (`adm02:33`, `adm02seed:30`)" }
+  - { feature: ADM-03, tag: CHANGED, why: "`addHoliday` must write `org_id` (`supabase.ts:2694-2698`)" }
+  - { feature: ADM-07, tag: CHANGED, why: "a report carries `org_id`; the insert grant is column-scoped (`supabase.ts:3059-3070`, `issue_img:78`)" }
+  - { feature: ADM-08, tag: CHANGED, why: "`entry_apply_approval_setting` stops joining through `m.team_id` (`approval_settings:111-118`)" }
+  - { feature: EVT-01, tag: CHANGED, why: "`save_event` and `event_stamp` must write `org_id` on the event and its invitees (`evt02:168-172`, `evt01:105`, `evt02:206-213`)" }
+  - { feature: EVT-02, tag: CHANGED, why: "joining an event carries `org_id`; the grant is `insert (event_id)` only (`evt02:406`)" }
+  - { feature: EVT-04, tag: CHANGED, why: "`notify()` must write `org_id` (`evt04:133-142`)" }
+  - { feature: EVT-07, tag: CHANGED, why: "`register_guest` (anon) must write `org_id` (`evt07:373-375`)" }
+# [predicted] at plan time. Corrected at ship in .ai/board/plans/feature-change-log.md.
+mir_detail: |
+  Short names (tea04, cal11, …) are migrations, per the File legend in
+  .ai/board/audits/multi-tenancy-audit-2026-10-12.md:38-77. "A:n" is a line of that audit;
+  "plan:n" a line of .ai/board/plans/calechip-multi-tenancy-plan.md.
+
+  Plan P3-3 (plan:182-187):
+  - Add `org_id` nullable everywhere
+  - Create the `Org public` row; backfill every existing team and member into it
+  - Backfill `membership` from today's `member.team_id`, with `is_primary = true`
+  - Set `org_id` NOT NULL
+  - (Drop `member.team_id` only after all readers move to `membership` — split out as MIR-21)
+
+  Blocked by MIR-10 (P3-1, "approve before any migration", plan:167). Each migration must be
+  independently shippable and reversible (plan:323).
+
+  ORDER DECIDED 2026-10-12 (the operator delegated the choice): the plan's last step waits for "all
+  readers" to move to `membership`, which is MIR-13's work, while MIR-13 rewrites policies against the
+  `membership` rows this item backfills. The step is split out as MIR-21, appended per the family rules,
+  so the order is MIR-12 → MIR-13 → MIR-21 with no cycle.
+
+  Audit references — what breaks under `org_id NOT NULL` (A:917-939):
+  - Admission trigger inserts without `org_id`, and `exception when others` swallows the error — `avatar_images:63-79`
+  - A pending sign-up has no org to attach — `member_approval:50`, `avatar_images:66`
+  - `createEntry` — `supabase.ts:1865-1877`, `cal01:192`
+  - `entry_apply_approval_setting` — `approval_settings:111-118`
+  - `create_team` — `many_teams:93`
+  - Bootstrap — `supabase/bootstrap.sql:175`, `:186`
+  - Seed — `supabase/seed.sql:51`, `:91`, `:182`, `:505`, `:548`, `:601`
+  - Account script — `supabase/create-account.sql:152`
+  - Holiday seed and `unique(date)` — `adm02seed:30`, `adm02:33`
+  - `addHoliday` — `supabase.ts:2694-2698`
+  - `save_event` / `event_stamp` — `evt02:168-172`, `evt01:105`; invitees `evt02:206-213`
+  - `joinEvent` — `evt02:406`, `supabase.ts:3380-3384`
+  - `register_guest` — `evt07:373-375`
+  - `notify()` — `evt04:133-142`
+  - `createIssueReport` — `supabase.ts:3059-3070`, `issue_img:78`
+  - `setOwnBusyDay` — `busy_day:81`, `supabase.ts:2602-2604`
+  - `ADD COLUMN … NOT NULL` without a default fails on a non-empty table — every table in audit §1
+  - Client types, mock and fixtures — `src/lib/domain/types.ts`, `src/lib/data/mock.ts`, `src/lib/fixtures.ts`
+  - `supabase/db.sql` drifts further

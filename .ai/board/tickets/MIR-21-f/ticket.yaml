@@ -1,0 +1,66 @@
+# Created by `tech-lead-design` at /plan MIR-21-c on 2026-11-06: the last of four slices of the
+# drop of feature MIR-21 (ADR-080 decision 4; .ai/board/tickets/MIR-21-c/01-plan.md § 1 and § 7).
+# Not produced by /triage: no idea file promotes it. It shares MIR-21's feature row, which stays
+# PLANNED until this ticket ships.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-21-f
+title: "`member.team_id`, `member_team_id()` and the mirror's insert branch are dropped"
+feature_ids: [MIR-21]   # split of MIR-21 (operating model § ID scheme: splits get -a, -b)
+group: MIR
+state: DONE   # `orchestrator` at /ship, 2026-11-07
+owner: ""
+branch: ""
+size_estimate: "M"   # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"            # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. 12 paths (01-plan.md § 7; 070 added at /implement 2026-11-07, 99-questions.md); predicted at /plan MIR-21-e: about 10 (ADR-081 decision 2)
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-05, MIR-06, MIR-07, MIR-08, MIR-09, MIR-10, MIR-12, MIR-13, MIR-13-b, MIR-21, MIR-21-b, MIR-21-c, MIR-21-d, MIR-21-e]   # "Blocked by" — MIR-21-e leaves no fixture naming the column (ADR-080 decision 4)
+invariants_touched: [INV-04, INV-07]   # 01-plan.md § 2
+allowed_paths:
+  - "supabase/migrations/20261107180000_mir21f_drop_member_team_id.sql"
+  - "supabase/tests/270-member-team-id-dropped.test.sql"
+  - "supabase/tests/010-catalogue.test.sql"
+  - "supabase/tests/040-member-self-writes.test.sql"
+  - "supabase/tests/100-mock-parity.test.sql"
+  - "supabase/tests/110-schema-cleanup.test.sql"
+  - "supabase/tests/160-read-path-org-bound.test.sql"
+  - "supabase/tests/230-writers-write-membership.test.sql"
+  - "supabase/tests/240-org-public-holidays.test.sql"
+  - "supabase/tests/070-definer-callers.test.sql"   # added 2026-11-07T07:42:15Z by tech-lead-design, 01-plan.md § 4.12
+  - ".ai/standards/data-model.md"
+  - ".ai/standards/rbac-and-security.md"
+glossary_owed: []
+schema_delta: "20261107180000_mir21f_drop_member_team_id.sql — drops member.team_id with its FK, member_team_id_idx, public.member_team_id(uuid) and policy member_decide_admin; replaces member_enforce_role_and_removal, member_sync_membership (removal branch only) and stamp_org_id; recreates trigger member_sync_membership as after update of removed_at; no cascade, no data rewritten (ADR-080 decision 4, ADR-081 decision 2; 01-plan.md § 4.1, § 6)"
+requires_adr: true    # ADR-080 decision 4 names the work; the contract is this ticket's PLAN
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-11-07T07:34:56Z" }
+  review: { passed: true, at: "2026-11-07T08:06:51Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+mir_phase: 3
+mir_plan_item: "P3-3, last step"             # .ai/board/plans/calechip-multi-tenancy-plan.md:187, the drop
+verification_required: true
+expected_impact: []   # [predicted] none: after MIR-21-e nothing reads or writes the column
+mir_detail: |
+  Slice 4 of 4 of the drop (ADR-080). After MIR-21-e no reader, writer or fixture names
+  `member.team_id`, except the catalogue and self-lock tests below.
+
+  In scope, from ADR-080 decision 4 (as read on 2026-11-06):
+  - drops: column member.team_id, member_team_id_idx, the `update (status, team_id)` grant's column,
+    public.member_team_id(uuid), the mirror's INSERT branch, the `team_id` clause of
+    member_enforce_role_and_removal, stamp_org_id's `member` team lookup, the member_decide_admin
+    policy (inert since ADR-064 decision 1)
+  - kept verbatim: the removal branch of member_sync_membership, which closes a removed member's
+    rows at greatest(removed_at, joined_at) (ADR-078 decision 6)
+  - tests naming the column or the function: supabase/tests/010, 040, 100, 110, 160 (AC-1)
+  - added at /plan MIR-21-e by ADR-081: the fixture inserts of supabase/tests/100, 160 and 240 stop
+    naming `team_id` and write `membership` with `tests.put_on_team` (MIR-21-e/01-plan.md § 4.1);
+    predicted count rises to about ten paths
+  - .ai/standards/data-model.md and .ai/standards/rbac-and-security.md, where they document the
+    column or member_decide_admin
+  - its own migration and pgTAP test
+
+  Predicted about nine paths at /plan MIR-21-c.

@@ -1,0 +1,77 @@
+# Copied from .ai/templates/ticket.yaml by `claude` on 2026-10-12, recording item P3-5 of
+# .ai/board/plans/calechip-multi-tenancy-plan.md. Not produced by /triage: no idea file promotes it.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-14
+title: "A multi-team member's entry needs approval if any of their teams requires it, the first decision wins, any rejection rejects, and both approver and rejecter are recorded"
+feature_ids: [MIR-14]   # ADR-063 row; written by the steward on the operator's decision of 2026-10-20
+group: MIR           # ADR-063: MIR is the eighth feature group
+state: DONE
+owner: ""
+branch: ""
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. 11 paths; the queue split to MIR-14-b (ADR-073 decision 9)
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-05, MIR-06, MIR-07, MIR-08, MIR-09, MIR-10]   # "Blocked by" — the MIR IDs that must be DONE first
+invariants_touched: [INV-02, INV-03, INV-07]
+allowed_paths:
+  - ".ai/registry/decisions/ADR-073-one-decider-on-any-of-the-owners-teams-decides-a-multi-team-entry.md"
+  - ".ai/standards/rbac-and-security.md"
+  - ".ai/board/tickets/MIR-14-b/ticket.yaml"
+  - "supabase/migrations/20261103210000_mir14_multi_team_decisions.sql"
+  - "supabase/tests/170-multi-team-decisions.test.sql"
+  - "supabase/tests/010-catalogue.test.sql"
+  - "src/lib/roles.ts"
+  - "src/lib/data/mock.ts"
+  - "src/lib/data/supabase.ts"
+  - "tests/manager-role.test.ts"
+  - "tests/bulk-rejection.test.ts"
+glossary_owed: []
+schema_delta: "non-none — entry gains rejected_by (+ entry_rejected_by_org_fk), rejected_at, self_approved (ADR-070 § 4); may_decide_entry helper; entry_update_manager rewritten, entry_select_decider added; entry_apply_approval_setting definer and OR-ed across teams; entry_enforce_decision amended. ADR-073 (supersedes ADR-035 item 3), ADR-070"
+requires_adr: true    # ADR-073, ACCEPTED under ADR-067
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-11-03T09:57:23Z" }
+  review: { passed: true, at: "2026-11-03T10:32:46Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+# Not in .ai/templates/ticket.yaml. Added for the multi-tenancy plan; nothing in scripts/ reads them.
+# Plan status lives only in .ai/board/plans/multi-tenancy-status.md. `state` above is the loop's.
+mir_phase: 3
+mir_plan_item: "P3-5"             # .ai/board/plans/calechip-multi-tenancy-plan.md:196-204
+verification_required: true   # phase 0 and phase 3 — a passing mock test is not verification
+expected_impact:
+  - { feature: ADM-04, tag: CHANGED, why: "an entry appears in the queue of every relevant team's manager and clears from the others once one decides; the UI shows which teams it affects" }
+  - { feature: ADM-05, tag: CHANGED, why: "one manager's decision is sufficient for a multi-team member; a rejection records `rejected_by`; a team with no manager falls back to `org_admin`" }
+  - { feature: ADM-06, tag: CHANGED, why: "a bulk rejection records `rejected_by` (`reject_entries` records no actor, `adm06:73-86`)" }
+  - { feature: ADM-08, tag: CHANGED, why: "the approval switches are OR-ed across every team the owner belongs to (`approval_settings:111-118`)" }
+  - { feature: TEA-12, tag: SUPERSEDED, why: "a manager may no longer be refused their own entry (`mgr_gen_cols:58-61`). Replaced by: a manager may approve their own entry, recorded as `self_approved = true`" }
+# [predicted] at plan time. Corrected at ship in .ai/board/plans/feature-change-log.md.
+mir_detail: |
+  Short names (tea04, cal11, …) are migrations, per the File legend in
+  .ai/board/audits/multi-tenancy-audit-2026-10-12.md:38-77. "A:n" is a line of that audit;
+  "plan:n" a line of .ai/board/plans/calechip-multi-tenancy-plan.md.
+
+  Plan P3-5 (plan:196-204), approval rules agreed at plan:30-35:
+  - Extend `entry_apply_approval_setting` to OR the approval switches across all the owner's teams
+  - Record which teams an entry affects, so each relevant manager sees it in their queue
+  - First decision wins; clear the other queues
+  - Any rejection rejects the entry
+  - Record `approved_by` **and** `rejected_by` — today rejection stores no actor (`mgr_gen_cols:107-109`)
+  - Record `self_approved` when a manager decides their own entry
+  - Fall back to `org_admin` when a team has no manager
+  - UI shows which teams an entry affects
+
+  Blocked by MIR-10 (plan:167).
+
+  Audit references (A:834-875):
+  - `entry_apply_approval_setting` `approval_settings:102-129`, join `approval_settings:111-118`
+  - `may_decide` `manager_role:55-64`; `entry_update_admin` `cal03:80-88`; `entry_update_manager` `manager_role:90-99`
+  - A manager may not decide their own entry — `mgr_gen_cols:58-61`
+  - Approval records the actor `mgr_gen_cols:102-106`; rejection clears it `mgr_gen_cols:107-109`
+  - A substantive edit returns the entry to `pending` — `mgr_gen_cols:122-132`
+  - `reject_entries` `adm06:73-86` (security invoker) records no actor
+  - Admin self-approval is known weakness 4, `.ai/standards/rbac-and-security.md:251`
+  - No audit or change-history table exists

@@ -1,0 +1,264 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-09-01 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW QA REWORK ESCALATED DONE
+id: TEA-05
+title: "Sign in, sign out, and the member-less landing state"
+feature_ids: [TEA-05, TEA-01]
+group: TEA
+state: DONE      # orchestrator at /ship, 2026-09-03, on 04-review.md cycle 2 `gate: PASS` /
+                 # `next_state: DONE`. ADR-022 removed the QA stage, so REVIEW -> DONE is the whole
+                 # remaining transition (.ai/01-operating-model.md:36)
+owner: ""
+branch: "feat/TEA-05"
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR. Read from 01-plan.md
+                      # section 1. The CARVE-OUT said S (TEA-01/01-story.md:211); the technical
+                      # half of /triage re-read the file list and said M. This plan agrees with
+                      # M rather than copying the S forward.
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. Counted
+                      # from the twelve allowed_paths below, 01-plan.md section 7. AGREES with
+                      # size_estimate; ADR-012 is not engaged. Twelve is M's ceiling — L begins
+                      # above it — so nothing splits.
+depends_on: [TEA-01]
+invariants_touched: [INV-04]   # 01-plan.md section 2. DIVERGES from the TEA-05 row in
+                               # features.md, which says []. Reached indirectly: this ticket
+                               # computes no count and writes no row, and AC-11 exists because
+                               # presenting the member-less state must not create a member.
+                               # invariants.md: "choosing the safest behaviour and then
+                               # concluding no invariant is engaged is circular reasoning".
+                               # The mechanism is thin and is stated so R8 does not hunt for a
+                               # control: nothing in section 4 writes public.member, and its
+                               # only writer is still the admission trigger on auth.users.
+# allowed_paths — 01-plan.md section 7. Twelve globs, twelve files.
+#
+# NO INLINE COMMENTS ON THE ITEMS. `readYamlList` in scripts/check-allowed-paths.mjs and in
+# .claude/hooks/guard-allowed-paths.mjs strips only a LEADING and a TRAILING quote, so a
+# trailing `# ...` is swallowed into the pattern and the glob then matches nothing.
+#
+# DELIBERATELY ABSENT: tests/seam-parity.test.ts (must pass unedited with four seam functions
+# added); playwright.config.ts (pinning the suite's seam is BUG-001, ahead of this ticket on
+# the board — taking it here would fix another ticket's defect inside a feature branch);
+# src/routes/AllowList.tsx and src/routes/MemberList.tsx (both already fail safe with no
+# session); supabase/migrations/ (section 6); tests/permission-model.test.ts (every criterion
+# here is observable through the interface, including AC-11).
+allowed_paths:
+  - "src/lib/domain/types.ts"
+  - "src/lib/data/index.ts"
+  - "src/lib/data/supabase.ts"
+  - "src/lib/data/mock.ts"
+  - "src/lib/fixtures.ts"
+  - "src/hooks/useSession.ts"
+  - "src/routes/SignIn.tsx"
+  - "src/routes/NotOnATeam.tsx"
+  - "src/routes/Home.tsx"
+  - "src/App.tsx"
+  - "supabase/seed.sql"
+  - "tests/e2e/tea-05-sign-in.spec.ts"
+schema_delta: none   # CONFIRMED at PLAN, not inherited. Section 2 of this shell made `none`
+                     # CONDITIONAL on the landing screen staying inside what `member_select_own`
+                     # already returns, because `public.team` has RLS enabled, everything
+                     # revoked and no select policy anywhere — that policy is CAL-04's.
+                     # 01-plan.md section 6 discharges the condition: Home.tsx renders
+                     # display_name, avatar and role off the caller's own member row plus one
+                     # admin-only /allow-list link, shows NO team name and NO board, and reads
+                     # public.team nowhere. ADR-010 Revert condition clause 1 does not fire.
+                     # NOTE: `none` does NOT mean no .sql file changes — supabase/seed.sql is
+                     # edited (section 5.1). That is data a human applies, not schema: no
+                     # table, column, policy, trigger or constraint, so ADR-014 does not engage.
+requires_adr: false  # No migration, no policy, no trigger, no constraint. ADR-005 is explicit
+                     # that authentication writes none, and the admission trigger fires on
+                     # email_confirmed_at rather than on sign-in.
+rework_count: 1   # CORRECTED from 0 by `orchestrator` at /ship, 2026-09-03. One rework cycle
+                  # genuinely ran and nothing had incremented this: 03-impl-log.md cycle 1
+                  # (2026-09-01T15:14:14) -> 06-test-report.md `gate: FAIL` / `next_state: REWORK`
+                  # (15:33:00) -> 03-impl-log.md cycle 2 (2026-09-03T09:39:34) -> 04-review.md
+                  # cycle 2 PASS (09:47:46). metrics.md reads this field at DONE for the
+                  # "rework cycles per ticket: 1 or fewer" target, so a 0 here understates it.
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+  developer->ba:               { used: 0, max: 6 }
+  qa->ba:                      { used: 0, max: 6 }
+  qa->tech-lead-design:        { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  # ADR-019 Decision point 4 merged the `spec` and `design` gates into one `plan` gate. This
+  # shell predates that and was migrated here by tech-lead-design at PLAN. Left `passed: false`
+  # on purpose — 01-plan.md's front-matter carries `gate: PASS` and `next_state: READY`, and the
+  # orchestrator grades the full Definition of Ready and records this flag, quoting the artifact
+  # rather than re-judging it.
+  #
+  # Recorded by orchestrator on 2026-09-01, quoting 01-plan.md's front-matter rather than
+  # re-judging it: `gate: PASS`, `next_state: READY`, `produced_at: 2026-09-01T14:26:13+07:00`.
+  # All six DoR items graded and passing — the first ticket to reach this gate with no ADR owed.
+  # Item 4 is the one that had to be earned: this shell made `none` CONDITIONAL, and 01-plan.md
+  # section 6 discharges the condition. State READY.
+  plan:   { passed: true, at: 2026-09-01T14:26:13+07:00 }
+  review: { passed: true, at: 2026-09-03T09:47:46+07:00 }
+  qa:     { passed: false, at: null }
+  #
+  # `review` WRITTEN BY `orchestrator` AT /ship, 2026-09-03, quoting 04-review.md's front-matter
+  # rather than re-judging it: `gate: PASS`, `next_state: DONE`, `produced_at:
+  # 2026-09-03T09:47:46+07:00` — cycle 2, a fresh session under RULE-13. Cycle 1 (2026-09-01T15:18:50)
+  # is kept verbatim inside that artifact and is not what this flag records.
+  #
+  # `qa` STAYS false, IS NOT REQUIRED, AND IS NOT A WAIVER. Read this before concluding the ticket
+  # shipped over a failing gate. 06-test-report.md carries a real `gate: FAIL` from 2026-09-01, whose
+  # `blocking_reason` is that the end-to-end suite was unpinned and ran against the live Supabase
+  # project — that is BUG-001, which shipped on 2026-09-03 in PR #27. ADR-022 then removed the QA
+  # stage outright, so no stage produces this gate any more and /ship must not write one that none
+  # does. The FAIL is superseded by its cause being fixed, not overridden: cycle 2 re-ran the suite
+  # on 2026-09-03 and reports 21 tests, exit 0 (04-review.md, finding 2).
+  # ADR-021 REVERTED the ADR-017 waiver on 2026-09-01. This gate is armed: `/ship` requires all
+  # three gates `passed: true` and never writes a waiver. The four lines that stood here told a
+  # reader that neither passed nor waived stops the ship, which is no longer true, and section 6
+  # below is annotated for the same reason.
+
+# Created by `product` at /triage on 2026-09-01, on a PROMOTE verdict, from
+# .ai/board/ideas/2026-09-01-a-person-who-signs-up-has-nowhere-to-come-back-to.md.
+# That file's verdict section is the reasoning; this block carries only what binds SPEC and DESIGN.
+#
+# Definition of Ready items 1, 3, 4 and 6 are filled here — they are produced at BACKLOG (ADR-010).
+# Items 2 and 5 (invariants_touched, size_estimate) were empty in the shell and are filled above:
+# they belong to tech-lead-design at PLAN, and the gate sits after PLAN so that they can. This
+# note said `the BA at SPEC` until ADR-019 merged SPEC and DESIGN into PLAN.
+#
+# ---------------------------------------------------------------------------------------------
+# 1. WHY THERE ARE TWO FEATURE IDS, AND WHAT /ship MUST DO WITH THEM
+#
+# This is the other half of TEA-01, carved out at DESIGN on 2026-08-31 and never turned into a
+# ticket. TEA-01's story fixes both halves at `feature_ids: [TEA-01]` and says the feature is
+# delivered only when both are DONE (01-story.md:212). A new row alone would split one capability
+# across two IDs after the fact; TEA-01 alone has no mechanism, because ADR-010 creates one shell
+# per promoted row and never a second against an existing one. Carrying both is permitted by the
+# field's own type — `feature_ids` is a list in the template — and Definition of Ready item 1
+# requires only that every ID resolve to a row. Both are group TEA, so item 6 is unaffected.
+#
+# ** /ship step 3 says "set this feature's `Status` to `DONE`" — singular. Read it as plural. **
+# .claude/commands/ship.md:42 was written before any ticket had two IDs, and it names itself the
+# only writer of that column (ship.md:44). TEA-05 and TEA-01 go to DONE together. TEA-01's row has
+# no other path out of IN_PROGRESS, so shipping this ticket and updating only one row leaves the
+# registry wrong in the opposite direction from today.
+#
+# ---------------------------------------------------------------------------------------------
+# 2. THE `schema_delta: none` CONDITION — a claim made before any design, and it can be wrong
+#
+# `none` holds because: authentication writes no migration (ADR-005 — Supabase Auth authenticates,
+# RLS authorizes, no server and no auth API); the admission trigger fires on confirmation and is
+# untouched; and what a signed-in caller reads is already served by `member_select_own`, whose own
+# comment says "the sign-in half depends on this policy rather than adding one"
+# (supabase/migrations/20260831150024_tea01_membership.sql:152).
+#
+# THE CONDITION: `public.team` has RLS enabled with everything revoked and NO select policy
+# anywhere — `revoke all on public.team, public.member, public.allowed_email from anon,
+# authenticated` at that migration's line 145 — and that policy is owned by CAL-04, per ADR-014's
+# Correction paragraph of 2026-08-31.
+#
+# So the landing screen reads THE CALLER'S OWN `member` ROW AND NOTHING ELSE, plus one /allow-list
+# link when that row is an admin. If DESIGN cannot hold the screen inside that, NARROW THE SCREEN
+# rather than taking CAL-04's policy early. A design that takes it is not a scope adjustment: it is
+# ADR-010 §Revert condition's first clause firing — the first ticket reaching SPEC with a
+# `schema_delta` that DESIGN contradicts — and should be reported as such.
+#
+# Taking CAL-04's policy would also need `grant select on public.team to authenticated` beside it,
+# because the revoke above means the grant is not inherited. Two reasons to leave it where it is.
+#
+# ---------------------------------------------------------------------------------------------
+# 3. THE FILE LIST, AND SIZE: THE CARVE-OUT SAID S. THE TECHNICAL TRIAGE SAYS M.
+#
+# ** This block is the authoritative enumeration; the TEA-05 registry row defers to it. ** The row
+# describes the contents in prose and names no path, because checks D5 and D6 in
+# scripts/check-docs.mjs are scoped to the governed plane by `isGovernedDoc` and a registry row
+# naming files that do not exist yet fails the audit. `.ai/board/` is exempt for exactly this
+# reason (check-docs.mjs:251-252: a design enumerating `allowed_paths` names files that do not
+# exist yet, because creating them is the next stage's job). So the list lives here, and DESIGN
+# turns it into `allowed_paths` above without going looking for it in the registry.
+#
+# 01-story.md:211 estimated this half at S. tech-lead-design enumerated ten to eleven files at
+# triage — the three-state `Membership` union in src/lib/domain/types.ts, four seam files, a new
+# src/hooks/useSession.ts, src/App.tsx, src/routes/SignIn.tsx, src/routes/NotOnATeam.tsx,
+# src/routes/Home.tsx, and an e2e spec — and reads it as M. Not XL despite touching types.ts: the
+# real test is whether existing callers must change, and the union is additive.
+# tests/seam-parity.test.ts need not be in allowed_paths — it enumerates Object.keys(referenceImpl)
+# and follows the seam without an edit.
+# `size_estimate` is the BA's at SPEC (DoR item 5) and stays empty here. The disagreement is the
+# point of this note: an S written from the carve-out without re-reading the file list would be
+# copied rather than judged.
+#
+# ---------------------------------------------------------------------------------------------
+# 4. SCOPE DECIDED AT TRIAGE
+#
+# IN:  sign-out. Already in the carved-out seam list (01-story.md:210), costs no additional file,
+#      and the seam-parity test means mock.ts gains it in the same edit. On a shared machine, in a
+#      product where every member reads the whole team's calendar, a session nobody can end is a
+#      real gap rather than a tidiness one.
+#
+# OUT, and the story writes these into its own Out of scope section at SPEC:
+#      - Anything beyond the caller's own member row on the landing screen. The month view is
+#        CAL-04. src/App.tsx:33-36 records that the first ticket adding a menu inherits the real
+#        version of TEA-02's AC-9 — this must not be that ticket by accident.
+#      - Closing .ai/standards/rbac-and-security.md:114 ("name where the session is read on the
+#        client, and what happens on expiry"). Standards plane, human-owned under RULE-01. It is a
+#        decision owed before DESIGN and it is NOT in depends_on, which holds tickets.
+#      - The `team` select policy. CAL-04's, per §2.
+#      - Password reset, email change, account deletion, social sign-in / SSO. Each is its own idea.
+#
+# ---------------------------------------------------------------------------------------------
+# 5. AC-6 IS RECONSTRUCTED, NOT TRANSCRIBED — an instruction to the BA
+#
+# 01-story.md:209 refers to "AC-6 as written above the split". That text does not exist: the story
+# entered git history in one commit already carrying the placeholder, `git fsck --lost-found
+# --unreachable` is empty, the stash is empty, and no artifact quotes the original. The BA writes
+# the criterion afresh from three surviving fragments — 02-design.md:160-163 (the three-state union
+# distinguishing signed-out from member-less from member), 02-design.md:818, and 01-story.md:102-105
+# (it is half of what keeps AC-5 from being an address-enumeration oracle) — and THE STORY SAYS SO.
+# A criterion presented as a transcription of text nobody can produce is the more expensive error.
+#
+# ADR-009 §Consequences bounds it: only somebody who controls the mailbox may learn their
+# allow-list status, so a screen announcing "you are not on the allow-list" to an unauthenticated
+# caller would undo TEA-01's AC-5.
+#
+# ---------------------------------------------------------------------------------------------
+# 6. ADR-017 FLAG — read before waiving this ticket's QA gate
+#
+# ADR-017 revert condition 2 is THREE TICKETS SHIPPED WAIVED. TEA-02 was the first. This would be
+# the SECOND. It is also the ticket where the waiver costs the most: every e2e test in the
+# repository drives VITE_DATA_SEAM=mock, and mock.ts's `__setCurrentMember` fabricates the exact
+# thing this ticket exists to produce — so a green mock-driven suite says nothing whatever about
+# whether anybody can sign in.
+#
+# Triage cannot waive or unwaive a gate; whether this one runs against a real Supabase project is
+# the operator's decision under ADR-017 and was NOT taken at triage. MD-016 records that nothing in
+# the model counts the waivers or enforces the revert.
+#
+# CORRECTION, steward 2026-09-01, appended rather than rewritten. Two things above have changed and
+# one of them was never right:
+#
+#   - ADR-021 reverted ADR-017. There is no waiver to consider: this ticket's QA gate must pass.
+#     Revert condition 2 fired on TEA-04, which was the third.
+#   - **"every e2e test in the repository drives VITE_DATA_SEAM=mock" is false, and that is MD-021.**
+#     The suite pins nothing. It inherits whatever `.env` the machine has, so today it resolves to
+#     SUPABASE and drives the live project — six of ten tests fail on `main` because of it. The
+#     warning this block was making is therefore right for a reason worse than the one it gives: a
+#     sign-in suite here would not be meaninglessly green against a mock, it would be non-
+#     deterministic and would write to production. The seam-pinning ticket is owed ahead of this one.
+#
+# Related and deliberately not in depends_on: the Appendix A provisioning chore has no feature ID,
+# and OPS is not a declared prefix (features.md:65 is `<!-- id-prefixes: CAL ADM TEA -->`), so an
+# OPS-nnn written today would be the dangling citation check D1 exists to report.
+#
+# ---------------------------------------------------------------------------------------------
+# 7. BRANCH: `feat/TEA-05`. Plain, no suffix.
+#
+# 01-story.md:225 asserts an `-a` / `-b` split scheme. It exists nowhere else in the repository and
+# is dropped here — a real ID makes it unnecessary. Do not use a slash-suffixed branch:
+# check-allowed-paths.mjs:90, guard-allowed-paths.mjs:166 and chat-guard.mjs all derive the ticket
+# as branch.slice("feat/".length).split("/")[0], so `feat/TEA-05/foo` resolves to TEA-05 and fails
+# OPEN into whatever that ticket's allowed_paths happen to be. Raised as MD-018.
+#
+# ---------------------------------------------------------------------------------------------
+# 8. depends_on: [TEA-01] ONLY.
+#
+# TEA-01 is state: DONE, so DoR item 3 passes. TEA-02 is the BENEFICIARY of this work, not its
+# prerequisite — nothing in the file list touches the allow-list — and is deliberately absent.
+# Honest caveat on item 3: TEA-01 is DONE with its QA gate passed by operator waiver, ten of twelve
+# acceptance criteria untested. The item asks whether the dependency is DONE, and it is; "DONE" and
+# "verified" are not the same statement here.

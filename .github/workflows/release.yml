@@ -1,0 +1,233 @@
+name: release
+
+# A version tag vX.Y.Z on a commit already on main promotes the image build-image pushed for that
+# commit (mingming21400/calechip:sha-<first 7>) to :vX.Y.Z by digest, without rebuilding. It then opens
+# a pull request in the deployment repository that pins CaleChip to that version and digest, and
+# last creates a GitHub Release with generated notes. CICD-04.
+#
+# Nothing here builds an image and nothing here deploys: merging the deployment PR is human (RULE-09).
+# A two-part tag (v2.0) does not trigger this; a tag on a commit not on main is refused.
+#
+# NEEDS, added by the operator, or every run fails at `inputs present`:
+#   secrets   DOCKERHUB_USERNAME, DOCKERHUB_TOKEN — the same two build-image uses
+#   secret    DEPLOY_REPO_TOKEN — a fine-grained token on the deployment repository ONLY,
+#                                 Contents + Pull requests read/write, nothing else
+#   variable  DEPLOY_REPO       — the deployment repository, as owner/name
+# The deployment repository's main must already hold apps/calechip/ (CICD-05's layout).
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write # gh release create; nothing else is written with this token
+
+# One run per tag; a later tag never cancels an earlier release.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  IMAGE: mingming21400/calechip
+  # The one file the deployment pull request changes. CICD-05's compose reads CALECHIP_IMAGE from it.
+  DEPLOY_FILE: apps/calechip/release.env
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: prod
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: inputs present
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          DEPLOY_REPO_TOKEN: ${{ secrets.DEPLOY_REPO_TOKEN }}
+          DEPLOY_REPO: ${{ vars.DEPLOY_REPO }}
+        run: |
+          missing=""
+          for name in DOCKERHUB_USERNAME DOCKERHUB_TOKEN DEPLOY_REPO_TOKEN DEPLOY_REPO; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing Actions secrets or variables:$missing — add them under Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+      - name: version
+        id: version
+        run: |
+          tag="$GITHUB_REF_NAME"
+          if ! [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Tag $tag is not vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-prerelease. Nothing was promoted."
+            exit 1
+          fi
+          commit="$(git rev-parse "${tag}^{commit}")"
+          prerelease=false
+          if [[ "$tag" == *-* ]]; then prerelease=true; fi
+          {
+            echo "tag=$tag"
+            echo "commit=$commit"
+            echo "source=${IMAGE}:sha-${commit::7}"
+            echo "target=${IMAGE}:${tag}"
+            echo "prerelease=$prerelease"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: on main
+        env:
+          COMMIT: ${{ steps.version.outputs.commit }}
+        run: |
+          if ! git merge-base --is-ancestor "$COMMIT" origin/main; then
+            echo "::error::Tag $GITHUB_REF_NAME points at $COMMIT, which is not on main. Nothing was promoted."
+            exit 1
+          fi
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: image exists
+        id: source
+        env:
+          SOURCE: ${{ steps.version.outputs.source }}
+        run: |
+          if ! digest="$(docker buildx imagetools inspect "$SOURCE" --format '{{.Manifest.Digest}}')" \
+             || [[ "$digest" != sha256:* ]]; then
+            echo "::error::$SOURCE is not in Docker Hub. build-image pushes it after a merge to main — wait for that run to succeed, then re-run this one. Nothing was promoted."
+            exit 1
+          fi
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
+      # Copies the manifest already in Docker Hub under a second name. No image bytes are built or pushed.
+      # --prefer-index=false: build-image pushes a single manifest, and without it imagetools wraps one
+      # in a new index with a new digest (buildx util/imagetools/create.go, v0.37.2).
+      - name: promote
+        env:
+          TARGET: ${{ steps.version.outputs.target }}
+          DIGEST: ${{ steps.source.outputs.digest }}
+        run: |
+          if existing="$(docker buildx imagetools inspect "$TARGET" --format '{{.Manifest.Digest}}' 2>/dev/null)"; then
+            if [ "$existing" != "$DIGEST" ]; then
+              echo "::error::$TARGET already exists at $existing, not $DIGEST. A version tag is never moved."
+              exit 1
+            fi
+            echo "$TARGET is already $DIGEST — nothing to promote."
+          else
+            docker buildx imagetools create --prefer-index=false --tag "$TARGET" "${IMAGE}@${DIGEST}"
+          fi
+          promoted="$(docker buildx imagetools inspect "$TARGET" --format '{{.Manifest.Digest}}')"
+          if [ "$promoted" != "$DIGEST" ]; then
+            echo "::error::$TARGET resolves to $promoted, not $DIGEST. The promotion did not copy the image."
+            exit 1
+          fi
+
+      - name: checkout deployment
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ vars.DEPLOY_REPO }}
+          ref: main
+          path: deployment
+          token: ${{ secrets.DEPLOY_REPO_TOKEN }}
+
+      - name: deployment pull request
+        id: pr
+        working-directory: deployment
+        env:
+          GH_TOKEN: ${{ secrets.DEPLOY_REPO_TOKEN }}
+          DEPLOY_REPO: ${{ vars.DEPLOY_REPO }}
+          TAG: ${{ steps.version.outputs.tag }}
+          COMMIT: ${{ steps.version.outputs.commit }}
+          TARGET: ${{ steps.version.outputs.target }}
+          DIGEST: ${{ steps.source.outputs.digest }}
+        run: |
+          branch="release/calechip-${TAG}"
+          dir="$(dirname "$DEPLOY_FILE")"
+          if [ ! -d "$dir" ]; then
+            echo "::error::$DEPLOY_REPO has no $dir/ on main. Apply the CaleChip layout there first (CICD-05). Nothing was pushed."
+            exit 1
+          fi
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null; then
+            url="$(gh pr list --repo "$DEPLOY_REPO" --head "$branch" --state open --json url --jq '.[0].url // empty')"
+            if [ -z "$url" ]; then
+              echo "::error::$branch already exists in $DEPLOY_REPO with no open pull request. Delete the branch, then re-run."
+              exit 1
+            fi
+            echo "Reusing the open pull request $url."
+            echo "url=$url" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git switch -c "$branch"
+          {
+            echo "# Written by the calechip release workflow for ${TAG} (commit ${COMMIT}). Do not edit by hand."
+            echo "CALECHIP_IMAGE=${TARGET}@${DIGEST}"
+            echo "CALECHIP_VERSION=${TAG}"
+          } > "$DEPLOY_FILE"
+          changed="$(git status --porcelain --untracked-files=all | awk '{print $2}')"
+          if [ "$changed" != "$DEPLOY_FILE" ]; then
+            echo "::error::Expected exactly $DEPLOY_FILE to change; got: ${changed:-nothing}. Nothing was pushed."
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "$DEPLOY_FILE"
+          git commit -m "calechip ${TAG}"
+          git push origin "$branch"
+          url="$(gh pr create --repo "$DEPLOY_REPO" --base main --head "$branch" \
+            --title "calechip ${TAG}" \
+            --body "Pins CaleChip to \`${TARGET}@${DIGEST}\`, built from ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${COMMIT}. Opened by ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. Merging deploys it.")"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      # Last, so a Release on GitHub means the image was promoted and the deployment PR exists.
+      #
+      # THE RELEASE MAY ALREADY EXIST. Publishing a release from the GitHub UI creates the tag, and the
+      # tag is what starts this workflow — so by the time this step runs, the release is there, and
+      # `gh release create` fails with 422 "tag_name already exists" (v3.3.0, v3.4.0). In that case the
+      # image and deployment lines are appended to the existing notes, keeping the title and notes the
+      # operator wrote; on a re-run they are not appended a second time.
+      - name: github release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
+          TARGET: ${{ steps.version.outputs.target }}
+          DIGEST: ${{ steps.source.outputs.digest }}
+          PR_URL: ${{ steps.pr.outputs.url }}
+        run: |
+          line="Image: \`${TARGET}@${DIGEST}\` · Deployment pull request: ${PR_URL}"
+          if body="$(gh release view "$TAG" --json body --jq .body 2>/dev/null)"; then
+            if [[ "$body" == *"${TARGET}@${DIGEST}"* ]]; then
+              echo "Release $TAG already exists and already names this image — nothing to change."
+            else
+              gh release edit "$TAG" --notes "$(printf '%s\n\n---\n%s\n' "$body" "$line")"
+              echo "Release $TAG already existed (published from the UI); image and deployment PR appended to its notes."
+            fi
+          else
+            flags=(--verify-tag --generate-notes --title "$TAG")
+            if [ "$PRERELEASE" = true ]; then flags+=(--prerelease); fi
+            gh release create "$TAG" "${flags[@]}" --notes "$line"
+          fi
+
+      - name: summary
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          COMMIT: ${{ steps.version.outputs.commit }}
+          SOURCE: ${{ steps.version.outputs.source }}
+          TARGET: ${{ steps.version.outputs.target }}
+          DIGEST: ${{ steps.source.outputs.digest }}
+          PR_URL: ${{ steps.pr.outputs.url }}
+        run: |
+          {
+            echo "### Release ${TAG}"
+            echo ""
+            echo "- Commit: \`$COMMIT\`"
+            echo "- Source: \`$SOURCE\`"
+            echo "- Promoted: \`${TARGET}@${DIGEST}\`"
+            echo "- Deployment pull request: $PR_URL"
+          } >> "$GITHUB_STEP_SUMMARY"

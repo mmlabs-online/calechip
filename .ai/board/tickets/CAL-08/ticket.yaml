@@ -1,0 +1,126 @@
+# Copied from .ai/templates/ticket.yaml at /triage (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: IDEA TRIAGE BACKLOG SPEC READY DESIGN IN_PROGRESS REVIEW QA REWORK ESCALATED DONE
+id: CAL-08
+title: "Holidays and bridge days shown in the calendar views"
+feature_ids: [CAL-08]
+group: CAL
+state: DONE      # `orchestrator` at /ship, 2026-09-05, on 04-review.md `gate: PASS` /
+                 # `next_state: DONE`. ADR-022 removed the QA stage, so REVIEW -> DONE is the
+                 # whole remaining transition (.ai/01-operating-model.md:36).
+#
+# PREVIOUS VALUE, `REVIEW`, SET BY `developer` AT /implement. Their comment is kept below rather
+# than deleted, because the gap it names is real and this ship is what closes it: the board never
+# held READY or IN_PROGRESS for this ticket. Both transitions are recorded in metrics.md here,
+# taken from the artifacts' own `produced_at` stamps rather than from memory, and `gates.plan`
+# below is written for the first time from 01-plan.md's front-matter. 04-review.md § Findings
+# outside the gate item 3 named this so /ship would not have to rediscover it; it did not.
+# state: REVIEW  # `developer` at /implement, 2026-09-05, on 03-impl-log.md `gate: PASS`.
+                 #
+                 # IT ARRIVED HERE READING `BACKLOG`, AND THAT IS NOT A TRANSITION THIS COMMAND
+                 # MADE. 01-plan.md's front-matter reads `gate: PASS` / `next_state: READY`,
+                 # produced 2026-09-05T16:13:56+07:00, but PLAN did not write this field — so the
+                 # board never recorded READY or IN_PROGRESS for this ticket. /implement writes the
+                 # state its own command file names and does not invent the two it skipped.
+                 # 03-impl-log.md § Open questions 1 carries it for the orchestrator at /ship.
+owner: ""
+branch: "feat/CAL-08"
+# `branch` FILLED BY `developer` AT IN_PROGRESS, 2026-09-05, and it should have been PLAN's —
+# CAL-07's shell records that field as `tech-lead-design`'s. It is a verified fact about the tree and
+# not a state change: `git branch --show-current` on this session reads `feat/CAL-08`, the branch
+# `/plan` created. An empty string here misreports a branch that exists, which is why it is written
+# rather than left for /ship. Same note: 03-impl-log.md § Open questions 1.
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR. Read from 01-plan.md
+                      # section 1. Three view surfaces, one new pure module, two new domain shapes,
+                      # NO migration, NO seam change, NO new route, NO new control.
+                      # Not S: fifteen criteria across three screens, and a derivation whose
+                      # definition is still partly the operator's (01-plan.md section 2, Open
+                      # questions 1 and 2). Not L: every read already exists, `listHolidays` is
+                      # unchanged, and the ticket sits entirely above the seam.
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. Counted from
+                      # the seven allowed_paths below, 01-plan.md section 7. AGREES with
+                      # size_estimate and ADR-012 is not engaged - both were read off the same fact,
+                      # three surfaces and one module, which is worth saying rather than presenting
+                      # as corroboration.
+depends_on: [ADM-02, CAL-04, CAL-05, CAL-06]
+invariants_touched: []
+# 01-plan.md section 2. `[]` is the feature row's own answer (features.md:95) and RULE-04 makes the
+# row the source: this ticket computes no count and cannot produce a different one, so listing INV-04
+# would over-declare on the argument that dropped INV-06 from CAL-05. A holiday row is not an entry
+# and enters no term of INV-04's sum.
+#
+# The tension is recorded in the plan rather than smoothed over: invariants.md warns that choosing
+# the safest behaviour and then concluding no invariant is engaged is circular reasoning, and AC-9
+# and AC-10 exist precisely because suppression was available and refused. The registry row wins; the
+# counter-argument is written in 01-plan.md section 2 so check R8 has something to reason from.
+allowed_paths:
+  # 01-plan.md section 7. Three are new: the module, its unit test, and the end-to-end spec.
+  # `src/lib/data/mock.ts`, `src/lib/data/supabase.ts` and `src/lib/data/index.ts` are ABSENT because
+  # section 5 is `none` - `listHolidays` is ADM-02's and is not touched - which also keeps this
+  # ticket clear of OPS-002's remaining copyDebt. `src/lib/fixtures.ts` is absent because ADM-02
+  # already shipped the four rows ADR-015 section 5 specified, including the ones AC-4 and AC-8 need.
+  - "src/lib/data/day-status.ts"
+  - "src/lib/domain/types.ts"
+  - "src/routes/MonthView.tsx"
+  - "src/routes/WeekView.tsx"
+  - "src/routes/YearView.tsx"
+  - "tests/day-status.test.ts"
+  - "tests/e2e/cal-08-holiday-shading.spec.ts"
+schema_delta: none
+requires_adr: false
+rework_count: 0
+chat_budget:
+  # Migrated 2026-09-04 by `steward`, together with the gates below. `ba` left the loop at ADR-019
+  # and `qa` at ADR-022, so three of the four edges this shell carried named roles nobody can
+  # dispatch. They are not kept as zeroes — `.ai/templates/ticket.yaml` says an edge nobody can walk
+  # is not a budget, it is a row that invites someone to try.
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  # Migrated 2026-09-04 by `steward`. This shell was created at /triage before ADR-019 merged the
+  # `spec` and `design` gates into one `plan` gate, and before ADR-022 removed the `qa` stage and
+  # its gate — and nothing migrated it, so five earlier tickets each patched their own copy at PLAN
+  # or at /ship. Check D14 now fails any ticket that is not DONE whose gate keys disagree with
+  # `.ai/templates/ticket.yaml`, so the set cannot drift again unnoticed.
+  #
+  # No value changes here, only the key set: every gate on an unstarted shell is `passed: false`
+  # under either shape.
+  #
+  # BOTH WRITTEN BY `orchestrator` AT /ship, 2026-09-05, quoted from the artifacts' front-matter
+  # rather than re-judged — the convention CAL-06's shell states in terms and ADM-03's followed.
+  # They were `{ passed: false, at: null }` until this moment, which is the whole of 04-review.md
+  # § Findings outside the gate item 3: no orchestrator run wrote this block, so the ticket reached
+  # /implement and then REVIEW with both gates reading false while both artifacts read PASS.
+  #
+  # `plan`   — 01-plan.md `gate: PASS` / `next_state: READY`, produced 2026-09-05T16:13:56+07:00.
+  #            Definition of Ready was graded six of six at /next-ticket, 2026-09-05 16:20 +07.
+  # `review` — 04-review.md `gate: PASS` / `next_state: DONE`, produced 2026-09-05T17:02:44+07:00.
+  #            R1-R8 all PASS with citations; all four verify commands exit 0 on this same tree.
+  plan:   { passed: true, at: "2026-09-05T16:13:56+07:00" }
+  review: { passed: true, at: "2026-09-05T17:02:44+07:00" }
+
+# Created by `product` at /triage on 2026-08-31, promoting
+# .ai/board/ideas/2026-08-31-everyone-computes-the-bridge-day-alone.md.
+#
+# Definition of Ready items 1, 3, 4 and 6 are filled here. Items 2 and 5 (invariants_touched,
+# size_estimate) are deliberately empty: they belong to the BA at SPEC.
+#
+# Item 6. One group: CAL. This is the rendering consequence of ADM-02's data, not a second
+# calendar feature — data-model.md stores no bridge day, and the derivation is a pure function.
+#
+# Item 3. ADM-02 because there is nothing to draw without the table, the seed and the select
+# policy. CAL-04, CAL-05 and CAL-06 are named individually and not collapsed to CAL-04: this
+# ticket shades all three grids, so all three must exist, and a dependency graph that hides two
+# of the three surfaces lets the ticket ship on one. `tech-lead-design` proposed [ADM-02, CAL-04]
+# with the year view confirmed at design; the coordinator took this version.
+#
+# Item 4. `schema_delta: none`, and it is the only one of this idea's three tickets that is
+# genuinely `none` under ADR-014 — no migration, no policy, no grant. It reads a table ADM-02
+# creates and writes nothing.
+#
+# `invariants_touched` is left empty for the BA, but the reasoning that produced `[]` in the
+# feature row travels with it: this ticket computes no count and cannot produce a different one.
+# The constraint that must not be lost is the other direction — INV-04's content is the
+# uniqueness of the definition, so a holiday that suppressed or altered the crowded-day warning
+# would introduce a second definition through the display rather than the arithmetic. This
+# ticket must not implement suppression. That question belongs to CAL-07 and CAL-04.

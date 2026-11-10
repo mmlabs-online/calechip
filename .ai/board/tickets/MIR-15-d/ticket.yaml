@@ -1,0 +1,71 @@
+# Created by `tech-lead-design` at /plan MIR-15 on 2026-11-05: the mock-seam half of MIR-15's event
+# fence, split by surface (.ai/board/tickets/MIR-15/01-plan.md § 1 and § 7; ADR-076 decision 6).
+# Not produced by /triage: no idea file promotes it. It shares MIR-15's feature row, which stays
+# PLANNED until MIR-15, -b, -c and -d have all shipped.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-15-d
+title: "The mock seam reproduces Org public's team-bound public events, and the seam tests assert it"
+feature_ids: [MIR-15]   # split of MIR-15 (operating model § ID scheme: splits get -a, -b)
+group: MIR
+state: BACKLOG
+owner: ""
+branch: ""
+size_estimate: ""     # S|M - set by tech-lead-design at PLAN; gates DoR
+size: ""              # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-05, MIR-06, MIR-07, MIR-08, MIR-09, MIR-10, MIR-18, MIR-15]   # MIR-15 ships the SQL this transcribes
+invariants_touched: []
+allowed_paths: []
+glossary_owed: []
+schema_delta: "none — expected; the mock and its tests only. Confirm at PLAN"
+requires_adr: false
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: false, at: null }
+  review: { passed: false, at: null }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+# Not in .ai/templates/ticket.yaml. Added for the multi-tenancy plan; nothing in scripts/ reads them.
+# Plan status lives only in .ai/board/plans/multi-tenancy-status.md. `state` above is the loop's.
+mir_phase: 3
+mir_plan_item: "P3-6"             # .ai/board/plans/calechip-multi-tenancy-plan.md:206-211
+verification_required: false  # the mock and vitest/playwright against it; the SQL was verified at MIR-15
+expected_impact: []   # transcribes MIR-15's; no new behaviour
+# [predicted] at plan time. Corrected at ship in .ai/board/plans/feature-change-log.md.
+mir_detail: |
+  Between MIR-15 and this ticket, the mock is LOOSER than SQL on one predicate: a `public` event
+  still reaches every team in the mock, while the database bounds it to the event's team in Org
+  public (ADR-076 decisions 1–3). This ticket closes that. It adds no behaviour.
+
+  The mock models one tenant, and it is Org public (every fixture is in it), so it implements the
+  shared branch only (MIR-15 01-plan.md § 4.4, carried here):
+  - `mayReadEvent` and `isEventAudience` (src/lib/data/mock.ts:740-754, :786-797): `event.scope ===
+    "public"` becomes `(event.scope === "public" && event.teamId === mine)`.
+  - `createEvent`'s `notify_event_created` filter (mock.ts:3563) becomes `memberTeamId(id) === row.teamId`.
+  - `listMemberDirectory` (mock.ts:3469-3519) unchanged in code; its comment says (c) and (d) now
+    reach through the narrowed `mayReadEvent`.
+
+  Tests that assert today's cross-team reach, from the census taken at /plan MIR-15 (file:line is
+  the assertion or the helper call that throws first). Each is changed to assert MIR-15's ACs, never
+  deleted:
+  - tests/events.test.ts:226-227, :305, :450
+  - tests/member-directory-scope.test.ts:134, :140-150, :157, :166, :173, :178, :238
+  - tests/event-attendance.test.ts:194, :257-261, :453-459 (its `input()` defaults to public, :60)
+  - tests/notifications.test.ts:176-177, :222-226, :289-291, :318 (default public, :60)
+  - tests/event-email.test.ts:186, :216-224, :250
+  - tests/event-invitation.test.ts:396
+  - tests/guest-link.test.ts:298-312, :446-447
+  - tests/guest-registration.test.ts:445-458, :478-481
+  - tests/event-layer.test.ts:271-272
+  - tests/e2e/evt-02-attendance.spec.ts:153-158, :173-191 (the create helper defaults to public, :74)
+
+  NOT changed, by ADR-076 decision 4 (admin unchanged): src/lib/event-layer.ts:74 and the tests
+  that read it (event-layer.test.ts:157-168, :224; description-pictures.test.ts:134-136;
+  e2e/evt-03-calendar-events.spec.ts:251). Ask at PLAN whether
+  src/components/EventAttendancePanel.tsx:133-134 (`inAudience`, `case "public": return true`) should
+  follow — it is an affordance only; the server refuses the join.
+
+  That is 11 test files plus mock.ts — 12 paths, the M ceiling. If PLAN adds one, it splits again.

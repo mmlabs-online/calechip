@@ -1,0 +1,37 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-10-12 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: EVT-10
+title: "A creator formats an event's description, and every surface that shows it renders it sanitised"
+feature_ids: [EVT-10]
+group: EVT
+state: DONE
+owner: ""
+branch: ""
+size_estimate: "M"   # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"            # S|M|L|XL - set by tech-lead-design at PLAN; twelve allowed_paths
+depends_on: []
+invariants_touched: []     # 01-plan.md § 2: an event is not an entry; INV-01..07 not engaged
+allowed_paths:
+  - ".ai/registry/glossary.md"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "supabase/migrations/20261012230000_evt10_description_html.sql"
+  - "src/main.tsx"
+  - "src/components/DescriptionHtml.tsx"
+  - "src/components/DescriptionEditor.tsx"
+  - "src/routes/EventEditor.tsx"
+  - "src/routes/EventDetail.tsx"
+  - "src/routes/GuestEvent.tsx"
+  - "tests/description-html.test.ts"
+  - "tests/e2e/evt-10-description.spec.ts"
+glossary_owed: [Sanitised description]
+schema_delta: "data migration: existing descriptions HTML-escaped to <p>/<br>; no RPC or grant change; must not fire notify_event_updated nor move updated_at — ADR-056"
+requires_adr: true    # ADR-056, ACCEPTED by the operator 2026-10-12
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-10-12T23:53:13+07:00" }
+  review: { passed: true, at: "2026-10-13T07:13:51+07:00" }

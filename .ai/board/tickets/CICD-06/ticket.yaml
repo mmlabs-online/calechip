@@ -1,0 +1,30 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-10-13 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: CICD-06
+title: "The pipeline, its secrets, how to cut a release and how to roll one back are written down, and the standards that describe CI match it"
+feature_ids: [CICD-06]
+group: CICD
+state: DONE           # `orchestrator` at /ship, 2026-10-14, on 04-review.md `gate: PASS` / `verdict: PASS`
+owner: ""
+branch: ""
+size_estimate: "M"     # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "S"   # five allowed_paths - 01-plan.md § 7; disagrees with size_estimate, verdict stands (ADR-012)
+depends_on: [CICD-02, CICD-03, CICD-04, CICD-05]
+invariants_touched: []   # 01-plan.md § 2 - documents and one workflow comment only
+allowed_paths:        # Enumerated by tech-lead-design at /plan, 2026-10-14 - 01-plan.md § 7. Implementer: devops (ADR-059).
+  - "docs/ops/ci-cd.md"
+  - ".ai/standards/tech-stack.md"
+  - "MODEL-OVERVIEW.md"
+  - "SETUP.md"
+  - ".github/workflows/allowed-paths.yml"
+glossary_owed: []
+schema_delta: none
+requires_adr: true    # ADR-059 (the CICD group), ACCEPTED by the operator 2026-10-13
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-10-14T07:13:00+00:00" }
+  review: { passed: true, at: "2026-10-14T08:37:34+00:00" }

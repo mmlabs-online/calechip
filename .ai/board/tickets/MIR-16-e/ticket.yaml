@@ -1,0 +1,68 @@
+# Created by `tech-lead-design` at /plan MIR-16-d on 2026-11-07: the in-place rename, split off
+# because MIR-16-d as ADR-083 described it counted L (ADR-084 decision 2; .ai/board/tickets/MIR-16-d/01-plan.md § 1 and § 7).
+# Not produced by /triage: no idea file promotes it. It shares MIR-16's feature row, which stays
+# PLANNED until MIR-16, MIR-16-b, MIR-16-c, MIR-16-d and MIR-16-e have all shipped.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-16-e
+title: "The value `admin` is renamed `org_admin` in place: the type, the five bodies, bootstrap, seed, the seam's mapping, and the last five fixtures"
+feature_ids: [MIR-16]   # split of MIR-16 (operating model § ID scheme: splits get -a, -b)
+group: MIR
+state: DONE
+owner: ""
+branch: ""
+size_estimate: "M"   # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"            # S|M|L|XL - 12 allowed_paths at /plan MIR-16-e (01-plan.md § 7); counted roughly at /plan MIR-16-d as ~11
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-10, MIR-11, MIR-12, MIR-13, MIR-14, MIR-15, MIR-18, MIR-21, MIR-21-b, MIR-21-c, MIR-21-d, MIR-21-e, MIR-21-f, MIR-16, MIR-16-b, MIR-16-d]
+invariants_touched: []
+allowed_paths:
+  - "supabase/migrations/20261107235000_mir16e_rename_admin_to_org_admin.sql"
+  - "supabase/tests/300-org-admin-rename.test.sql"
+  - "supabase/tests/_isolation.psql"
+  - "supabase/tests/250-membership-self-lock.test.sql"
+  - "supabase/tests/260-writers-stop-writing-team-id.test.sql"
+  - "supabase/tests/270-issue-reports-system-scope.test.sql"
+  - "supabase/tests/270-member-team-id-dropped.test.sql"
+  - "supabase/tests/280-is-org-admin.test.sql"
+  - "supabase/bootstrap.sql"
+  - "supabase/seed.sql"
+  - "src/lib/data/supabase.ts"
+  - "tests/org-admin-role-mapping.test.ts"
+glossary_owed: []
+schema_delta: "20261107235000_mir16e_rename_admin_to_org_admin.sql — `alter type public.member_role rename value 'admin' to 'org_admin'`, and five function bodies re-created with the new spelling: is_org_admin, member_enforce_role_and_removal, may_decide, set_member_role, promote_member_to_admin. No table, column, policy, constraint, grant or row statement (ADR-084 decision 2; 01-plan.md § 6)"
+requires_adr: true    # ADR-084 names the work; the contract is this ticket's PLAN
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-11-07T13:34:39Z" }
+  review: { passed: true, at: "2026-11-07T13:50:04Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+mir_phase: 4
+mir_plan_item: "P4-1"             # .ai/board/plans/calechip-multi-tenancy-plan.md:230-236
+verification_required: false
+expected_impact:
+  - { feature: TEA-04, tag: CHANGED, why: "transcribed from MIR-16-d's ticket.yaml: promotion is to `org_admin`; `admin` is no longer a value" }
+mir_detail: |
+  Slice 5 of P4-1 (ADR-084 decision 2). Moved here from MIR-16-d's mir_detail at /plan MIR-16-d,
+  counted against the local catalogue at migration 20261107230000:
+  - `alter type public.member_role rename value 'admin' to 'org_admin'`. It updates no row and fires
+    no trigger, so the demotion trigger's refusal of any change away from 'admin' is never met
+    (ADR-084 Context).
+  - re-created in the same migration, because their bodies are stored as text: is_org_admin,
+    member_enforce_role_and_removal (the demotion clause and its message name `org_admin`),
+    may_decide, set_member_role and promote_member_to_admin. No policy, constraint, default, index
+    predicate or view spells the value; re-verify at PLAN.
+  - `supabase/tests/_isolation.psql`: the `'admin'` branch of `tests.member_role` returns
+    'org_admin' (ADR-084 decision 1)
+  - `supabase/bootstrap.sql` (lines 142, 161, 208 on 2026-11-07) and `supabase/seed.sql` (96, 155,
+    310, and the comment at 117)
+  - `src/lib/data/supabase.ts`: 'org_admin' maps to the application's "admin" in `toMember`, and
+    "admin" maps to 'org_admin' in the `p_role` argument of `set_member_role`, so an "admin"
+    argument is still refused with 42501 and not 22P02. `MemberRole` does not change (MIR-17).
+  - the five fixture files MIR-16-d left: 250 (line 48), 260 (46), 270-issue-reports (68),
+    270-member-team-id-dropped (151, a read-back) and 280 (54), each through `tests.member_role`
+  - `290-member-role-helper.test.sql` is not edited: its assertions hold on both sides of the rename
+  - in Org public, today's admins become its org_admins (ADR-082 decision 3); the rename carries the rows

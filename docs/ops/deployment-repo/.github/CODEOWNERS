@@ -1,0 +1,4 @@
+# DRAFT for the deployment repository (calechip CICD-05). Each app's folder has its owner; the
+# workflows are the operator's. Change the handle if the deployment repository belongs elsewhere.
+/.github/        @didi-code0980
+/apps/calechip/  @didi-code0980

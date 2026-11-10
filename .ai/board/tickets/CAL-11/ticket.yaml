@@ -1,0 +1,58 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-09-22 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: CAL-11
+title: "An admin reads any team's entries and roster through the seam"
+feature_ids: [CAL-11]
+group: CAL
+state: DONE
+owner: ""
+branch: "feat/CAL-11"
+size_estimate: "M"    # Set by tech-lead-design at /plan, 2026-09-22, from 01-plan.md section 1: one
+                      # migration creating three definer functions, three seam methods implemented
+                      # twice, one new test file. Gates DoR.
+size: "S"             # Five files, counted from allowed_paths below - 01-plan.md section 7. DISAGREES
+                      # with size_estimate; the verdict wins (ADR-012) and section 7 says why. XL
+                      # clause checked: additive functions, no existing seam signature changes,
+                      # src/lib/domain/types.ts untouched.
+depends_on: []
+# ^ Measured at /triage: the BACKLOG table in .ai/board/backlog.md was empty and no ticket on the
+#   board claims these paths. CAL-12 depends on this one, not the reverse.
+invariants_touched: [INV-04, INV-05, INV-07]
+# ^ Filled by tech-lead-design at /plan, 2026-09-22. 01-plan.md section 2 states the mechanism per
+#   ID. The line this replaced read "PLAN's (DoR item 2). Left empty at /triage deliberately."
+allowed_paths:
+  - "supabase/migrations/20260922150000_cal11_cross_team_reads.sql"
+  - "src/lib/data/index.ts"
+  - "src/lib/data/supabase.ts"
+  - "src/lib/data/mock.ts"
+  - "tests/cross-team-reads.test.ts"
+schema_delta: "new security definer read functions, per ADR-040 decision 5 — no table, column or policy change"
+# ^ DoR item 4. ADR: .ai/registry/decisions/ADR-040-an-admin-reads-any-teams-calendar-read-only.md
+#   (ACCEPTED by the operator), resting on ADR-039. The migration shape is the one
+#   supabase/migrations/20260911180000_solo_many_teams.sql already uses. Widening a table policy is
+#   OUT OF BOUNDS here — ADR-039 § Rationale; if PLAN concludes it is needed, PLAN returns BLOCKED.
+requires_adr: false
+# ^ False because ADR-040 is the ADR and is accepted. Not a licence to go outside it.
+#
+# ADR-042 (.ai/registry/decisions/ADR-042-inv-04-accepts-the-removed-member-shape-until-both-sides-are-fixed.md)
+# records the operator's 2026-09-23 answer to the RULE-07 escalation this ticket's review raised on
+# INV-04 — the accepted deviation, and what the fix ticket owes. Cited here so the runner carries the
+# file with this ticket rather than calling it stray (scripts/lib/entry.mjs planCarry), and so a
+# reader of ticket.yaml finds the deviation without opening 01-plan.md.
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: 2026-09-23T00:04:05+0700 }
+  review: { passed: true, at: 2026-09-23T11:42:24+0700 }
+
+# Provenance: .ai/board/ideas/2026-09-22-an-admin-manages-every-team-and-sees-only-one-calendar.md,
+# § Re-triage verdict. DoR item 6: feature_ids is one group, CAL.
+#
+# Owed and NOT this ticket's: ADR-039 and ADR-040 each list affected standards
+# (.ai/standards/rbac-and-security.md, data-model.md, architecture.md). None had been transcribed
+# when this shell was written — rbac-and-security.md:63 and :119 and data-model.md:20 and :129 still
+# say one team. Human plane under RULE-01; /thuki's on an ops/<slug> branch. PLAN plans against the
+# two accepted ADRs where the standards disagree with them.

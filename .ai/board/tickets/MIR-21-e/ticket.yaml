@@ -1,0 +1,61 @@
+# Created by `tech-lead-design` at /plan MIR-21-c on 2026-11-06: the third of four slices of the
+# drop of feature MIR-21 (ADR-080 decision 3; .ai/board/tickets/MIR-21-c/01-plan.md § 1 and § 7).
+# Not produced by /triage: no idea file promotes it. It shares MIR-21's feature row, which stays
+# PLANNED until MIR-21-f ships.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-21-e
+title: "No fixture names `member.team_id`: every fixture writes `membership` itself"
+feature_ids: [MIR-21]   # split of MIR-21 (operating model § ID scheme: splits get -a, -b)
+group: MIR
+state: DONE   # `orchestrator` at /ship, 2026-11-07
+owner: ""
+branch: ""
+size_estimate: "M"   # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"            # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. 12 paths after ADR-081 moved 100, 160 and 240 to MIR-21-f (13 as ADR-080 allotted it, L); predicted at /plan MIR-21-c: about 12
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-05, MIR-06, MIR-07, MIR-08, MIR-09, MIR-10, MIR-12, MIR-13, MIR-13-b, MIR-21, MIR-21-b, MIR-21-c, MIR-21-d]   # "Blocked by" — MIR-21-d removes every test read of the column first, so a fixture may leave it null (ADR-080 decision 3)
+invariants_touched: []
+allowed_paths:
+  - ".ai/registry/decisions/ADR-081-the-fixtures-of-100-160-and-240-move-to-the-drop.md"
+  - ".ai/board/tickets/MIR-21-f/ticket.yaml"
+  - "supabase/tests/_isolation.psql"
+  - "supabase/tests/120-composite-fks.test.sql"
+  - "supabase/tests/140-org-stamping-and-membership-mirror.test.sql"
+  - "supabase/tests/150-write-path-org-bound.test.sql"
+  - "supabase/tests/190-system-admin.test.sql"
+  - "supabase/tests/210-org-public-team-bound.test.sql"
+  - "supabase/tests/220-roster-team-from-membership.test.sql"
+  - "supabase/tests/230-writers-write-membership.test.sql"
+  - "supabase/seed.sql"
+  - "supabase/bootstrap.sql"
+glossary_owed: []
+schema_delta: "none"   # confirmed at PLAN: fixtures and seed scripts only, no migration (01-plan.md § 6)
+requires_adr: true    # ADR-081, written at this PLAN under ADR-067: re-allocates three files of ADR-080 decision 3 to MIR-21-f
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-11-07T05:12:46Z" }
+  review: { passed: true, at: "2026-11-07T06:40:45Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+mir_phase: 3
+mir_plan_item: "P3-3, last step"             # .ai/board/plans/calechip-multi-tenancy-plan.md:187, the drop
+verification_required: true
+expected_impact: []   # [predicted] none: test fixtures and local seed data only
+mir_detail: |
+  Slice 3 of 4 of the drop (ADR-080). After MIR-21-d nothing reads `member.team_id`, and only
+  fixture inserts write it.
+
+  In scope, from ADR-080 decision 3 (as read on 2026-11-06):
+  - every `insert into public.member` that names `team_id` stops naming it, and writes the member's
+    `membership` rows directly; where it relied on `stamp_org_id`'s team lookup for an org, it names
+    `org_id`
+  - pgTAP fixtures: supabase/tests/_isolation.psql (`tests.seed()`), and the inline fixtures of 100,
+    120, 140, 150, 160, 190, 210, 220, 230
+  - supabase/seed.sql, supabase/bootstrap.sql
+  - 220 AC-1 and AC-2 (the column equals the roster team) are retired
+
+  Not in scope: the drop (MIR-21-f). Predicted about twelve paths at /plan MIR-21-c, and no
+  migration.

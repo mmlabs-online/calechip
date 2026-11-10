@@ -1,0 +1,74 @@
+# Created by `developer` at CICD-01 /implement, 2026-10-13, from .ai/board/tickets/CICD-01/01-plan.md § 4.8 — not by /triage (ADR-010); see that plan's § 0.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: BUG-003
+title: "The sidebar's week, year and holidays links are commented out, so twenty shipped end-to-end criteria fail"
+feature_ids: [UIE-10]
+group: UIE
+state: BACKLOG
+owner: ""
+branch: ""
+size_estimate: ""     # S|M - set by tech-lead-design at PLAN; gates DoR
+size: ""              # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting
+depends_on: []
+invariants_touched: []
+allowed_paths: []
+glossary_owed: []     # terms /triage found missing from .ai/registry/glossary.md; PLAN writes the rows (ADR-047)
+schema_delta: none
+requires_adr: false
+rework_count: 0
+chat_budget:
+  # ADR-019 retired `ba` from the loop, so the two `->ba` edges are gone. They are not listed as
+  # zeroes: an edge nobody can walk is not a budget, it is a row that invites someone to try.
+  developer->tech-lead-design: { used: 0, max: 6 }
+  # ADR-022 removed the QA stage, and the `qa->tech-lead-design` edge with it.
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: false, at: null }   # ADR-019 merged the `spec` and `design` gates into one
+  review: { passed: false, at: null }
+  # There is no `qa` gate. ADR-017 waived it on 2026-09-01, ADR-021 reverted that the same
+  # afternoon, and ADR-022 removed the stage outright. Tickets planned before that date carry a
+  # `qa` key; three of them carry `waived: true`. `/ship` requires `plan` and `review`.
+
+# Register rows owned (docs/ops/e2e-quarantine.md), all kind fixme:
+#   adm-01-threshold: AC-13: the new threshold reclassifies the days already on screen
+#   adm-02-holidays: AC-1, AC-2, AC-3, AC-4, AC-8, AC-9, AC-10, AC-14, AC-15 (nine tests)
+#   adm-03-holiday-writes: AC-14 (a member is offered no control...), AC-18 (an admin and a member read the same rows...)
+#   adm-04-worklist: AC-10 and AC-12 (a member is refused...)
+#   cal-06-year-view: AC-12 (the year is reachable from the month and from the week...)
+#   uie-09-admin-hub: AC-6, AC-9, AC-10
+#   uie-10-sidebar: AC-2, AC-8, AC-11
+# Features whose tests are quarantined here besides UIE-10: ADM-01, ADM-02, ADM-03, ADM-04, CAL-06, UIE-09.
+# Suspected cause: Confirmed: the sidebar <nav> carrying home-week-link, home-year-link and home-holidays-link is commented out at src/components/Sidebar.tsx:507-519 (commit 2259136).
+# Evidence (CICD-01 01-plan.md § 2.0): bisected locally, first failing PR is #87 (6aff433, ops/release-v1.0.0).
+#   At #86 (366b071) the seven spec files of the group ran 83 passed, 0 failed; at #87 exactly the same 20 failed.
+#   Sufficiency: at 460cf5e with only the two JSX comment delimiters removed in a scratch worktree, the 41 tests of
+#   the group's failing spec selection all pass (41 passed, 24.0 s). One cause explains all twenty.
+# The code this would revert was a deliberate UI change (2259136 "chaneg UI"), so restoring the links versus
+# rewording the shipped criteria is this ticket's decision.
+# Quarantine expires 2026-11-12 (docs/ops/e2e-quarantine.md). Fixing the test, or deleting it with a reason, closes this ticket.
+
+# The state enum line above is machine-read. Checks D10 and D13 in scripts/check-docs.mjs both parse
+# it: D10 holds it and the stage ownership table to the same membership, D13 reads it as the
+# LIFECYCLE ORDER and positions the Definition of Ready gate against it. Reordering the lifecycle
+# without reordering this line leaves D13 measuring against the old order and silently agreeing with
+# a document that has changed underneath it.
+#
+# EXA-01 is a placeholder, not a real feature. Check D1 skips .ai/templates/ for exactly this reason.
+#
+# Notes on fields that are easy to get wrong:
+#
+# invariants_touched  [] means "considered, none engaged". Absent means nobody looked.
+#                     Definition of Ready requires it to be explicit.
+# allowed_paths       [] is a control, not a placeholder. guard-allowed-paths.mjs blocks every
+#                     write outside this ticket folder while it is empty. PLAN fills it.
+# glossary_owed       Written by `product` at /triage on PROMOTE, read by `tech-lead-design` at /plan.
+#                     Bare term names, e.g. [Event, Attendee]. /triage never writes glossary.md itself:
+#                     nothing would commit it (MD-041). A non-empty list puts
+#                     `.ai/registry/glossary.md` in `allowed_paths` and the rows ship with the ticket.
+#                     [] means "considered, none owed". ADR-047.
+# rework_count        Only Developer-caused failures increment it (RULE-08). Two failures
+#                     escalate (RULE-06).
+# chat_budget         Six messages per pair per ticket (RULE-15). chat-guard.mjs increments
+#                     `used` and blocks at `max`. Pairs absent from this map are not chattable.
+# sync_enabled        false by default (RULE-10). Turn on per ticket, after the loop is proven.

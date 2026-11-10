@@ -1,0 +1,405 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-09-07 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: UIE-05
+title: "The week column fills the viewport, and its header strip and entry chip are restacked"
+feature_ids: [UIE-05]
+group: UIE           # ONE GROUP, ONE FEATURE ID. Definition of Ready item 6 is therefore satisfied
+                     # OUTRIGHT by its FIRST clause and NO SPLIT RATIONALE IS OWED — the same
+                     # situation as UIE-01 through UIE-04.
+                     # CAL-05 IS DELIBERATELY NOT IN feature_ids, for the same reason UIE-04 kept it
+                     # out: this ticket re-lays-out the screen that feature shipped and delivers none
+                     # of it. Listing it would claim otherwise. The link is prose in both directions
+                     # and §4 is where it does the work.
+state: DONE        # `orchestrator` at /ship, 2026-09-08, on 04-review.md `gate: PASS` /
+                   # `next_state: DONE`. ADR-022 removed the QA stage, so REVIEW -> DONE is the whole
+                   # remaining transition (.ai/01-operating-model.md:36).
+#
+# PREVIOUS VALUE, `REVIEW`, comment reproduced below rather than deleted. TWELFTH CONSECUTIVE TICKET,
+# and this one reasons about it more carefully than any before it — but its central FACT is wrong,
+# and the correction is the only thing worth adding.
+#
+# ***THE CHECK RAN.*** The comment says the DoR gate "was never stamped ... a gate is a claim about a
+# check that ran, and this one did not." The principle is exactly right and the developer was right
+# to refuse to write another stage's gate on it. But `/next-ticket` graded the FULL Definition of
+# Ready in the orchestrator session at **2026-09-08 08:17 +07**, SIX OF SIX PASS — after `/plan`
+# (08:12) and before `/implement` (08:31). The developer could not see that from this file, because
+# `/next-ticket` writes no file by design. **The grading is not what is missing; a WRITER for it is.**
+# `/ship` is that writer, at the end, which is why this gate is being stamped here and not earlier.
+#
+# state: REVIEW    # Set by `developer` at /implement, 2026-09-08, on `03-impl-log.md`'s
+#                  # `gate: PASS` / `next_state: REVIEW`.
+#                  # ***IT WAS `BACKLOG` WHEN THIS COMMAND STARTED, AND THAT IS NOT A TYPO.***
+#                  # /plan correctly sets no state (.claude/commands/plan.md:112-115): the
+#                  # orchestrator grades the Definition of Ready and moves BACKLOG -> READY.
+#                  # ***THAT STEP NEVER RAN — /implement was invoked straight after /plan — SO
+#                  # `gates.plan` BELOW IS STILL `passed: false` AND THE DoR GATE WAS NEVER
+#                  # STAMPED.*** It is left false deliberately rather than filled in here: a
+#                  # gate is a claim about a check that ran, and this one did not.
+#                  # All six DoR items were read before any code was written and all six are
+#                  # satisfied on this file as it stands — 1 `feature_ids: [UIE-05]`, a row in
+#                  # features.md:153; 2 `invariants_touched` explicit; 3 `depends_on: []`;
+#                  # 4 `schema_delta: none`; 5 `size_estimate: S`; 6 one group. So the build
+#                  # was safe to do. ***/ship REQUIRES BOTH GATES `true` AND WILL REFUSE UNTIL
+#                  # THE ORCHESTRATOR STAMPS `plan`.***
+owner: ""
+branch: "feat/UIE-05"   # .ai/standards/git-conventions.md:36 asks for feat/<FEATURE-ID>, and UIE-05
+                        # IS a row in .ai/registry/features.md as of 2026-09-07. The convention
+                        # followed; no trade-off to argue. It also means
+                        # scripts/check-allowed-paths.mjs resolves the branch to this file and
+                        # RULE-03 is enforced in CI rather than exiting 0 with "nothing to check".
+size_estimate: S      # 01-plan.md section 1. One component's layout, with half the target property
+                      # already shipped. MEASURED AT PLAN, not inherited: the triage proposal was
+                      # withheld from this file on purpose and was not read back into it.
+size: S               # 01-plan.md section 7, counted from allowed_paths: ONE file outside the ticket
+                      # folder. S is up to 6 at .ai/01-operating-model.md:372. AGREES with
+                      # size_estimate, so ADR-012 never engages.
+                      # BOTH CONDITIONAL FILES §2 NAMES ARE OUT, each for a MEASURED reason:
+                      #   tests/e2e/cal-05-week-view.spec.ts — enters only if the weekday is
+                      #     abbreviated. :145-146 use toContainText, so `Mon` FAILS where `Monday`
+                      #     passes. 01-plan.md § 4.3 keeps the full name; the file stays out.
+                      #   src/index.css — enters only if the radius needs a token. It does not; see
+                      #     the correction on §3.4 recorded at `invariants_touched` below.
+depends_on: []        # DEFINITION OF READY ITEM 3, AND IT PASSES TODAY — a first for this group.
+                      # UIE-01 through UIE-04 are all DONE, so the chain this screen sits on is
+                      # complete: the shell exists, the screens gave up their chrome, and the seven
+                      # columns are shipped. NOTHING IS WAITING ON ADR-029 EITHER — see §5.
+                      # `allowed_paths` is [] on every ticket on the board (the board is otherwise
+                      # empty as of 2026-09-07), so no live ticket claims a path. That is a
+                      # measurement taken today, not a standing guarantee; PLAN re-checks.
+invariants_touched: [INV-04, INV-06]   # REACHED AT PLAN BY LOOKING, as §6 instructs, and it is
+                         # TWO rather than the `[]` that section proposes as the honest first reading.
+                         # 01-plan.md section 2 carries the reasoning.
+                         #   INV-04 — this ticket ADDS NO NUMBER, so UIE-04's first reason does not
+                         #     repeat. Its SECOND reason applies unchanged: this rewrites the
+                         #     presentation of the set that count sums, and the tempting space-saving
+                         #     at ~161px is merging a member's am and pm entries into ONE chip, after
+                         #     which the week disagrees with the month cell. AC-10 forbids it.
+                         #   INV-06 — THE PORTION PILL IS THIS INVARIANT'S ONLY VISIBLE SURFACE IN THE
+                         #     PRODUCT, and this ticket MOVES it. A five-day `pm` entry is five
+                         #     afternoons and the pill is how a reader sees that. The image DROPS it,
+                         #     which would make INV-06 invisible on the one screen that shows it.
+                         #     AC-9 keeps it, at rest, with `data-portion`.
+                         # INV-01/02/03/05/07 are properties of stored entries; nothing is written,
+                         # nothing new is read, no arithmetic changes.
+                         #
+                         # ***ONE CORRECTION TO §3.4 OF THIS FILE, MADE AT PLAN.*** It says the card
+                         # radius is "A token value, not a layout. Free." IT IS NOT FREE:
+                         # `rounded-card` is SHARED — src/components/AuthCard.tsx (UIE-01's sign-in
+                         # card), src/components/Sidebar.tsx (UIE-02's shell) and WeekView.tsx. Moving
+                         # `--radius-card` would repaint two screens this ticket may not touch (§7.4).
+                         # It is the same collision src/index.css:117-123 records for `--radius-lg`,
+                         # one token over. 01-plan.md § 4.4 uses a Tailwind built-in on the day column
+                         # instead, so src/index.css is never opened and AC-16 asserts the two shared
+                         # surfaces are unchanged.
+# FILLED BY tech-lead-design AT PLAN, from 01-plan.md section 7. ONE file outside the ticket folder —
+# the one §2 called certain. Neither conditional file entered; the `size` note above says why for each.
+allowed_paths:
+  - ".ai/board/tickets/UIE-05/**"
+  - "src/routes/WeekView.tsx"
+schema_delta: none    # DEFINITION OF READY ITEM 4. Every file in scope sits above the data seam: no
+                      # query, no policy, no migration, no arithmetic, and no new seam call. ADR-014
+                      # does not engage, because there is no policy change to mistake for "none".
+requires_adr: false   # ***RECORDED ON THE READING THAT THIS TICKET BUILDS ARRANGEMENT ONLY.***
+                      # The footer absence count DOES need a decision and it is NOT this ticket's:
+                      # ADR-029 is drafted and PROPOSED, awaiting the operator, against the second
+                      # idea file. ***IF PLAN CONCLUDES IT MUST RENDER A COUNT, OR MUST DELETE ANY OF
+                      # THE FIVE FACTS THE CHIP CARRIES, OR MUST DELETE THE EMPTY-STATE SENTENCE, IT
+                      # STOPS AND ASKS RATHER THAN FLIPPING THIS FIELD QUIETLY.*** Each of those is
+                      # an amendment to CAL-05's registry row or to OPS-002's AC-7 under RULE-01.
+rework_count: 0
+chat_budget:
+  # ADR-019 retired `ba` from the loop, so the two `->ba` edges are gone. They are not listed as
+  # zeroes: an edge nobody can walk is not a budget, it is a row that invites someone to try.
+  developer->tech-lead-design: { used: 0, max: 6 }
+  # ADR-022 removed the QA stage, and the `qa->tech-lead-design` edge with it.
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  # BOTH ROWS TRANSCRIBED BY `orchestrator` AT /ship ON 2026-09-08. Neither value is claimed here —
+  # each is a copy of a gate another stage reached, read from that artifact's own front-matter.
+  #
+  # From .ai/board/tickets/UIE-05/01-plan.md: `gate: PASS`, `blocking_reason: ""`,
+  # `produced_at: 2026-09-08T08:12:05+07:00`. ADR-019 merged the `spec` and `design` gates into one.
+  # The Definition of Ready behind it was graded at `/next-ticket`, 08:17 +07, six of six PASS.
+  plan:   { passed: true, at: "2026-09-08T08:12:05+07:00" }
+  # From .ai/board/tickets/UIE-05/04-review.md: `gate: PASS`, `blocking_reason: ""`,
+  # `next_state: DONE`, `produced_at: 2026-09-08T08:39:59+07:00`. ONE review pass, `rework_count: 0`,
+  # no consultation, no amendment — the third such ticket in a row after UIE-03 and UIE-04.
+  review: { passed: true, at: "2026-09-08T08:39:59+07:00" }
+  # No `qa` key. ADR-022 removed the stage and this shell is created after that date, so the two
+  # gates that decide anything are `plan` and `review`. /ship requires both.
+
+# Created by `product` at /triage on 2026-09-07, on a PROMOTE verdict, from
+# .ai/board/ideas/2026-09-07-a-busy-week-does-not-fit-and-a-day-does-not-say-how-full-it-is.md.
+# That file's *Triage verdict* section is the reasoning; this block carries only what binds PLAN.
+#
+# ***THAT IDEA WAS SPLIT AT TRIAGE AND THIS TICKET IS ONE HALF OF IT.*** The other half — the
+# per-day absence count the image draws along the bottom of every column — is
+# .ai/board/ideas/2026-09-07-a-day-does-not-say-how-full-it-is.md, ruled NEEDS-ADR, with
+# .ai/registry/decisions/ADR-029-the-week-view-renders-a-per-day-absence-count.md drafted and
+# PROPOSED, awaiting the operator. ***THIS TICKET DOES NOT WAIT ON THAT DECISION AND MUST NOT
+# ANTICIPATE IT.*** See §5.
+#
+# THE VISUAL REFERENCE IS .ai/board/tickets/UIE-05/design/README.md — a hand transcription of an
+# image shown in conversation on 2026-09-07 and never on disk, written at the canonical path
+# (.ai/standards/ui-design-system.md:115-119) because there was no file to move. ***IT IS EVIDENCE OF
+# INTENT AND NOT A SPECIFICATION***, and it is a DIFFERENT image from the one UIE-02, UIE-03 and
+# UIE-04 were built against. An image is attached at exactly one stage and that stage has happened:
+# ***/plan MUST NOT BE HANDED A SECOND ONE.***
+#
+# Definition of Ready items 1, 3, 4 and 6 are filled above — they are produced at BACKLOG (ADR-010).
+# Items 2 and 5 (invariants_touched, size_estimate) are deliberately left as the template ships them:
+# they belong to tech-lead-design at PLAN, and the gate sits after PLAN so that they can.
+#
+# ---------------------------------------------------------------------------------------------
+# 1. WHY THIS TICKET EXISTS AT ALL, HOURS AFTER UIE-04 SHIPPED THE SAME SCREEN
+#
+# The operator's request, verbatim, 2026-09-07: *"thay đổi UI lịch tuần như design trong hình này"* —
+# change the week calendar UI to match the design in this image. They looked at the result of UIE-04
+# within hours of it merging in PR #66 and drew a different screen.
+#
+# The defect it answers is already written into the file it governs. src/routes/WeekView.tsx:39-46
+# records the arithmetic and the decision: at ~161px a column, one chip is 90-110px, one member may
+# hold an `am` AND a `pm` entry on the same date, so sixteen chips on one day is ~1520px of content in
+# ~910px of body. ***THE CONSEQUENCE A PERSON MEETS IS THAT ONE CROWDED WEDNESDAY PUSHES THE REST OF
+# THE WEEK BELOW THE FOLD, AND THE FOUR-FIFTHS OF EVERY QUIET COLUMN THAT IS WHITE SPACE GOES DOWN
+# THERE WITH IT*** — on a screen whose whole purpose is seeing the shape of the week at once.
+#
+# ---------------------------------------------------------------------------------------------
+# 2. ***THE FINDING THAT MOST CHANGES THE SHAPE OF THIS TICKET: HALF OF IT IS ALREADY SHIPPED.***
+#
+# `tech-lead-design`'s, from the technical half of this triage. ***CARRY IT; A PLAN THAT DOES NOT KNOW
+# THIS REWRITES WORKING CODE TO ARRIVE WHERE IT ALREADY IS.***
+#
+# ALREADY TRUE ON SCREEN TODAY — the image is DESCRIBING these, not requesting them:
+#   - seven equal columns filling the pane's full width, ~8px gutters
+#   - the white rounded card with its soft shadow (the radius differs by a TOKEN VALUE, not a layout)
+#   - ***ALL SEVEN COLUMNS ARE ALREADY EXACTLY THE SAME HEIGHT*** — one CSS grid row, the default
+#     `align-items: stretch`, and no height set on the card
+#   - mint WFH and peach PTO chip fills
+#   - Monday-first column order
+#
+# NOT TRUE TODAY, and this is the whole of what §3 builds:
+#   - a column FILLS the viewport on a quiet week (nothing sets a min-height)
+#   - the header strip is centred, with a hairline beneath it, and the date is in the shorter numeric
+#     form
+#   - the chip is a two-line stack with a circular avatar bubble and the star beside the name
+#   - the card radius
+#
+# SCOPE, AND PLAN MEASURES IT RATHER THAN INHERITING IT:
+#   src/routes/WeekView.tsx                  certainly. One component's layout.
+#   tests/e2e/cal-05-week-view.spec.ts       ***CONDITIONALLY, AND ONLY IF §3.2 ABBREVIATES THE
+#                                            WEEKDAY.*** :145-146 assert `Monday` and `Sunday`. Two
+#                                            lines. PLAN says which it did.
+#   src/index.css                            PROBABLY NOT — UIE-04 needed no token that UIE-01 and
+#                                            UIE-02 had not already shipped. PLAN checks the hairline
+#                                            colour and the chip radius against the existing tokens
+#                                            before adding one.
+#
+# ---------------------------------------------------------------------------------------------
+# 3. WHAT IS BUILT
+#
+# 3.1 ***COLUMNS FILL THE VIEWPORT — AND THE ANSWER IS `min-height`, NOT `height`.***
+#
+#     UIE-04 § 4.2 abandoned the fill-the-viewport property deliberately, in prose. ***THIS TICKET
+#     REVERSES THAT PROSE AND PLAN MUST SAY SO IN A LINE, WITH THE REASON***, rather than quietly
+#     doing the opposite of a shipped ticket's stated decision.
+#
+#     ***THE TWO SHIPPED ACCEPTANCE CRITERIA ARE NOT REVERSED, AND THAT IS THE WHOLE ARGUMENT.***
+#     UIE-04 AC-4 requires every entry reachable by scrolling THE PAGE, with no column scrollbar and
+#     nothing clipped; AC-5 requires the seven to stay in horizontal register. A column at LEAST the
+#     pane tall, free to grow past it, renders the image on a quiet week and behaves exactly as AC-4
+#     and AC-5 require on a busy one. The pane is already the sole bounded scroller.
+#
+#     ***UIE-04's THREE REJECTED ALTERNATIVES ARE UNTOUCHED.*** Seven independently scrolling columns
+#     are still refused — the week would go out of horizontal register and a day whose entries all sat
+#     below its own fold would read as a quiet day, which is the opposite of what this screen is for.
+#     Compressing the chip is still refused; see §3.3.
+#
+#     COST, ACCEPTED AND STATED: on a busy week anything pinned to the bottom of a column goes below
+#     the fold with that column. The footer is pinned to the COLUMN, not to the viewport. Pinning to
+#     the viewport is a different feature and is not proposed anywhere.
+#
+#     TODO(verify): whether a percentage min-height resolves through this exact `flex-1` / `min-h-0`
+#     chain or needs an explicit `calc(...)`. ***IT NEEDS A RENDERED VIEWPORT, WHICH TRIAGE HAS NO WAY
+#     TO PRODUCE.*** It does not change the conclusion; it changes one declaration.
+#
+# 3.2 ***THE HEADER STRIP: CENTRED, WITH A HAIRLINE BENEATH IT. THE WEEKDAY STAYS ENGLISH.***
+#
+#     Today it is a left-aligned wrapping flex row carrying the full weekday name and the raw
+#     `yyyy-MM-dd` date. Centring it, shortening the date to the image's numeric form and adding the
+#     hairline are arrangement and cost nothing.
+#
+#     ***`T2` / `CN` IS NOT AVAILABLE.*** It is Vietnamese; see §7.1.
+#     ***`Mon 30/03` IS available and IS layout*** — but it breaks
+#     tests/e2e/cal-05-week-view.spec.ts:145-146, which assert `Monday` and `Sunday`. That is a
+#     two-line spec edit PLAN MAY AUTHORISE AND MUST NAME, and it is the only thing that puts a spec
+#     file in `allowed_paths`. Keeping the full weekday name is FREE.
+#
+#     ***AND THE HEADER STRIP IS WHERE CAL-08's BEHAVIOUR LIVES.*** See §4.
+#
+# 3.3 ***THE CHIP: THE IMAGE'S SILHOUETTE, WITH ALL FIVE OF ITS FACTS KEPT. THIS IS THE MIDDLE PATH.***
+#
+#     The image's chip is a full-width ~44px two-line stack: a circular avatar bubble at the left,
+#     then the name with the star `★` beside it, and a small uppercase type code beneath. It carries
+#     NOTHING ELSE.
+#
+#     ***THE FIVE THINGS IT DROPS ARE EVERY ONE OF THEM LOAD-BEARING, AND DROPPING ANY OF THEM IS AN
+#     ACCEPTANCE-CRITERION AMENDMENT RATHER THAN A RESTYLE:***
+#       - the portion pill (`week-row-portion`, `data-portion`) — CAL-05 AC-3 and AC-4, and
+#         ***THE PRODUCT'S ONLY SURFACE ON WHICH INV-06 IS VISIBLE.*** A five-day `pm` entry is five
+#         afternoons, and the portion is how a reader sees it.
+#       - the note (`week-row-note`) — CAL-05 AC-6, both halves tested.
+#       - the word `Tentative` (`week-row-tentative`) — CAL-05 AC-9, and specifically for
+#         accessibility: the dashed border says it visually, the WORD says it for someone who cannot
+#         see the border.
+#       - `Approved by <name>` (`week-row-approver`, `data-approver-id`) — ***CAL-05's REGISTRY ROW IS
+#         THIS SENTENCE.*** `approved_by`/`approved_at` is the ONLY audit trail v1 has, and an admin
+#         may approve their own entry. A bare star says SOMEBODY approved; the product's entire audit
+#         answer is WHO.
+#       - `Leave` / `Working from home` collapsed to `PTO` / `WFH` — the one that looks like
+#         decoration and is not. OPS-002 AC-7 requires every screen naming an entry's type to state
+#         that the member is WORKING and not to use a word meaning "away". A bare code states nothing.
+#         src/lib/labels.ts:21-29 records the choice deliberately.
+#
+#     ***UIE-04 REFUSED EXACTLY THIS ONCE ALREADY, AS ITS OPTION 2 — "an acceptance-criterion
+#     amendment wearing a layout's clothes" — AND REFUSED IT EVEN BEHIND AN EXPAND, WHERE THE
+#     INFORMATION STILL EXISTED. THE IMAGE DELETES IT OUTRIGHT.***
+#
+#     ***WHAT THIS TICKET BUILDS INSTEAD, AND IT IS INSIDE THE § Visual specification GRANT:***
+#     restack the wrapping row into the image's two-line shape — circular avatar bubble at the left,
+#     name and star on the first line, type label on the second — and demote the portion, the
+#     tentative marker, the approver and the note to a small secondary line at reduced weight. It
+#     reproduces the image's silhouette and its density without amending anything.
+#
+#     ***IT WILL BE TWO OR THREE LINES TALL, NOT 44px. 44px AND FIVE FACTS ARE NOT SIMULTANEOUSLY
+#     SATISFIABLE***, and PLAN states which it chose rather than writing an AC it cannot meet.
+#
+# 3.4 THE CARD RADIUS. A token value, not a layout. Free.
+#
+# ---------------------------------------------------------------------------------------------
+# 4. ***SILENCE IS NOT REMOVAL. FIVE THINGS THE IMAGE OMITS AND THE SCREEN DRAWS TODAY.***
+#
+# A header strip or a chip rebuilt from the transcription alone would drop SHIPPED BEHAVIOUR that spec
+# files assert. All five survive this ticket unchanged in substance:
+#
+#   week-day-holiday   the holiday's name, carrying `data-kind`
+#   week-day-bridge    an OUTLINED badge, no fill
+#   the lavender tint  on the DAY HEADING ONLY, and only for a NON-WORKING holiday
+#   the tentative dashed border at reduced opacity
+#   the empty-week mascot card
+#
+# tests/e2e/cal-08-holiday-shading.spec.ts:287-298 pins the first three. ***THE IMAGE SHOWS NO HOLIDAY
+# AND NO BRIDGE DAY AT ALL***, and its header strip has no room drawn for either — which is precisely
+# where they go. ***DROPPING THE BRIDGE BADGE BECAUSE A 161px COLUMN HAS NO ROOM FOR IT REVERSES
+# CAL-08's OWN DECISION THAT A BRIDGE DAY IS A WORKING DAY, AND THAT IS A FEATURE-ROW AMENDMENT.***
+#
+# ***AND `week-day-empty` KEEPS ITS ELEMENT, ITS SELECTOR AND ITS SENTENCE.*** The image's empty body
+# shows nothing at all. That sentence is what stops "an ordinary Tuesday" and "we did not look" being
+# the same column — CAL-05 AC-13, UIE-04 AC-10, and tests/e2e/cal-05-week-view.spec.ts:266 asserts
+# seven of them. ***IT MAY BE DE-EMPHASISED — smaller, lighter, muted — AND ITS WORDS MAY NOT BE
+# REPLACED BY A DASH OR A GLYPH.*** Triage refused that substitution deliberately: see §5.
+#
+# ---------------------------------------------------------------------------------------------
+# 5. ***THE FOOTER COUNT IS NOT THIS TICKET'S, AND THE EMPTY STATE IS COUPLED TO IT.***
+#
+# The image draws `n/8 vắng` under all seven columns. ***THAT IS BEHAVIOUR, NOT ARRANGEMENT***, the
+# § Visual specification grant does not reach it, and CAL-05's registry row plus UIE-04's shipped
+# AC-13 both say the screen renders no number. Triage split it into its own idea and drafted
+# ADR-029, PROPOSED and awaiting the operator. ***PLAN DOES NOT BUILD IT, DOES NOT APPROXIMATE IT,
+# AND ABOVE ALL DOES NOT SUBSTITUTE THE DAY'S CHIP COUNT FOR IT*** — a day holding one full-day and
+# two half-day entries has THREE chips and an absence count of TWO, which is the second definition
+# INV-04 exists to forbid, reached without ever opening absence.ts. UIE-04 refused that substitute and
+# the refusal stands.
+#
+# ***THE COUPLING, AND IT IS WHY THE EMPTY-STATE SENTENCE STAYS.*** A footer reading `0/4` removes the
+# ambiguity that sentence exists to remove, so deleting the sentence becomes defensible AND FOLLOWS
+# FROM the count. Without the count, deleting it is a straight loss. ***THE TWO MUST NOT BE DECIDED
+# INDEPENDENTLY***, so the deletion is decided with the count, in ADR-029's ticket, or not at all.
+#
+# ***THE `8` IS FICTIONAL EITHER WAY.*** src/lib/fixtures.ts holds FOUR unremoved members of the main
+# team — :39, :72, :149, :319; :108 is another team and :123 carries `removedAt`. Nothing may be
+# asserted from that number, and this ticket does not make the transcription's eight names real.
+#
+# ---------------------------------------------------------------------------------------------
+# 6. NOTE ON `invariants_touched` — LEFT AS THE TEMPLATE'S `[]`, WHICH IS THE DEFAULT AND NOT AN ANSWER
+#
+# .ai/registry/invariants.md warns that concluding "none" from safe-feeling behaviour is circular.
+# ADR-028 records separately that `Invariants touched` will be `[]` on almost every UIE row, AS A COST
+# OF THE GROUP rather than as permission to skip the question.
+#
+# ***THE HONEST FIRST READING IS `[]`, AND IT IS NOT FREE.*** This ticket adds no number, so UIE-04's
+# `[INV-04]` — the only non-empty entry in this group — does not repeat for the reason UIE-04 had it
+# the first time. ***BUT UIE-04 LISTED INV-04 TWICE OVER, AND THE SECOND REASON APPLIES HERE
+# UNCHANGED:*** this ticket rewrites the presentation of the set that count sums. The tempting
+# space-saving at ~161px is merging a member's morning and afternoon entries into ONE chip, and
+# UIE-04's AC-8 forbids it. ***PLAN ANSWERS ITEM 2 BY LOOKING AT THAT, NOT BY COPYING THIS SENTENCE.***
+# INV-06 is engaged by §3.3 in the same way: the portion pill is its only visible surface, and this
+# ticket moves it rather than removing it.
+#
+# ---------------------------------------------------------------------------------------------
+# 7. ***OUT OF SCOPE, AND THESE ARE NEGATIVE REQUIREMENTS — THE KIND NOBODY CHECKS.***
+#
+# 7.1 ***DO NOT TRANSLATE ANY COPY ON THIS SCREEN INTO VIETNAMESE.*** Every string in the image is
+#     Vietnamese — `T2`…`CN`, `vắng`, the legend, the buttons. It reverses
+#     .ai/standards/ui-design-system.md:46-48, ***THE OPERATOR'S OWN INSTRUCTION OF 2026-09-03***, it
+#     is lint-enforced at eslint.config.js:84-92, ui-language.json:21 has `copyDebt: []` — the sweep
+#     is FINISHED and that list ONLY EVER SHRINKS, with adding a file back named in the file as THE
+#     failure mode — and UIE-01 already refused the identical request. If the operator wants a
+#     Vietnamese interface, it is its own request with an ADR superseding § Language, product-wide.
+#
+# 7.2 ***DO NOT ADD THE FOOTER COUNT.*** §5.
+#
+# 7.3 ***DO NOT DELETE ANY OF THE FIVE FACTS THE CHIP CARRIES, AND DO NOT COLLAPSE THE TYPE LABEL TO
+#     `WFH` / `PTO`.*** §3.3.
+#
+# 7.4 ***DO NOT TOUCH THE SHELL.*** src/components/Sidebar.tsx, src/components/TopBar.tsx,
+#     src/components/AppShell.tsx and src/App.tsx are UIE-02's and UIE-03's and are shipped. That
+#     covers, specifically, every one of these, each already refused for its own reason: the
+#     `Quá tải (>50%)` legend row — a FOURTH row against the three shipped, needing the
+#     `overloadThreshold` from a `seam.getTeam()` call the shell does not make, which UIE-02 AC-11 and
+#     AC-20 already settled; the `▾` after the period title; the palette and sign-out icon buttons;
+#     the `Quản trị & Duyệt` pill; and the floating `?` button. ***THE TRAP IS THE SAME ONE UIE-04
+#     NAMED:*** this ticket owns the grid, so adjusting a sidebar swatch to match a column it just
+#     restyled will feel like finishing the job. It is still a shell edit.
+#
+# 7.5 ***DO NOT MAKE THE FIXTURES MATCH THE PICTURE.*** src/lib/fixtures.ts is § Language's permanent
+#     `userContent` exception, keeps its Vietnamese diacritics, and is not this ticket's to grow. §5.
+#
+# 7.6 ***THE MONTH AND YEAR VIEWS.*** Whatever is decided about a chip or a header here does not
+#     travel to them by implication, and CAL-04's month cell is where the absence count already lives.
+#
+# 7.7 ***THE 1280px BREAKPOINT AND THE STACKED LAYOUT BELOW IT.*** UIE-04 originated both. The image
+#     shows one desktop width and says nothing about narrow ones. ***SILENCE IS NOT REMOVAL***: the
+#     stacked layout survives, and §3.1's min-height applies above the breakpoint where columns exist.
+#
+# 7.8 DARK MODE IS OUT OF SCOPE AND § Out-of-scope MUST SAY SO RATHER THAN BE SILENT.
+#
+# 7.9 AMENDING .ai/standards/ui-design-system.md — HUMAN PLANE, RULE-01. AMENDING
+#     .ai/registry/features.md — INCLUDING CAL-05's ROW. AMENDING .ai/registry/invariants.md.
+#     AMENDING ui-language.json. If any of them is needed, PLAN STOPS AND ASKS.
+#
+# ---------------------------------------------------------------------------------------------
+# 8. ***A FINDING ABOUT THE IMAGE THAT BELONGS TO NO TICKET, RECORDED SO IT IS NOT ACTED ON QUIETLY.***
+#
+# The image's sidebar shows EIGHT members carrying FIVE different team subtitles — Core Engineering,
+# Frontend Team, Backend Team, QA / Testing, Design / Product. ***THAT CONTRADICTS INV-07 — one member
+# belongs to exactly one team — AND THE CHARTER'S ONE-TEAM SCOPE. IT IS NOT A RESTYLE; IT IS A
+# DIFFERENT PRODUCT.*** The sidebar is out of scope here (§7.4) so nothing acts on it. It is written
+# into .ai/board/tickets/UIE-05/design/README.md §4.1 as well, because that is where a later reader
+# will actually be standing when the question occurs to them.
+#
+# ---------------------------------------------------------------------------------------------
+# 9. THE ROW IN .ai/registry/features.md
+#
+# THERE IS A ROW: `UIE-05`, in the `## UIE` section, `Status: PLANNED`, `Invariants touched: []`,
+# citing the idea file by name — the provenance ADR-007 requires of every promoted row, written by
+# `product` at /triage. Its `Notes` carries §2's already-shipped finding, §3.3's middle path and §5's
+# registry problem, because those are the three things a later reader needs most and none of them may
+# live only in a ticket shell.
+#
+# ***UNDER ADR-028's FOUR-STEP TEST THIS IS UIE AT STEP 3.*** Step 1 fails — no acceptance criterion
+# and no standard says a week column must fill the viewport; UIE-04's layout is a deliberate decision
+# built correctly, and §3.1 reverses its PROSE rather than a defect. Step 2 fails — after this ticket
+# the product can do nothing it could not do before. ***STEP 3 ANSWERS YES: MORE THAN ONE OUTPUT WOULD
+# BE ACCEPTABLE AND SOMEBODY HAS TO LOOK AT THE RESULT AND JUDGE IT.***

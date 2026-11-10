@@ -1,0 +1,57 @@
+# Created by `tech-lead-design` at /plan MIR-16 on 2026-11-07: the last of three slices of the
+# role split (ADR-082 decision 1; .ai/board/tickets/MIR-16/01-plan.md § 1 and § 7).
+# Not produced by /triage: no idea file promotes it. It shares MIR-16's feature row, which stays
+# PLANNED until this ticket ships.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-16-c
+title: "`manager` leaves `member.role`: every manager check reads `membership.team_role`"
+feature_ids: [MIR-16]   # split of MIR-16 (operating model § ID scheme: splits get -a, -b)
+group: MIR
+state: DONE
+owner: ""
+branch: ""
+size_estimate: "M"   # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"            # S|M|L|XL - 10 allowed_paths at /plan MIR-16-c; as ADR-082 described it, ~18 (L), so the write side and the enum removal split to MIR-16-f (ADR-085)
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-10, MIR-11, MIR-12, MIR-13, MIR-14, MIR-15, MIR-18, MIR-21, MIR-21-b, MIR-21-c, MIR-21-d, MIR-21-e, MIR-21-f, MIR-16, MIR-16-b, MIR-16-d, MIR-16-e]   # MIR-16-d added 2026-11-07 at /plan MIR-16-b (ADR-083 decision 4). MIR-16-e added 2026-11-07 at /plan MIR-16-d (ADR-084 decision 4)
+invariants_touched: []
+allowed_paths:
+  - ".ai/registry/decisions/ADR-085-the-manager-rank-is-read-from-membership-first-and-the-value-leaves-member-role-second.md"
+  - ".ai/board/tickets/MIR-16-f/ticket.yaml"
+  - ".ai/board/tickets/MIR-17/ticket.yaml"
+  - "supabase/migrations/20261108090000_mir16c_manager_read_from_membership.sql"
+  - "supabase/tests/310-manager-read-from-membership.test.sql"
+  - "supabase/tests/010-catalogue.test.sql"
+  - "supabase/tests/100-mock-parity.test.sql"
+  - "supabase/tests/300-org-admin-rename.test.sql"
+  - "src/lib/data/supabase.ts"
+  - "tests/org-admin-role-mapping.test.ts"
+glossary_owed: []
+schema_delta: "20261108090000_mir16c_manager_read_from_membership.sql — adds member_roster_team_role(uuid) and the computed field roster_team_role(public.member); re-creates membership_make_primary off member.role; drops may_decide(uuid). No table, column, enum, policy, constraint or row change (ADR-085; 01-plan.md § 6)"
+requires_adr: true    # ADR-082 names the work; ADR-085 (written at this PLAN) narrows it
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-11-08T00:51:08Z" }
+  review: { passed: true, at: "2026-11-08T01:05:20Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+mir_phase: 4
+mir_plan_item: "P4-1"             # .ai/board/plans/calechip-multi-tenancy-plan.md:230-236
+verification_required: false
+expected_impact:
+  - { feature: TEA-12, tag: SUPERSEDED, why: "transcribed from MIR-16's ticket.yaml: manager is no longer one global value on `member.role`; replaced by `membership.role_in_team`" }
+  - { feature: TEA-08, tag: CHANGED, why: "transcribed from MIR-16's ticket.yaml: ranks become `org_admin` | `member` on `member.role`, with manager per team" }
+  - { feature: ADM-05, tag: CHANGED, why: "transcribed from MIR-16's ticket.yaml: `may_decide` gains a team parameter" }
+mir_detail: |
+  Slice 3 of 3 of P4-1 (ADR-082). From ADR-082 decision 1 and MIR-16's mir_detail:
+  - `may_decide(uid)` (`manager_role:62`) and `entry_update_manager`
+    (20261103120000_mir13_write_path_org_bound.sql:818-828) stop reading the global role; the
+    decider is `may_decide_entry` (ADR-073 decision 2)
+  - `set_member_role` writes a per-team role, and `membership.team_role` is the only record of
+    manager
+  - 'manager' is removed from public.member_role, which re-creates the type
+  - the member seam keeps reporting a manager to the application until MIR-17
+  Not counted at /plan MIR-16.

@@ -1,0 +1,96 @@
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Be+Vietnam+Pro:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-pto: #FF9E7D;
+  --color-pto-soft: #FFE8DF;
+  --color-wfh: #4FC9AC;
+  --color-wfh-soft: #DDF6EF;
+  --color-holiday: #A88BEB;
+  --color-holiday-soft: #EDE6FF;
+  --color-alert: #FF6F9C;
+  --color-alert-soft: #FFE3EC;
+  --color-star: #FFC93C;
+  
+  --color-ink: #241F45;
+  --color-ink-2: #5A5480;
+  --color-ink-3: #8F89B3;
+  
+  --color-bg: #F1EFFA;
+  --color-card: #FFFFFF;
+  --color-line: #E4E0F4;
+
+  --font-display: 'Baloo 2', cursive;
+  --font-sans: 'Be Vietnam Pro', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 26px;
+  --radius-xl: 38px;
+
+  --shadow-soft: 0 4px 20px -2px rgba(36, 31, 69, 0.05), 0 0 3px rgba(36, 31, 69, 0.02);
+}
+
+@layer base {
+  :root {
+    --pto: #FF9E7D;
+    --pto-soft: #FFE8DF;
+    --wfh: #4FC9AC;
+    --wfh-soft: #DDF6EF;
+    --holiday: #A88BEB;
+    --holiday-soft: #EDE6FF;
+    --alert: #FF6F9C;
+    --alert-soft: #FFE3EC;
+    --star: #FFC93C;
+    --ink: #241F45;
+    --ink-2: #5A5480;
+    --ink-3: #8F89B3;
+    --bg: #F1EFFA;
+    --card: #FFFFFF;
+    --line: #E4E0F4;
+  }
+  
+  body {
+    @apply bg-bg text-ink font-sans antialiased;
+  }
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  background-color: var(--line);
+  border: 1px solid var(--line);
+}
+
+.calendar-cell {
+  @apply bg-card flex flex-col transition-colors hover:bg-slate-50 relative;
+}
+.calendar-cell.outside {
+  @apply bg-bg/50 opacity-50;
+}
+.calendar-cell.holiday {
+  @apply bg-holiday-soft;
+}
+.calendar-cell.alert {
+  @apply bg-alert-soft;
+}
+
+/* Hide scrollbar for year view */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.slide-in {
+  animation: slideIn 0.2s ease-out forwards;
+}

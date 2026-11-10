@@ -1,0 +1,414 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-09-08 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: BUG-002
+title: "Two row limits sit above the datastore cap, so four truncation assertions can never fire"
+feature_ids: [CAL-03, CAL-04, CAL-05, CAL-06]
+group: CAL
+state: DONE     # `orchestrator` at /ship, 2026-09-08, on 04-review.md `gate: PASS` /
+                # `next_state: DONE`. ADR-022 removed the QA stage, so REVIEW -> DONE is the whole
+                # remaining transition (.ai/01-operating-model.md:36).
+#
+# PREVIOUS VALUE, `REVIEW`, comment reproduced below. FOURTEENTH TICKET TO GO BACKLOG -> REVIEW ON
+# DISK — but the FIRST where `gates.plan` did not reach /ship as `false`. The `developer` set it at
+# /implement ON THE OPERATOR'S EXPLICIT INSTRUCTION, after declining to set another stage's gate
+# unasked. That refusal was right and the instruction resolved it; both are recorded in
+# 03-impl-log.md Open questions item 1 rather than left to be inferred from a flipped boolean.
+#
+# THE GRADE BEHIND IT: `/next-ticket` graded the full Definition of Ready in the orchestrator session
+# at 2026-09-08 11:18 +07, SIX OF SIX PASS — after `/plan` (11:13) and before `/implement`.
+#
+# state: REVIEW # advanced by `developer` at /implement on a PASS gate, 03-impl-log.md.
+#               # It was still BACKLOG when this command started, though 01-plan.md's front-matter
+#               # carries `gate: PASS` and `next_state: READY` — so it never carried READY or
+#               # IN_PROGRESS on disk. 03-impl-log.md Open questions item 1 records that, and
+#               # records who set `gates.plan` below and why it was not the developer's call alone.
+owner: ""
+branch: "feat/BUG-002"   # `feat/` AND NOT `bugfix/`, deliberately — see §2 below. The settled
+                         # precedent is BUG-001's `§4 CORRECTION` and .ai/board/backlog.md:496.
+size_estimate: S      # 01-plan.md section 1. Two constants, one new constant, one new test file,
+                      # and NO seam edit.
+size: S               # 01-plan.md section 7, counted from allowed_paths: TWO files outside the
+                      # ticket folder. S is up to 6 at .ai/01-operating-model.md:372. AGREES with
+                      # size_estimate, so ADR-012 never engages.
+                      # ***§6 COUNTED ITS S FROM FIVE FILES; THIS IS TWO, AND THE DIFFERENCE IS THE
+                      # FIX SHAPE.*** §6 lists supabase.ts, mock.ts and index.ts because the
+                      # RECOMMENDED shape (d) would have rewritten four assertion sites and added a
+                      # COUNT(*) to each read. Shape (a) repairs those four sites WITHOUT OPENING
+                      # EITHER IMPLEMENTATION — both import the constants and compare
+                      # `rows.length >= LIMIT`, which is correct as written once LIMIT <= the cap.
+                      # index.ts's contract comments become TRUE without being edited.
+                      # THE SIX E2E SPEC HEADERS ARE LEFT ALONE — §6 calls that the S/M decision.
+                      # Their load-bearing claim survives (the criteria are still asserted nowhere,
+                      # and no test can still make PostgREST cap a read); only the numeral `2000` in
+                      # prose goes stale. 01-plan.md Open questions item 4 records it.
+depends_on: []        # nothing blocks it. All four parent features are DONE; this is a defect in
+                      # their shipped behaviour, not an extension of it.
+invariants_touched: [INV-04]   # CHOSEN AT PLAN from the two readings §8 sets out, WITH THE
+                         # MECHANISM STATED rather than the conclusion. 01-plan.md section 2 carries
+                         # it in full.
+                         # THE `[]` READING IS REAL: this ticket creates no second arithmetic,
+                         # absenceCountsFor stays pure and untouched, and the invariant's STATEMENT
+                         # is not engaged.
+                         # ***IT IS LISTED BECAUSE THE MECHANISM IS THE INPUT, NOT THE DEFINITION.***
+                         # The defect's entire consequence is that the single definition is reliably
+                         # FED A TRUNCATED SET and prints a believable wrong number with no error. A
+                         # sum over an arbitrary 1000 of 1400 matching rows is not the sum INV-04
+                         # defines, and nothing distinguishes it from one that is. invariants.md:63
+                         # warns that concluding "no invariant is engaged" from safe-LOOKING
+                         # behaviour is circular — concluding `[]` here because the arithmetic is
+                         # untouched is exactly that shape. This ticket restores INV-04's inputs to
+                         # COMPLETE-OR-REFUSED, which is why AC-4, AC-5 and AC-6 are written about
+                         # the READ and not about the sum.
+                         # INV-01/02/03/05/06/07 are properties of stored entries; nothing is
+                         # written, nothing new is read, no comparison the database performs changes.
+# FILLED BY tech-lead-design AT PLAN, from 01-plan.md section 7. TWO files outside the ticket folder.
+# EXACT PATHS, NO GLOBS, NO INLINE COMMENTS ON THE ITEMS — §6's `readYamlList` warning is honoured.
+#
+# ***THE FIX SHAPE IS (a), NOT §3's RECOMMENDED (d), AND 01-plan.md §8 CARRIES THE ARGUMENT.***
+# Two findings decided it. FIRST: §3's (d) and §5's evidence CONTRADICT EACH OTHER — (d) leaves both
+# constants at 2000, so the static test §5 calls the only available proof STILL FAILS after the fix.
+# SECOND: lowering 2000 -> 1000 COSTS NOTHING, because the datastore never returned more than 1000
+# anyway — which dissolves §3's stated objection to (a) ("it costs the year view first"). No read
+# loses a row it was getting; a truncation that is silent today becomes an error.
+#
+# src/lib/data/supabase.ts, src/lib/data/mock.ts and src/lib/data/index.ts are NOT here, though §6
+# counted them. Both implementations import the constants and compare `rows.length >= LIMIT`, which
+# is CORRECT AS WRITTEN once LIMIT <= the cap — so lowering the constant repairs FOUR assertion sites
+# across TWO files without opening either. index.ts's contract comments promise a throw that today
+# cannot happen; after this change the promise becomes true without the sentence changing.
+allowed_paths:
+  - ".ai/board/tickets/BUG-002/**"
+  - "src/lib/domain/types.ts"
+  - "tests/row-limits.test.ts"
+schema_delta: none
+requires_adr: false   # WITH ONE GUARDRAIL — §4. One of the four fix shapes flips this to `true` and
+                      # the verdict from PLAN to BLOCKED. Read §4 before choosing a shape.
+rework_count: 0
+chat_budget:
+  # ADR-019 retired `ba` from the loop, so the two `->ba` edges are gone. They are not listed as
+  # zeroes: an edge nobody can walk is not a budget, it is a row that invites someone to try.
+  developer->tech-lead-design: { used: 0, max: 6 }
+  # ADR-022 removed the QA stage, and the `qa->tech-lead-design` edge with it. This ticket is
+  # triaged after that date, so no `qa` key appears here and none may be added.
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  # `at` VALUES ARE QUOTED, as on all thirteen tickets before this one. The `plan` row arrived
+  # unquoted from /implement; YAML would read that as a timestamp rather than a string, and one block
+  # holding both forms is the kind of drift nothing here checks. Quoted, value unchanged.
+  #
+  # MIRRORED FROM 01-plan.md's front-matter (`gate: PASS`), whose `produced_at` is the timestamp
+  # below — PLAN passed but did not write this row. Set by `developer` at /implement ON THE
+  # OPERATOR'S EXPLICIT INSTRUCTION, 2026-09-08, after it declined to set another stage's gate
+  # unasked. 03-impl-log.md Open questions item 1 is the record. ADR-019 merged `spec` + `design`.
+  plan:   { passed: true, at: "2026-09-08T11:13:43+07:00" }
+  # TRANSCRIBED BY `orchestrator` AT /ship from .ai/board/tickets/BUG-002/04-review.md front-matter:
+  # `gate: PASS`, `blocking_reason: ""`, `next_state: DONE`, `produced_at: 2026-09-08T11:42:17+07:00`.
+  # ONE review pass, `rework_count: 0`, no consultation, no amendment — the fifth in a row.
+  review: { passed: true, at: "2026-09-08T11:42:17+07:00" }
+  # No `qa` gate — ADR-022 removed the stage. /ship requires `plan` and `review`.
+
+# Created by `product` at /triage on 2026-09-08, on a PROMOTE verdict, from
+# .ai/board/ideas/2026-09-08-two-row-limits-sit-above-the-cap-they-were-written-to-stay-under.md.
+# That file's `## Verdict` section is the reasoning; this block carries only what binds PLAN.
+#
+# Definition of Ready items 1, 3, 4 and 6 are filled here — they are produced at BACKLOG (ADR-010).
+# Items 2 and 5 (invariants_touched, size_estimate) are deliberately left empty: they belong to
+# tech-lead-design at PLAN, and the gate sits after PLAN so that they can.
+#
+# EVERY CLAIM BELOW WAS READ ON DISK DURING TRIAGE. Nothing here is recalled, and nothing here is a
+# design — where a shape is recommended it is labelled as a recommendation and PLAN may reject it.
+#
+# ---------------------------------------------------------------------------------------------
+# 1. WHY THIS TICKET EXISTS, AND WHY IT IS ROW 1
+#
+# It has been owed since 2026-09-05. ADM-04's PLAN found it, verified it, and REFUSED TO FIX IT for
+# a stated reason — .ai/board/tickets/ADM-04/01-plan.md:275-302: changing two numbers in
+# `src/lib/domain/types.ts` inside a ticket whose `invariants_touched` is `[]` would silently alter
+# two other tickets' acceptance criteria. That judgement was correct and this ticket does not
+# revisit it; it is the ticket that judgement asked for.
+#
+# The board has carried the debt in four places since — src/lib/domain/types.ts:488-496,
+# .ai/board/tickets/ADM-04/01-plan.md:275-302, and twice in .ai/board/backlog.md (:352-362 as the
+# finding, :278-282 as owed item 1). Every one of them says the same thing: nothing on this board
+# issues the row automatically, and /triage issues it.
+#
+# IT IS ROW 1 BECAUSE IT IS THE ONLY ROW. `## BACKLOG` in .ai/board/backlog.md was empty when this
+# was written — the second time in the board's life. `product` asserts nothing about priority; the
+# header of that file says a human reorders, and this shell does not argue with it.
+#
+# WHAT IS ACTUALLY BROKEN, in one paragraph so nothing downstream has to reconstruct it:
+# `TEAM_ENTRY_LIMIT` (src/lib/domain/types.ts:251) and `MONTH_ENTRY_LIMIT` (:300) are both 2000
+# while the datastore caps at 1000 (index.d.mts:3522). Both reads ask for 2000
+# (src/lib/data/supabase.ts:1033 and :1168), the server returns at most 1000, so
+# `rows.length >= 2000` at :1044 and :1181 can never be true. The read comes back short, comes back
+# as a SUCCESS, and is summed. Four written statements are falsified by those two integers: CAL-04
+# AC-11, CAL-05 AC-15, CAL-06 AC-14, and CAL-03's own § 4.1 contract sentence.
+#
+# ---------------------------------------------------------------------------------------------
+# 2. WHY `id: BUG-002` WITH FOUR `feature_ids` AND NO NEW FEATURE ROW — AND WHY THE BRANCH IS `feat/`
+#
+# This is the part of this shell most likely to be read as a mistake, so it is stated first.
+#
+# `id` AND `feature_ids` ARE DIFFERENT FIELDS — .ai/templates/ticket.yaml:4 and :6. Definition of
+# Ready item 1 constrains `feature_ids`, not `id`. So `BUG-002` with `feature_ids: [CAL-03, CAL-04,
+# CAL-05, CAL-06]` satisfies item 1 literally, and item 6 too, because all four are `CAL` — exactly
+# one feature group. .ai/01-operating-model.md declares the scheme: defects are `BUG-nnn`.
+#
+# CHECK D1 IS NOT TRIPPED, AND THIS WAS RE-VERIFIED ON DISK RATHER THAN COPIED FROM BUG-001, whose
+# note predates the `UIE` group and therefore quotes a stale regex. scripts/check-docs.mjs:194-198
+# reads the prefixes from the machine-readable line in .ai/registry/features.md:66, which today
+# declares `CAL ADM TEA UIE`; :224-225 builds `\b(?:CAL|ADM|TEA|UIE)-\d{2}\b`. `BUG-002` matches
+# neither half — wrong prefix, and three digits against `\d{2}`. The four IDs in `feature_ids` DO
+# match and all four resolve to rows, which is what D1 is for.
+#
+# NO ROW WAS ADDED TO .ai/registry/features.md, a deliberate departure from /triage's default
+# PROMOTE action (ADR-007). This is a defect in shipped behaviour, not a new capability, and
+# ADR-028:36-39 records that `BUG-nnn` appears on no prefix line, has no rows and is not policed by
+# D1; ADR-028:103 — "BUG-001 likewise stays." BUG-001's shell §2 is the precedent. What was written
+# instead is a provenance sentence appended to the `Notes` of each of the four CAL rows, citing the
+# idea file and this ticket. RULE-01 permits a feature-row edit with no ADR; CODEOWNERS review at
+# merge is the approval.
+#
+# FOUR PARENTS, NOT THREE — A DELIBERATE DEPARTURE FROM `tech-lead-design`'s RECOMMENDATION, WHICH
+# WAS [CAL-03, CAL-04, CAL-06]. CAL-05 is added. Its AC-15
+# (.ai/board/tickets/CAL-05/01-plan.md:200-204) is falsified by the same constant through the same
+# read, so it is a parent of this defect. What is true is that it is the read least likely to reach
+# the cap in practice — a seven-day range needs a great many entries spanning it from outside to
+# accumulate a thousand rows. THAT IS A STATEMENT ABOUT URGENCY, NOT ABOUT PARENTAGE.
+# .ai/standards/git-conventions.md:38-39 requires a bug to carry its parent feature — "a bug branch
+# that cannot be traced to a feature is a bug nobody can decide the priority of" — and there are
+# four of them.
+#
+# THE BRANCH IS `feat/BUG-002` AND THE PATH GUARD IS THEREFORE ON. scripts/check-allowed-paths.mjs:96
+# exits 0 with "nothing to check" on any branch that does not start with `feat/`; :101-103 computes
+# `branch.slice("feat/".length).split("/")[0]` = `BUG-002` and looks for
+# .ai/board/tickets/BUG-002/ticket.yaml, which is this file. So on `feat/BUG-002` CI checks the real
+# diff against `allowed_paths` and RULE-03 is mechanically enforced; on `bugfix/...` it would not be
+# (.ai/standards/git-conventions.md:44-49 calls that a defect rather than a decision). That matters
+# more here than it did on BUG-001: this ticket edits shipped application code, not a test harness.
+#
+# (BUG-001's §4 CORRECTION cites `check-allowed-paths.mjs:90` for that computation. The file has
+# moved since; the lines are :96 and :101-103 today. Recorded rather than propagated.)
+#
+# THE SETTLED PRECEDENT IS BUG-001's `§4 CORRECTION` AND .ai/board/backlog.md:496, so this is not a
+# question being re-opened. WHAT IT COSTS, RECORDED HONESTLY RATHER THAN GLOSSED:
+# .ai/standards/git-conventions.md:36 says `<FEATURE-ID>` is a row in .ai/registry/features.md and
+# nothing else, and `BUG-002` is not a row. That inconsistency is standards plane under RULE-01, is
+# unresolved, and is NOT this ticket's to resolve. It is the second `feat/BUG-` branch, so the
+# standing cost is now a pattern rather than an exception.
+#
+# ---------------------------------------------------------------------------------------------
+# 3. THE FOUR FIX SHAPES — ALL OPEN. THE RECOMMENDATION IS A RECOMMENDATION.
+#
+# The idea file's Open questions item 1 is NOT answered by triage, and this section does not answer
+# it either. It carries what was already reasoned so PLAN starts there rather than re-deriving it.
+#
+#   (a) LOWER THE TWO CONSTANTS below 1000. Smallest diff, entirely in the repository. It costs the
+#       year view first — the year read is the largest legitimate row count in the product, and a
+#       ceiling low enough to be honest may be low enough that a real team's year hits it, turning a
+#       silent wrong count into a screen that refuses to render. That is the correct failure and it
+#       is still a failure.
+#
+#       ***THE REAL CONTENT OF (a) IS NOT THE TWO NUMBERS.*** It is that the fix should NAME
+#       `DATASTORE_MAX_ROWS = 1000` in the repository, citing index.d.mts:3522, with every ceiling
+#       defined BELOW it and a static test asserting that relation. Today five constants are written
+#       against a number that appears nowhere in the tree, which is exactly how two of them drifted
+#       above it without anything noticing. NAMING IT IS WHAT STOPS A SIXTH CONSTANT BEING WRITTEN
+#       AGAINST A NUMBER NOBODY WROTE DOWN.
+#
+#   (b) RAISE THE PROJECT'S `max-rows` API SETTING. Keeps every constant and every screen as
+#       shipped. ***READ §4 BEFORE CONSIDERING THIS ONE.***
+#
+#   (c) PAGE EXPLICITLY WITH `range()`. The only shape that scales with the year view rather than
+#       against it, and it is pre-authorised — .ai/board/tickets/CAL-04/01-plan.md:177-179 and
+#       ADR-015:380. It is also by far the largest: a loop inside the seam, in BOTH implementations,
+#       preserving src/lib/data/supabase.ts:1166-1167's deterministic order and surviving
+#       tests/seam-parity.test.ts.
+#
+#   (d) ADM-04's SHORT-PAGE PATTERN, ADAPTED TO A CEILING READ VIA `count: "exact"`. Request the
+#       ceiling with an exact count, then compare `count > LIMIT` (more rows match than were asked
+#       for) and `rows.length < count` (fewer arrived than match). `count` alongside `.limit()`
+#       returns THE TOTAL MATCHING ROWS, NOT THE PAGE SIZE — verified at index.d.mts:3519, and that
+#       is the whole reason this works on a ceiling read.
+#
+# THE RECOMMENDATION FROM `tech-lead-design`, RECORDED AS A RECOMMENDATION AND NOT AS A DECISION:
+# (d) PLUS THE NAMING HALF OF (a). Its argument is that this fixes DETECTION WITHOUT CHANGING EITHER
+# NUMBER, so it reaches into no shipped threshold, moves no acceptance criterion, and needs no
+# judgement about what a real team's row count is — which is the one input nobody has.
+#
+# ITS COSTS, RECORDED WITH IT RATHER THAN LEFT FOR REVIEW TO FIND:
+#   - A `COUNT(*)` ON EVERY CALENDAR READ. This is the price ADM-04 already pays and already
+#     documented — .ai/board/tickets/ADM-04/01-plan.md:262-264. It is a known cost, not a new one,
+#     but the calendar reads are the hot path and ADM-04's worklist is not.
+#   - ***THE MOCK'S COPY OF THE SECOND COMPARISON IS DEAD CODE, BY CONSTRUCTION.*** src/lib/data/mock.ts
+#     slices deterministically (:1227), so it can never return fewer rows than match and
+#     `rows.length < count` can never be true there. It must be written as UNREACHABLE-AND-MIRRORED,
+#     with a comment saying so, or the two implementations diverge in SHAPE while
+#     tests/seam-parity.test.ts — which compares names and arity only — sees nothing. That is the
+#     same silent-divergence failure CAL-04's and CAL-08's rows both warned about.
+#
+# ---------------------------------------------------------------------------------------------
+# 4. ***THE GUARDRAIL. FIX SHAPE (b) MUST NOT BE CHOSEN INSIDE THIS TICKET.***
+#
+# Raising the project's `max-rows` setting is file-representable and CLI-pushable, and that makes it
+# MORE tempting rather than less: `supabase init` generates `supabase/config.toml` carrying
+# `max_rows = 1000`, and `supabase config push` exists. The CLI is installed — package.json:39,
+# `supabase@^2.116.0`. So the shape that looks unavailable is in fact reachable, which is exactly
+# why the fence is written down instead of assumed.
+#
+# THREE REASONS IT IS OUT OF BOUNDS HERE:
+#   1. It ADDS A REPOSITORY ARTIFACT THAT DOES NOT EXIST. There is no supabase/config.toml in the
+#      tree today — `supabase/` holds bootstrap.sql, db.sql, migrations/ and seed.sql and nothing
+#      else. Generating one is a decision about how this project is configured, not a bug fix.
+#   2. It ADDS A DEPLOYMENT STEP THAT DOES NOT EXIST, and makes a PRODUCT CORRECTNESS PROPERTY
+#      depend on a value no file in the tree records and no check can verify. A reviewer cannot see
+#      it in a diff; the next project provisioned starts at 1000 again and the constants are wrong
+#      for a second time with nobody watching.
+#   3. IT POINTS THE WRONG WAY. The setting's own purpose is to limit payload size against accidental
+#      or malicious requests, and under ADR-005 the anon key is public and the PostgREST endpoint is
+#      reachable without this application at all. Raising it to make one screen work loosens a
+#      control that is not there for this screen's benefit.
+#
+# IT FAILS ADR-008's TEST — decide inside the envelope, ask before changing it.
+#
+# ***IF PLAN CONCLUDES (b) IS RIGHT, THE CORRECT VERDICT FROM PLAN IS `BLOCKED` WITH
+# `requires_adr: true`.*** Not a quiet configuration change, and not a `TODO` in an implementation
+# log. `requires_adr: false` above is scoped to shapes (a), (c) and (d).
+#
+# ONE `TODO(verify):` TRAVELS WITH THIS AND IS NOT DISCHARGED: whether `supabase config push`
+# actually carries `api.max_rows` to a HOSTED project cannot be confirmed without a linked project,
+# and none is provisioned. So even the argument FOR (b) rests on an unverified mechanism.
+#
+# ---------------------------------------------------------------------------------------------
+# 5. HOW THIS TICKET PROVES IT IS FIXED — the part most likely to be assumed and least likely to be
+#    true by accident
+#
+# EVERY RUNNER DRIVES THE MOCK. playwright.config.ts:50 pins `VITE_DATA_SEAM: "mock"` for the whole
+# acceptance suite (BUG-001's own fix), and the mock's assertions say in their own comments that
+# they are decorative — src/lib/data/mock.ts:1230-1231. The only implementation that can truncate is
+# the one no runner drives.
+#
+# THE E2E SPEC HEADERS' CLAIM IS HALF TRUE, AND THE HALF THAT IS FALSE IS THE USEFUL ONE:
+#   - "No test can make PostgREST cap a read without a provisioned project" — TRUE, and it stays
+#     true. Nothing in this ticket changes it.
+#   - "The mock's entry table is bounded by the fixtures" — TRUE OF THE E2E FIXTURES ONLY.
+#     tests/pending-entries.test.ts:98-110 seeds 51 entries through `seam.createEntry`, so a vitest
+#     test can seed N entries and observe the mock's own ceiling behaviour at any N it likes. The
+#     mock is not bounded; the e2e fixture set is.
+#
+# ***THE TEST THAT GENUINELY OBSERVES THIS FIX IS STATIC, AND IT COSTS NOTHING.*** With
+# `DATASTORE_MAX_ROWS` named (§3(a)), assert that each of the five ceilings is STRICTLY BELOW it. It
+# FAILS TODAY at both broken constants, PASSES after the fix, and catches `HOLIDAY_LIMIT`'s
+# exactly-equal boundary as a bonus — the one that survives today only because the comparison at
+# src/lib/data/supabase.ts:1235 is `>=` and not `>`.
+#
+# That test does not depend on a datastore, a fixture, a runner or a provisioned project, which is
+# what makes it the one piece of evidence available. A behavioural test against a truncating
+# datastore is NOT available and §9 says so as out of scope rather than leaving it to be discovered
+# at Definition of Done item 4.
+#
+# ---------------------------------------------------------------------------------------------
+# 6. SIZING SIGNAL FOR PLAN — A SIGNAL, NOT A DECISION. `size_estimate` IS DELIBERATELY EMPTY ABOVE.
+#
+# `tech-lead-design` estimates S, counted from these files:
+#   src/lib/domain/types.ts        the constants themselves
+#   src/lib/data/supabase.ts       the two ceiling reads and their assertions
+#   src/lib/data/mock.ts           the mirrored assertions, including §3's dead branch
+#   tests/row-limits.test.ts       NEW — the static assertion of §5
+#   src/lib/data/index.ts          ONLY IF the contract comments at :352 and :433 must state the new
+#                                  guarantee. They currently assert a throw that cannot happen.
+#
+# EXACT PATHS, NO GLOBS, AND NO INLINE COMMENTS ON `allowed_paths` ITEMS. `readYamlList` in
+# scripts/check-allowed-paths.mjs and in .claude/hooks/guard-allowed-paths.mjs strips only a leading
+# and a trailing quote, so a trailing `# ...` is swallowed into the pattern and the glob then
+# matches nothing. Naming the files here is not authorising them; `allowed_paths` above is `[]` and
+# PLAN fills it.
+#
+# ***THE ONE THING THAT PUSHES THIS TO M IS A SCOPING DECISION, NOT A DISCOVERY.*** Six e2e spec
+# headers assert that these criteria are NOT asserted anywhere, and they become false the moment
+# this ticket adds an assertion:
+#   tests/e2e/cal-04-month-view.spec.ts:15-19    tests/e2e/cal-07-overload-warning.spec.ts:22
+#   tests/e2e/cal-05-week-view.spec.ts:24-27     tests/e2e/cal-08-holiday-shading.spec.ts:28
+#   tests/e2e/cal-06-year-view.spec.ts:24        tests/e2e/adm-02-holidays.spec.ts:21
+# Whether they are corrected in this ticket or left to be corrected by whoever next touches each
+# spec is PLAN's call. It is six files either way, and it is the difference between S and M.
+#
+# ---------------------------------------------------------------------------------------------
+# 7. IT IS NOT XL, AND THIS IS STATED BECAUSE A REVIEWER WILL ASK
+#
+# .ai/01-operating-model.md:375 escalates any ticket that "changes a shared type module", and
+# src/lib/domain/types.ts is one. THE ESTABLISHED READING IS AT src/lib/domain/types.ts:503-505,
+# written by ADM-06 and citing the CAL-04, ADM-02, CAL-08 and ADM-04 precedent: the test is whether
+# EXISTING CALLERS MUST CHANGE, not whether the file was touched.
+#
+# Neither half of this work changes a caller. Changing a constant's VALUE changes no signature and
+# no shape — every call site reads the same identifier and gets a different integer. ADDING
+# `DATASTORE_MAX_ROWS` adds a name at the end of the file and changes nothing existing, which is the
+# exact shape the four precedent tickets used.
+#
+# WHAT WOULD MAKE IT XL, so the reading is falsifiable rather than convenient: fix shape (c) changes
+# what the seam's list functions return or how they behave under load in a way callers must follow,
+# and .ai/01-operating-model.md:375 also escalates a changed signature of an existing seam function.
+# If PLAN takes (c) and the signatures move, the size question re-opens on its own terms.
+#
+# ---------------------------------------------------------------------------------------------
+# 8. `invariants_touched` IS PLAN's — THIS SECTION FLAGS IT AND DOES NOT SETTLE IT
+#
+# INV-04 IS ARGUABLE BOTH WAYS AND BOTH READINGS ARE WRITTEN OUT HERE SO PLAN CHOOSES RATHER THAN
+# INHERITS:
+#   - `[]` IS DEFENSIBLE. INV-04's content is the UNIQUENESS of the absence-count definition. One
+#     definition survives a capped read: `absenceCountsFor` is pure, takes rows, and this ticket
+#     creates no second arithmetic anywhere. Nothing about the invariant's statement is engaged.
+#   - LISTING INV-04 IS ALSO DEFENSIBLE. The defect's entire consequence is that the single
+#     definition is FED TRUNCATED INPUT and prints a believable wrong number with no error. An
+#     invariant whose one implementation is reliably given incomplete input is not obviously
+#     unengaged.
+#
+# .ai/registry/invariants.md:63 warns that observing the safest behaviour and concluding no
+# invariant is engaged is circular reasoning. So WHICHEVER IS CHOSEN, STATE THE MECHANISM AND NOT
+# THE CONCLUSION — the same standard BUG-001's shell held itself to.
+#
+# ---------------------------------------------------------------------------------------------
+# 9. OUT OF SCOPE — restated here so it survives into the plan's own Out-of-scope section
+#
+#   - REWRITING CAL-03's, CAL-04's, CAL-05's OR CAL-06's ACCEPTANCE CRITERIA. AC-11, AC-14 and
+#     AC-15 are CORRECT AS WRITTEN and the code does not hold them. Any edit that makes a criterion
+#     describe today's behaviour is the failure this ticket exists to prevent, and it is the
+#     cheapest way to make this ticket look done.
+#   - PROVISIONING A REAL SUPABASE PROJECT so that truncation is observable behaviourally. Its own
+#     decision, with a project, a lifecycle, credentials in CI and seed data. §5 is how this ticket
+#     produces evidence without one.
+#   - RE-OPENING THE END-TO-END SEAM PIN. playwright.config.ts:50 is BUG-001's shipped fix and is
+#     cited here as a fact, not as a target.
+#   - THE WRITE-PATH UNKNOWN AT ADR-016:251 — whether PostgREST's `db-max-rows` caps a PATCH's
+#     RETURNED REPRESENTATION or its AFFECTED ROWS. It is a SECOND AND INDEPENDENT unknown, it sits
+#     on ADM-05 and ADM-06, and this ticket NEITHER TOUCHES NOR DISCHARGES IT. ADM-06's row keeps
+#     its `TODO(verify):` for exactly that reason while CAL-04's, CAL-06's and ADM-02's were
+#     discharged at this triage.
+#   - CAL-07. Its AC-21 (.ai/board/tickets/CAL-07/01-plan.md:226-230) is VACUOUSLY SATISFIED — its
+#     `Given` is conditioned on the seam refusing, and under this defect the seam never refuses, so
+#     the criterion stays green while the screen is wrong. That is a finding about how the next such
+#     criterion should be PHRASED, and it is deliberately NOT in `feature_ids`: nothing about CAL-07
+#     is falsified, and widening the ticket on the strength of a criterion that passes is scope
+#     drift with a citation.
+#   - `ROSTER_LIMIT` AND `OWN_ENTRY_LIMIT`. Both 500, both below the cap, both assertions fire as
+#     designed. Named only as the contrast.
+#   - `PENDING_PAGE_SIZE` AND ADM-04's PAGED WORKLIST. A window rather than a ceiling, it already
+#     pages, and its short-page assertion already detects a lowered cap. Nothing about it is broken.
+#   - THE ABSENCE ARITHMETIC IN src/lib/data/absence.ts. INV-04's single implementation sums
+#     correctly over whatever rows it is handed. The defect is UPSTREAM of it and the fix must not
+#     reach into it.
+#   - REFACTORING THE FOUR ASSERTION SITES INTO A SHARED HELPER. A tidy-up with its own risk that no
+#     criterion asks for.
+#   - THE `bugfix/` PATH-GUARD DEFECT ITSELF (.ai/standards/git-conventions.md:44-49). Cited in §2
+#     as the reason for `feat/`; fixing the two resolvers is human-plane `/thuki` work with its own
+#     tests and it is not this ticket.
+#   - .ai/standards/tech-stack.md:84's STALE LINE recording the Supabase CLI as not installed. Found
+#     during this triage, true against package.json:39, standards plane under RULE-01, and reported
+#     in the idea file's verdict rather than fixed.
+#   - THE FOUR OTHER ITEMS THIS BOARD OWES, none of them this and none of them discharged here:
+#     ADR-029's obliged re-triage of .ai/board/ideas/2026-09-07-a-day-does-not-say-how-full-it-is.md
+#     (a separate /triage run), the bare `TODO(project)` stubs at .ai/standards/ui-design-system.md
+#     § Colour and § Type plus UIE-04's `1280px` breakpoint, the product showing two names, and the
+#     `PLAN -> READY` transition that .ai/01-operating-model.md:285 declares and no command runs.

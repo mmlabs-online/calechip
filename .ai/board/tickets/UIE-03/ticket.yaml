@@ -1,0 +1,417 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-09-05 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: UIE-03
+title: "The calendar screens give up their own chrome to the shell"
+feature_ids: [UIE-03]
+group: UIE           # ONE GROUP, ONE FEATURE ID. Definition of Ready item 6 is therefore satisfied
+                     # OUTRIGHT by its FIRST clause and NO SPLIT RATIONALE IS OWED — the same
+                     # situation as UIE-01 and UIE-02, and NOT the OPS-002 situation, which spans
+                     # two groups and owes a whole §5 to the second clause.
+                     # NO CAL OR ADM ROW IS IN feature_ids. This ticket deletes chrome from the
+                     # surfaces those features shipped; it delivers none of them. See §7.
+state: DONE          # `orchestrator` at /ship, 2026-09-07, on 04-review.md `gate: PASS` /
+                     # `next_state: DONE`. ADR-022 removed the QA stage, so REVIEW -> DONE is the
+                     # whole remaining transition (.ai/01-operating-model.md:36).
+#
+# PREVIOUS VALUE, `REVIEW`, comment reproduced below rather than deleted. NINTH CONSECUTIVE TICKET.
+#
+# ONE CORRECTION, and it is the same one OPS-002, UIE-01 and UIE-02 each needed. The comment lays
+# the gap at PLAN's door — "the gap is PLAN's". IT IS NOT PLAN'S, AND THAT MISATTRIBUTION IS WHY
+# NINE TICKETS HAVE RECORDED THIS WITHOUT IT EVER BEING FIXED. `.ai/01-operating-model.md:285`
+# puts PLAN -> READY in the ORCHESTRATOR's loop, not in `/plan`: the orchestrator reads the plan
+# gate, evaluates DoR, and writes the state. `/plan` writing `state: READY` would be a stage
+# grading its own Definition of Ready. What is missing is a COMMAND that runs that loop step —
+# `/next-ticket` grades and writes nothing by design, and `/ship` is where it all lands at the end.
+#
+# THE GRADE ITSELF WAS GIVEN: `/next-ticket` in the orchestrator session graded the full Definition
+# of Ready at 2026-09-07 15:07 +07, SIX OF SIX PASS, after `/plan` and before `/implement`.
+#
+# state: REVIEW      # Set by /implement, 2026-09-07. It read BACKLOG on arrival, not READY: PLAN
+#                    # wrote 01-plan.md with `next_state: READY` in its front-matter and did not
+#                    # carry the value into this file. Named here rather than corrected silently —
+#                    # the gap is PLAN's and a reviewer should see that the row skipped two states.
+owner: ""
+branch: "feat/UIE-03"   # .ai/standards/git-conventions.md:36 asks for feat/<FEATURE-ID>, and UIE-03
+                        # IS a row in .ai/registry/features.md as of 2026-09-05. The convention
+                        # followed; no trade-off to argue.
+size_estimate: M      # 01-plan.md section 1. Four screens stripped, two shell files adopting the
+                      # relocated ids, six spec files each losing one navigation step.
+size: M               # 01-plan.md section 7, counted from the TWELVE allowed_paths below (the
+                      # ticket folder is not counted). M is up to 12 at .ai/01-operating-model.md:373,
+                      # so this is THE CEILING EXACTLY and there is no headroom. It AGREES with
+                      # size_estimate, and only because the estimate was formed AFTER 01-plan.md
+                      # section 0's measurement rather than from §2 of this file, which says ten.
+depends_on: [UIE-02]  # ***FAILS DEFINITION OF READY ITEM 3 TODAY, ON PURPOSE.*** See §5.
+invariants_touched: []   # REACHED AT PLAN, and no longer the template's default. 01-plan.md
+                         # section 2 carries the reasoning. All seven rows at invariants.md:33-39
+                         # constrain `entry` rows or the member they belong to; none governs the
+                         # APPEARANCE of a screen. The structural argument, which is what avoids the
+                         # circularity invariants.md warns about: this ticket DELETES MARKUP AND
+                         # RENAMES TEST IDS. No query, no policy, no migration, no arithmetic;
+                         # src/lib/data/absence.ts is untouched; period.ts is pure and imports no
+                         # seam. AC-10 and AC-13 are the observable forms.
+# FILLED BY tech-lead-design AT PLAN, from 01-plan.md section 7. TWELVE files, not the TEN §2 of
+# this file predicts, and the two extra are the whole finding of 01-plan.md section 0.
+#
+# ***§2 AND §3 OF THIS FILE ASSUME UIE-02 RELOCATED THE SCREENS' IDS ONTO THE SHELL. IT DID NOT.***
+# UIE-02 shipped `shell-period-prev/next/anchor` and `shell-view-week/month/year`, and its anchor
+# carries `data-period-kind` and NOT `data-week-start` / `data-month` / `data-year` — deliberately,
+# because while both copies existed a reused id resolved to two nodes and Playwright strict mode
+# fails rather than picking one (UIE-02 01-plan.md § 4.8). That same section HANDS THE DECISION HERE:
+# "UIE-03 ... is the ticket that may then decide whether the old names move onto the shell."
+#
+# SO src/components/TopBar.tsx AND src/lib/period.ts ARE IN SCOPE, against §7 of this file, on the
+# authority of UIE-02's plan — the later document and the owner of both files. The grant is NARROW:
+# test ids and the data attributes beside them, nothing else. Without it, deleting four headers
+# destroys 83 spec references across the anchors, the period controls and the cross-view links.
+#
+# tests/e2e/adm-01-threshold.spec.ts is NOT here although it references `week-month` (:219-220) and
+# `month-threshold`. Both survive — the first by 01-plan.md § 4.3, the second by AC-2 — so it needs
+# no edit. Named so a reader who counts SEVEN spec files referencing a touched id knows why six.
+allowed_paths:
+  - ".ai/board/tickets/UIE-03/**"
+  - "src/routes/WeekView.tsx"
+  - "src/routes/MonthView.tsx"
+  - "src/routes/YearView.tsx"
+  - "src/routes/Holidays.tsx"
+  - "src/components/TopBar.tsx"
+  - "src/lib/period.ts"
+  - "tests/e2e/cal-04-month-view.spec.ts"
+  - "tests/e2e/cal-05-week-view.spec.ts"
+  - "tests/e2e/cal-06-year-view.spec.ts"
+  - "tests/e2e/adm-02-holidays.spec.ts"
+  - "tests/e2e/adm-03-holiday-writes.spec.ts"
+  - "tests/e2e/cal-08-holiday-shading.spec.ts"
+schema_delta: none
+requires_adr: false   # This ticket DELETES markup and four selectors. Nothing here reaches a
+                      # registry, a schema or a dependency. IF PLAN CONCLUDES OTHERWISE IT MUST STOP
+                      # AND ASK RATHER THAN FLIP THE FIELD QUIETLY — same clause and same reason as
+                      # OPS-002 §2's localisation-library question.
+rework_count: 0
+chat_budget:
+  # ADR-019 retired `ba` from the loop, so the two `->ba` edges are gone. They are not listed as
+  # zeroes: an edge nobody can walk is not a budget, it is a row that invites someone to try.
+  developer->tech-lead-design: { used: 0, max: 6 }
+  # ADR-022 removed the QA stage, and the `qa->tech-lead-design` edge with it.
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  # BOTH ROWS TRANSCRIBED BY `orchestrator` AT /ship ON 2026-09-07. Neither value is claimed here —
+  # each is a copy of a gate another stage reached, read from that artifact's own front-matter.
+  #
+  # From .ai/board/tickets/UIE-03/01-plan.md: `gate: PASS`, `blocking_reason: ""`,
+  # `produced_at: 2026-09-07T15:01:57+07:00`. ADR-019 merged the `spec` and `design` gates into one.
+  plan:   { passed: true, at: "2026-09-07T15:01:57+07:00" }
+  # From .ai/board/tickets/UIE-03/04-review.md: `gate: PASS`, `blocking_reason: ""`,
+  # `next_state: DONE`, `produced_at: 2026-09-07T15:33:12+07:00`. ONE review pass, no rework, no
+  # consultation — the first ticket since ADM-06 to need none of the three.
+  review: { passed: true, at: "2026-09-07T15:33:12+07:00" }
+  # No `qa` key. ADR-022 removed the stage and this shell is created after that date, so the two
+  # gates that decide anything are `plan` and `review`. /ship requires both.
+
+# Created by `product` at /triage on 2026-09-05, on a PROMOTE verdict, from
+# .ai/board/ideas/2026-09-05-the-product-has-no-shell-and-every-screen-starts-over.md.
+# That file's *Triage verdict* section is the reasoning; this block carries only what binds PLAN.
+#
+# ***THE SECOND OF THREE TICKETS FROM ONE IDEA, AND THE ORDER IS STRICTLY SEQUENTIAL:***
+#   UIE-01 -> UIE-02 -> UIE-03 -> UIE-04.
+# One working directory holds one branch (ADR-006), so exactly one of these is ever in flight.
+# UIE-02 builds the shell and leaves the application KNOWINGLY DOUBLED — a shell top bar above each
+# screen's own header. ***THIS TICKET IS WHERE THE DOUBLING ENDS.*** At the end of it the
+# application matches the mockup's shell. UIE-04 then rewrites the week grid into seven columns.
+#
+# ***THIS IS THE ONLY ONE OF THE THREE TICKETS THAT TOUCHES A TEST FILE***, and every one of those
+# edits is the DELETION OF A NAVIGATION STEP rather than the rewrite of an assertion. See §3.
+#
+# THE VISUAL REFERENCE IS .ai/board/tickets/UIE-02/design/README.md — the CANONICAL copy, and it is
+# a transcription rather than an image. .ai/board/tickets/UIE-03/design/README.md quotes only the
+# part this ticket owns and points there for the whole.
+#
+# Definition of Ready items 1, 3, 4 and 6 are filled here — they are produced at BACKLOG (ADR-010).
+# Items 2 and 5 (invariants_touched, size_estimate) are deliberately left as the template ships
+# them: they belong to tech-lead-design at PLAN, and the gate sits after PLAN so that they can.
+#
+# ---------------------------------------------------------------------------------------------
+# 1. ***THE TWENTY-TWO ELEMENTS, FILE BY FILE. MEASURED AT TRIAGE; DO NOT RE-DERIVE THEM.***
+#
+# ***EVERY LINE NUMBER IN THIS TABLE WAS RE-MEASURED BY `product` ON 2026-09-05, AFTER CAL-08 MERGED
+# (PR #56) AND THIS BRANCH WAS REBASED ONTO IT.*** CAL-08 rewrote all three view files and the
+# citations written earlier the same day were stale by 28-35 lines. ***THEY DID NOT MOVE BY A
+# UNIFORM OFFSET, SO NOTHING BELOW MAY BE DERIVED FROM AN OLD NUMBER PLUS A CONSTANT.*** The
+# superseded numbers are kept in the right-hand column so a reader can tell a correction from a
+# transcription error. src/routes/Holidays.tsx and src/App.tsx were NOT touched by CAL-08 and their
+# citations are unchanged.
+#
+#                                                              WAS (stale, pre-CAL-08)
+#   src/routes/WeekView.tsx:277-315   THE WHOLE <header>:      (was :249-286)
+#                                       week-home      :278     (was :250)
+#                                       week-prev      :286     (was :258)
+#                                       week-anchor    :289     (was :261)   (an h1)
+#                                       week-next      :292     (was :264)
+#                                       week-month     :301     (was :273)
+#                                       week-year      :312     (was :284)
+#
+#   src/routes/MonthView.tsx:331-370    month-home     :332     (was :298)
+#                                       month-prev     :338     (was :304)
+#                                       month-anchor   :341     (was :307)   (an h1)
+#                                       month-next     :344     (was :310)
+#                                       month-week     :356     (was :322)
+#                                       month-year     :368     (was :334)
+#
+#   src/routes/YearView.tsx:329-353     year-home      :330     (was :300)
+#                                       year-prev      :336     (was :306)
+#                                       year-anchor    :339     (was :309)   (an h1)
+#                                       year-next      :342     (was :312)
+#                                       year-month     :350     (was :320)
+#
+#   src/routes/Holidays.tsx             holidays-prev  :272     UNCHANGED
+#                                       holidays-year  :278     UNCHANGED    (an h1)
+#                                       holidays-next  :282     UNCHANGED
+#                                       holidays-back  :470     UNCHANGED
+#
+#   src/routes/Home.tsx                 THE WHOLE FILE
+#
+# ***THE MONTH RANGE ENDS AT :370 AND THE <header> ELEMENT DOES NOT — READ THIS BEFORE DELETING
+# ANYTHING FROM MonthView.tsx.*** That file's `<header>` opens at :331 and closes at :378, and it
+# holds a SEVENTH child this ticket MUST NOT REMOVE: `month-threshold` at :375, which is CAL-04's
+# AC-14 and carries `data-threshold` and `data-current-members`. ***FOUR ASSERTIONS ACROSS THREE
+# SPEC FILES READ IT*** — tests/e2e/adm-01-threshold.spec.ts (twice), tests/e2e/cal-04-month-view.spec.ts
+# and tests/e2e/cal-06-year-view.spec.ts. It is CONTENT, not chrome, by the same test §4.3 applies to
+# the refusal headings: the top bar does not carry it and nothing in the shell replaces it. The
+# range stops at the close of `month-year` deliberately. ***A DELETION OF "THE WHOLE <header>" IN
+# THAT FILE TAKES THREE SPEC FILES WITH IT.*** This paragraph was added on 2026-09-05 with the
+# re-measurement; the old range :297-335 already stopped short of it, but never said why.
+#
+# ***THE ARITHMETIC, STATED SO THE COUNT IS NOT ARGUED AT REVIEW.*** Twenty-two elements across five
+# files is the figure for the WHOLE mockup. ***THIS TICKET REMOVES TWENTY-ONE ACROSS FOUR FILES***,
+# because the fifth file is src/routes/Home.tsx and ***UIE-02 ALREADY DELETED IT.*** It is listed
+# above anyway, because a reader counting elements against this table and finding twenty-one needs
+# to find out where the twenty-second went rather than conclude the table is wrong.
+#
+# ---------------------------------------------------------------------------------------------
+# 2. SCOPE — FOUR SOURCE FILES PLUS ***SIX*** SPEC FILES. ***TEN, NOT NINE.***
+#
+# ***AMENDED ON 2026-09-05 AFTER THE CAL-08 REBASE. THIS IS A SCOPE CHANGE, NOT A CITATION FIX, AND
+# IT IS THE ONE CORRECTION ON THIS TICKET THAT CHANGES WHAT GETS EDITED.*** The heading read
+# *FOUR SOURCE FILES PLUS FIVE SPEC FILES. NINE.* until then. CAL-08 shipped a SIXTH spec file that
+# addresses two of the four ids §3 kills.
+#
+#   src/routes/WeekView.tsx                  header removed
+#   src/routes/MonthView.tsx                 header removed (NOT `month-threshold` — see §1)
+#   src/routes/YearView.tsx                  header removed
+#   src/routes/Holidays.tsx                  period controls and the back-link removed
+#   tests/e2e/cal-04-month-view.spec.ts      `month-home` navigation step deleted        :87
+#   tests/e2e/cal-05-week-view.spec.ts       `week-home` navigation step deleted         :104
+#   tests/e2e/cal-06-year-view.spec.ts       `year-home` navigation step deleted    :137, :336
+#   tests/e2e/adm-02-holidays.spec.ts        `holidays-back` navigation step deleted :122, :280
+#   tests/e2e/adm-03-holiday-writes.spec.ts  `holidays-back` navigation step deleted     :398
+#   tests/e2e/cal-08-holiday-shading.spec.ts ***NEW, AND IN SCOPE FOR EXACTLY ONE REASON:***
+#                                            `holidays-back` :183, `month-home` :356 AND :476
+#
+# ***THE NEW FILE IS IN SCOPE FOR THE DYING SELECTORS AND FOR NOTHING ELSE. SAY IT THAT WAY AT PLAN,
+# BECAUSE THE SIX OTHER SELECTORS IT ADDRESSES ARE THE TRAP.*** tests/e2e/cal-08-holiday-shading.spec.ts
+# also reads `week-anchor` (:138, :456), `week-next` (:406, :407), `month-anchor` (:489),
+# `month-next` (:488), `year-anchor` (:342) and `year-prev` (:341). ***EVERY ONE OF THOSE SIX IS
+# CLASS A — UIE-02 RELOCATES THEM INTO THE TOP BAR RATHER THAN DELETING THEM, SO THEY SURVIVE AND
+# THOSE ASSERTIONS ARE NOT TOUCHED.*** Only the three references on the first line die.
+#
+# ***THAT FILE ALSO ADDRESSES `week-day-holiday` AND `week-day-bridge` (:285-292, :413), WHICH ARE
+# GRID SELECTORS AND ARE NOT THIS TICKET'S AT ALL.*** This ticket deletes the <header> and nothing
+# below it (§4.6). Nothing in it may reach a day cell.
+#
+# ***`month-home` APPEARS TWICE IN THAT FILE (:356 AND :476), NOT ONCE.*** A reader who deletes the
+# first and stops leaves a red suite. `year-home` in tests/e2e/cal-06-year-view.spec.ts and
+# `holidays-back` in tests/e2e/adm-02-holidays.spec.ts are the same shape and always were — the
+# per-file line numbers above are given for that reason.
+#
+# ***THE THREE ANCHOR h1s MOVE INTO THE TOP-BAR TITLE CARRYING THEIR DATA ATTRIBUTES.***
+# `week-anchor` keeps `data-week-start`, `month-anchor` keeps `data-month`, `year-anchor` keeps
+# `data-year`, and `holidays-year` keeps `data-year`. ***TWENTY-FIVE ASSERTIONS READ THOSE
+# ATTRIBUTES.*** Dropping an attribute while keeping the id is the failure that looks like success:
+# the element is found, the assertion on its text passes, and the one reading `data-month` does not.
+#
+# ***THE CROSS-VIEW LINKS ARE NOT REMOVED, THEY ARE REPARENTED.*** `week-month`, `week-year`,
+# `month-week`, `month-year` and `year-month` become the segmented control's segments, plus a NEW
+# `year-week` that has zero references anywhere today. UIE-02 §7 requires PLAN to decide which side
+# holds each id WHILE BOTH EXIST; this ticket is where the screen's copy goes away and the question
+# stops existing.
+#
+# ---------------------------------------------------------------------------------------------
+# 3. ***CLASS B — FOUR IDS THAT MUST DIE, ACROSS ***SIX*** SPEC FILES.***
+#
+# ***THE FILE LIST WAS AMENDED ON 2026-09-05 AFTER THE CAL-08 REBASE — IT READ "FIVE SPEC FILES"
+# AND NAMED FIVE. THE IDS THEMSELVES ARE UNCHANGED; ONLY THE BLAST RADIUS GREW.***
+#
+#   week-home       tests/e2e/cal-05-week-view.spec.ts
+#   month-home      tests/e2e/cal-04-month-view.spec.ts,
+#                   ***tests/e2e/cal-08-holiday-shading.spec.ts (TWICE)***
+#   year-home       tests/e2e/cal-06-year-view.spec.ts
+#   holidays-back   tests/e2e/adm-02-holidays.spec.ts, tests/e2e/adm-03-holiday-writes.spec.ts,
+#                   ***tests/e2e/cal-08-holiday-shading.spec.ts***
+#
+# ***SIX FILES REFERENCE ONE OF THESE FOUR IDS AND THE LIST IS EXHAUSTIVE, MEASURED IN THIS TREE:***
+# adm-02-holidays, adm-03-holiday-writes, cal-04-month-view, cal-05-week-view, cal-06-year-view and
+# cal-08-holiday-shading. §2 carries the line numbers.
+#
+# ***THERE IS NO HOME BUTTON IN THE MOCKUP AND NO HOME SCREEN LEFT TO POINT AT.*** UIE-02 deleted
+# src/routes/Home.tsx and made the landing route redirect a member to the week route. A control
+# named `-home` pointing at a redirect is a control that lies about where it goes.
+#
+# ***EACH SPEC CHANGE IS A DELETION OF A NAVIGATION STEP, NOT A REWRITE OF AN ASSERTION.*** The test
+# clicks the control and then asserts something about where it landed; the click goes, and what it
+# asserted about the ORIGIN screen is untouched. ***PLAN MUST SAY SO EXPLICITLY***, because "this
+# ticket edits six spec files" reads as a licence to adjust assertions that have nothing to do with
+# it, and .ai/standards/testing-standards.md is not a document a chore may quietly reinterpret.
+# ***THE LICENCE IS NARROWEST ON tests/e2e/cal-08-holiday-shading.spec.ts***, which was added to this
+# ticket on 2026-09-05 for three references and reads eight other selectors this ticket does not
+# touch. See §2.
+#
+# ***DO NOT REPLACE A DELETED STEP WITH A CLICK ON THE SHELL'S EQUIVALENT.*** There is no
+# equivalent — that is the point of Class B. A test that navigates via the sidebar instead is a
+# NEW test of the shell, and the shell is UIE-02's, already shipped, and not re-verified here.
+#
+# ---------------------------------------------------------------------------------------------
+# 4. ***WHAT MUST NOT BE TOUCHED. THIS IS THE HALF THAT KEEPS THE TICKET SMALL.***
+#
+# 4.1 ***src/routes/TeamEntries.tsx AND src/routes/Threshold.tsx ARE DROPPED FROM THE TICKET
+#     ENTIRELY.*** `team-entries-back` (src/routes/TeamEntries.tsx:307) and `threshold-back` three
+#     times over (src/routes/Threshold.tsx:170, :193, :276) point at the LANDING ROUTE, which UIE-02
+#     made redirect to the week route. ***THEY KEEP WORKING WITH ZERO EDITS AND ZERO SPEC EDITS.***
+#     The mockup shows neither screen. Touching either adds files and spec files for nothing.
+#
+# 4.2 ***src/routes/EditEntry.tsx:121 AND :200 ARE NOT BACK-TO-HOME LINKS. LEAVE THEM ALONE.***
+#     `edit-entry-back` points at the new-entry route and `edit-entry-team-back` at the team-entries
+#     route. They return the caller to the list they arrived from, and NO SHELL CONTROL REPLACES
+#     THAT. This is the premise most likely to be got wrong by a reader grepping for `-back`.
+#
+# 4.3 ***EVERY REFUSAL AND ERROR HEADING IS PAGE CONTENT, NOT CHROME.*** Do not remove:
+#       src/routes/AllowList.tsx:133
+#       src/routes/MemberList.tsx:140, :156
+#       src/routes/TeamEntries.tsx:151, :166
+#       src/routes/Threshold.tsx:163, :185
+#     UIE-02 §3 exists precisely so a member-less or signed-out caller still REACHES these. Deleting
+#     them here would finish the job that ticket's `BareLayout` was built to prevent.
+#
+# 4.4 ***THE CONTENT h1s THE TOP BAR DOES NOT TITLE STAY.*** src/routes/AllowList.tsx:146,
+#     src/routes/MemberList.tsx:184, src/routes/TeamEntries.tsx:186, src/routes/Threshold.tsx:206.
+#     The top bar titles the four PERIOD screens and nothing else; a screen it does not title that
+#     loses its own heading loses its name.
+#
+# 4.5 ***`app-root` AND `seam-banner` KEEP THEIR NAMES AND THEIR POSITIONS.*** src/App.tsx:1-6 says
+#     `app-root` stays on the element wrapping <Routes>, and tests/e2e/smoke.spec.ts:9 depends on
+#     it — a file deliberately absent from every allowed_paths this project has ever written.
+#     Wherever UIE-02's PLAN placed the seam banner, ***THIS TICKET DOES NOT MOVE IT AGAIN.***
+#
+# 4.6 ***THE WEEK GRID'S CONTENTS ARE UIE-04's AND NOT THIS TICKET'S.*** This ticket deletes
+#     src/routes/WeekView.tsx's <header> and nothing below it. src/routes/WeekView.tsx:317-319 is
+#     today's stacked layout and it survives this ticket unchanged. (Re-measured 2026-09-05 on the
+#     CAL-08 rebase; it read `:290-292`.)
+#     ***AND CAL-08 PUT MORE BELOW THAT LINE THAN THERE WAS WHEN THIS SHELL WAS WRITTEN.*** The day
+#     heading now carries `week-day-holiday` (:355) and `week-day-bridge` (:364) and the section
+#     carries `data-day-status` and `data-bridge` (:334-335). ***NONE OF IT IS THIS TICKET'S.***
+#     The <header> ends at :315 and everything from :317 down is untouched.
+#
+# ---------------------------------------------------------------------------------------------
+# 5. `depends_on: [UIE-02]` — ***AND IT FAILS DEFINITION OF READY ITEM 3 TODAY, ON PURPOSE***
+#
+# Item 3 requires every ticket named in `depends_on` to be DONE. UIE-02 is `BACKLOG`, so this ticket
+# FAILS item 3 as it stands. Deliberate, and stated the way OPS-002 §3 states the same thing.
+#
+# ***THE DEPENDENCY IS NOT A FILE COLLISION, IT IS A CORRECTNESS ONE, AND IT IS STRICTER THAN A
+# COLLISION.*** Running this ticket first removes every way to navigate this application and leaves
+# nothing in its place: four period screens with no prev, no next, no anchor and no way to another
+# view. ***THE SHELL MUST EXIST BEFORE A SCREEN CAN GIVE ANYTHING UP TO IT.*** One working
+# directory, one branch (ADR-006), so the ordering is enforced by git rather than by policy.
+#
+# ***UIE-01 -> UIE-02 -> UIE-03 IS THE WHOLE CHAIN AND `depends_on` NAMES ONLY THE LINK.*** UIE-01
+# is not repeated here: it is UIE-02's dependency, and a shell that restated it would have two
+# places to keep true.
+#
+# ---------------------------------------------------------------------------------------------
+# 6. NOTE ON `invariants_touched`
+#
+# Left as the template's `[]`, which is the DEFAULT and NOT an answer.
+# .ai/registry/invariants.md warns that concluding "none" from safe behaviour is circular reasoning.
+# What triage established as a STARTING POINT, and PLAN must reach its own: all seven rows in that
+# file constrain `entry` rows, and this ticket DELETES MARKUP. No query changes, no policy, no
+# migration, no arithmetic — src/lib/data/absence.ts is not in scope and is not touched. The four
+# screens read exactly what they read today.
+# ADR-028 records separately that `Invariants touched` will be `[]` on almost every UIE row, and
+# says so as a COST of the group rather than as permission to skip the question.
+#
+# ---------------------------------------------------------------------------------------------
+# 7. ***OUT OF SCOPE, AND THESE ARE NEGATIVE REQUIREMENTS — THE KIND NOBODY CHECKS.***
+#
+# 7.1 ***DO NOT TRANSLATE ANY COPY ON THESE FOUR SCREENS INTO VIETNAMESE.*** It reverses
+#     .ai/standards/ui-design-system.md § Language — the operator's own instruction of 2026-09-03 —
+#     and it is LINT-ENFORCED at eslint.config.js:83-92 against `Literal`, `TemplateElement` and
+#     `JSXText` under src/. None of these four files is in copyDebt (ui-language.json:20-26) and
+#     that list ONLY EVER SHRINKS; adding one is named as the failure mode at :10-13. This ticket
+#     deletes markup, so the temptation is small and the cost of yielding to it is a red lint run.
+#
+# 7.2 ***DO NOT ADD THE `Duyệt phép` BUTTON.*** ADM-04, ADM-05 and ADM-06 are all BACKLOG with
+#     `allowed_paths: []`. Ship it absent, not disabled — the full argument is
+#     .ai/board/tickets/UIE-02/ticket.yaml §9.2 and it is not restated here.
+#
+# 7.3 ***THE `Ngày lễ` ROW IS STILL NOT THIS TICKET'S — BUT THE REASON CHANGED COMPLETELY ON
+#     2026-09-05, AND THE OLD REASON IS KEPT BELOW RATHER THAN DELETED.***
+#
+#     ~~DO NOT ADD THE `Ngày lễ` ROW TO THE LEGEND CARD. src/routes/WeekView.tsx:27-28 records that
+#     holidays are lavender and are NOT DRAWN, because CAL-08's row forbids CAL-05 inheriting it.
+#     This ticket has src/routes/Holidays.tsx open, which makes it the likeliest of the three to
+#     absorb the row by accident. THE HOLIDAYS SCREEN EXISTING IS NOT THE SAME AS A HOLIDAY BEING
+#     DRAWN IN A GRID. CAL-08 adds the swatch in the ticket that adds the colour.~~
+#
+#     ***WHAT OVERTOOK IT.*** CAL-08 merged (PR #56) and is `DONE`. src/routes/WeekView.tsx:28-29
+#     now reads the OPPOSITE of the sentence quoted above — *"Holidays are lavender, and CAL-08
+#     draws them HERE"*. The colour appears, so the legend no longer lies by carrying the row, and
+#     ***THE ROW MOVED INTO UIE-02's LIVE SCOPE*** (.ai/board/tickets/UIE-02/ticket.yaml §9.3).
+#
+#     ***SO IT IS OUT OF THIS TICKET FOR THE ORDINARY REASON INSTEAD: THE LEGEND CARD IS IN THE
+#     SIDEBAR, THE SIDEBAR IS UIE-02's, AND UIE-02 IS DONE BEFORE THIS RUNS.*** By the time this
+#     ticket starts the row already exists. Adding, moving or restyling it here is editing a shell
+#     component, which § Also out of scope forbids outright. ***AND THE OLD WARNING STILL STANDS ON
+#     ITS OWN FEET:*** this is the ticket with src/routes/Holidays.tsx open, so it remains the
+#     likeliest of the three to absorb a legend change by accident.
+#
+# 7.4 ***DO NOT ADD THE PALETTE ICON OR THE `?` BUTTON.*** Neither corresponds to a decision taken
+#     anywhere. .ai/board/tickets/UIE-02/ticket.yaml §9.5 and §9.6 carry the reasoning; they are
+#     shell controls and this ticket does not touch the shell at all.
+#
+# 7.5 ***DARK MODE IS OUT OF SCOPE AND § Out-of-scope MUST SAY SO RATHER THAN BE SILENT.***
+#     Silence here reads as an omission; it is a decision.
+#
+# Also out of scope, each for its own reason:
+#   - ***THE SHELL ITSELF.*** src/App.tsx, the three new components and the roster hook are UIE-02's
+#     and are already shipped when this runs. Editing one of them here is scope drift with a very
+#     plausible-looking excuse: "the top bar needed one more thing".
+#   - ***THE WEEK GRID AS SEVEN COLUMNS.*** UIE-04. See §4.6.
+#   - ***THE PER-COLUMN ABSENCE COUNT AND THE OVERLOAD LEGEND ROW.*** Both are BEHAVIOUR rather than
+#     visual arrangement, both reverse a decision in CAL-05's registry row, and both are argued in
+#     .ai/board/tickets/UIE-04/ticket.yaml §3. Nothing here may reproduce them.
+#   - AMENDING .ai/standards/ui-design-system.md — HUMAN PLANE, RULE-01.
+#   - AMENDING ui-language.json. See 7.1.
+#   - ***tests/e2e/smoke.spec.ts.*** Deliberately absent from every allowed_paths this project has
+#     written. See §4.5.
+#
+# ---------------------------------------------------------------------------------------------
+# 8. THE ROW IN .ai/registry/features.md
+#
+# THERE IS A ROW: `UIE-03`, in the `## UIE` section, `Status: PLANNED`, `Invariants touched: []`,
+# citing the idea file by name — the provenance ADR-007 requires of every promoted row, written by
+# `product` at /triage.
+#
+# ***feature_ids IS [UIE-03] ALONE.*** .ai/01-operating-model.md:317 makes the ticket ID equal the
+# feature ID in the 1:1 case, and this is exactly that case. CAL-04, CAL-05, CAL-06, ADM-02, ADM-03
+# and — since 2026-09-05 — CAL-08 shipped the four screens and the SIX spec files this ticket edits,
+# and NOT ONE OF THEM IS IN feature_ids: listing them would claim this ticket DELIVERS those
+# features, which it does not — it deletes chrome from the surfaces they shipped. The link survives
+# as prose. ***CAL-08 IS THE NEWEST OF THE SIX AND THE ONLY ONE THAT WAS `PLANNED` WHEN THIS SHELL
+# WAS WRITTEN;*** it merged in PR #56 the same day and this branch was rebased onto it.
+#
+# ***UNDER ADR-028's FOUR-STEP TEST THIS IS UIE AT STEP 3.*** Step 1 fails — no acceptance criterion
+# and no standard says these screens should have no header of their own; they were built correctly
+# against a product that had no shell. Step 2 fails — after this ticket the product can do nothing
+# it could not do before, and it can do ONE THING LESS in four places, which is the point. Step 3
+# answers yes: the deliverable is the appearance of surfaces that already exist, more than one
+# output would be acceptable, and somebody has to look at the result and judge it.

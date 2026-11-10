@@ -1,0 +1,134 @@
+# Copied from .ai/templates/ticket.yaml at /triage (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: IDEA TRIAGE BACKLOG SPEC READY DESIGN IN_PROGRESS REVIEW QA REWORK ESCALATED DONE
+id: ADM-04
+title: "The worklist of entries awaiting a decision"
+feature_ids: [ADM-04]
+group: ADM
+state: DONE      # `orchestrator` at /ship, 2026-09-05, on 04-review.md `gate: PASS` /
+                 # `next_state: DONE`. ADR-022 removed the QA stage, so REVIEW -> DONE is the
+                 # whole remaining transition (.ai/01-operating-model.md:36).
+#
+# PREVIOUS VALUE, `REVIEW`, SET BY `developer` AT /implement. Their comment is kept below rather
+# than deleted. THIS IS THE THIRD TICKET RUNNING to reach /implement still reading `BACKLOG` with
+# both gates false: CAL-08, and ADM-04 here, and the cause is structural rather than a lapse — no
+# command in .claude/commands/ owns the PLAN -> READY transition. The orchestrator loop in
+# .ai/01-operating-model.md:284-286 has it, /next-ticket grades the Definition of Ready and writes
+# no file, and /ship is where it is finally recorded. That is steward work and it is named in the
+# metrics row for this transition rather than left to be rediscovered a fourth time.
+# state: REVIEW  # `developer` at /implement, 2026-09-05, on 03-impl-log.md `gate: PASS`.
+                #
+                # IT ARRIVED HERE READING `BACKLOG`, AND THAT IS NOT A TRANSITION THIS COMMAND MADE
+                # — the SECOND ticket in a row, after CAL-08 the same day. 01-plan.md's front-matter
+                # reads `gate: PASS` / `next_state: READY`, produced 2026-09-05T17:25:45+07:00, but
+                # PLAN did not write this field, so the board never recorded READY or IN_PROGRESS
+                # for this ticket. /implement writes the state its own command file names and does
+                # not invent the two it skipped. 03-impl-log.md and CAL-08's shell carry the same
+                # note; two occurrences make it a defect in /plan rather than one agent's slip.
+owner: ""
+branch: "feat/ADM-04"
+# `branch` FILLED BY `developer` AT IN_PROGRESS, 2026-09-05, and it should have been PLAN's —
+# CAL-07's and CAL-08's shells both record that field as `tech-lead-design`'s. It is a verified fact
+# about the tree and not a state change: `git branch --show-current` in this session reads
+# `feat/ADM-04`, the branch /plan created. An empty string here misreports a branch that exists,
+# which is why it is written rather than left for /ship.
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR. Read from 01-plan.md
+                      # section 1. One new screen, one new seam function implemented twice, two new
+                      # domain shapes, three new fixtures, one route, one home link -- and NO
+                      # migration, NO policy, NO grant.
+                      # Not S: sixteen criteria, a paged read with an exact count, and two
+                      # TODO(project) markers whose recommendations decide what the list contains.
+                      # Not L: every policy it reads through already ships, and it writes nothing.
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. Counted from
+                      # the eleven allowed_paths below, 01-plan.md section 7. AGREES with
+                      # size_estimate; ADR-012 is not engaged. ELEVEN OF M'S CEILING OF TWELVE, and
+                      # the plan says so rather than presenting the agreement as corroboration: the
+                      # estimate was made before the seam function was designed. A twelfth file
+                      # would be the signal to split by surface, and there is no twelfth.
+depends_on: [CAL-01, TEA-03, ADM-01]
+invariants_touched: []
+# 01-plan.md section 2, reasoned per candidate rather than asserted. `[]` is the feature row's own
+# answer (features.md:103) and RULE-04 makes the row the source: this ticket computes no absence
+# count and writes nothing.
+#
+# INV-02 and INV-03 govern transitions of `status` and `rejection_reason`; this ticket performs
+# none and only displays the pending state. INV-04 and INV-05 are the absence count -- a pending
+# entry counts whether or not this list shows it, and the number on this screen counts ENTRIES
+# AWAITING A DECISION, a different quantity over a different set. INV-07 is the closest call and is
+# still not touched: AC-13 asserts it holds, held by `entry_select_team` which CAL-01 shipped and
+# this ticket does not change. Asserting an invariant still holds is not touching it.
+allowed_paths:
+  # 01-plan.md section 7. Three are new: the screen, its unit test, and the end-to-end spec.
+  # `mock.ts` and `supabase.ts` are two of OPS-002's five remaining copyDebt files -- OPS-002 is
+  # BACKLOG so nothing is in flight, this ticket adds nothing to that list, and every sentence it
+  # writes into those two files is already English. CAL-06 and CAL-08 each avoided both; this
+  # ticket cannot, because a new seam function has to be implemented twice.
+  - "src/lib/data/index.ts"
+  - "src/lib/data/mock.ts"
+  - "src/lib/data/supabase.ts"
+  - "src/lib/domain/types.ts"
+  - "src/lib/fixtures.ts"
+  - "src/routes/PendingEntries.tsx"
+  - "src/routes/Home.tsx"
+  - "src/App.tsx"
+  - "supabase/seed.sql"
+  - "tests/pending-entries.test.ts"
+  - "tests/e2e/adm-04-worklist.spec.ts"
+schema_delta: none
+requires_adr: false
+rework_count: 0
+chat_budget:
+  # Migrated 2026-09-04 by `steward`, together with the gates below. `ba` left the loop at ADR-019
+  # and `qa` at ADR-022, so three of the four edges this shell carried named roles nobody can
+  # dispatch. They are not kept as zeroes — `.ai/templates/ticket.yaml` says an edge nobody can walk
+  # is not a budget, it is a row that invites someone to try.
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  # Migrated 2026-09-04 by `steward`. This shell was created at /triage before ADR-019 merged the
+  # `spec` and `design` gates into one `plan` gate, and before ADR-022 removed the `qa` stage and
+  # its gate — and nothing migrated it, so five earlier tickets each patched their own copy at PLAN
+  # or at /ship. Check D14 now fails any ticket that is not DONE whose gate keys disagree with
+  # `.ai/templates/ticket.yaml`, so the set cannot drift again unnoticed.
+  #
+  # No value changes here, only the key set: every gate on an unstarted shell is `passed: false`
+  # under either shape.
+  #
+  # BOTH WRITTEN BY `orchestrator` AT /ship, 2026-09-05, quoted from the artifacts' front-matter
+  # rather than re-judged — the convention CAL-06's shell states in terms.
+  #
+  # `plan`   — 01-plan.md `gate: PASS` / `next_state: READY`, produced 2026-09-05T17:25:45+07:00.
+  #            Definition of Ready graded six of six at /next-ticket, 2026-09-05 17:33 +07.
+  # `review` — 04-review.md `gate: PASS` / `next_state: DONE`, produced 2026-09-05T18:16:29+07:00.
+  #            R1-R8 all PASS with citations; all four verify commands exit 0, the unit suite under
+  #            three timezones.
+  plan:   { passed: true, at: "2026-09-05T17:25:45+07:00" }
+  review: { passed: true, at: "2026-09-05T18:16:29+07:00" }
+
+# Created by `product` at /triage on 2026-08-31, promoting
+# .ai/board/ideas/2026-08-31-no-way-to-tell-a-settled-plan-from-a-typed-one.md.
+#
+# Definition of Ready items 1, 3, 4 and 6 are filled here. Items 2 and 5 (invariants_touched,
+# size_estimate) are deliberately empty: they belong to the BA at SPEC, and the gate sits after
+# SPEC so that they can.
+#
+# Item 6. One group: ADM. The split from ADM-05 is by operation rather than by surface, per the
+# operating model's "split by operation first (read path, then write path), then by surface" --
+# the same rule that settled ADM-02 against ADM-03 earlier the same day. This ticket makes the
+# queue visible; ADM-05 makes it decidable. `product` argued at triage that the worklist was not
+# separable and lost; the argument is recorded in the idea's verdict because it fixes what this
+# ticket must NOT do -- it carries no approve control and no reject control.
+#
+# Item 3. CAL-01 for the `entry` table and its select policy; it transitively carries TEA-01.
+# TEA-03 is a hard dependency and not a courtesy: TEA-01's `member_select_own` returns only the
+# caller's own row, so an embedded member(display_name, avatar) comes back empty until TEA-03
+# widens that policy, and a worklist of unnamed entries is not the feature. ADM-01 because its
+# own Notes say the later admin rows inherit its screen-versus-settings-area answer.
+#
+# Item 4. Genuinely `none` under ADR-014: this ticket reads through the select policy CAL-01
+# already ships and adds no policy, no column and no grant.
+#
+# The failure mode the story must be written against: a capped read makes a queue SHORT, so
+# pending items are silently invisible and are therefore never decided. The outstanding badge
+# derives from an exact count and never from data.length, and the badge and the list must not be
+# able to disagree. TODO(verify): Supabase's default max-rows.

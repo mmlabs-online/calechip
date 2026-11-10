@@ -1,0 +1,25 @@
+# Copied from .ai/templates/ticket.yaml at triage, 2026-10-14 (ADR-010), gap check of the CI/CD request.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: CICD-08
+title: "Every stage of the pipeline has run once for real — a pull request, a merge, a pre-release tag and a forced failed health check — and the evidence is recorded"
+feature_ids: [CICD-08]
+group: CICD
+state: BACKLOG
+owner: ""
+branch: ""
+size_estimate: ""     # S|M - set by tech-lead-design at PLAN; gates DoR
+size: ""              # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting
+depends_on: [CICD-06, CICD-07]
+invariants_touched: []
+allowed_paths: []
+glossary_owed: []
+schema_delta: none
+requires_adr: true    # ADR-059 (the CICD group), ACCEPTED by the operator 2026-10-13
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: false, at: null }
+  review: { passed: false, at: null }

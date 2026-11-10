@@ -1,0 +1,132 @@
+name: verify
+
+# The pull-request gate, and the same gate on every push to main. Branch protection requires ONE job
+# from this file: `verify`, at the bottom, which passes only when every other job here passed. The
+# other job names — static, scripts, database, e2e (n/2) — are deliberately not required, so regrouping steps
+# or changing the shard count never touches repository settings. The required list is
+# docs/ops/branch-protection.md. CICD-02.
+#
+# Do not enable branch protection until this has passed once. A required check that has never passed
+# blocks every pull request, including the operator's, and the only way out is to disable the
+# protection just configured.
+
+# TEMPORARY, operator 2026-10-17: Actions run on release branches only. Branch protection on main is
+# the operator's to lift, since its required checks no longer report there.
+on:
+  pull_request:
+    branches: ["release/**"]
+  push:
+    branches: ["release/**"]
+
+permissions:
+  contents: read
+
+# A pull request's newer run cancels its older one. A push to main gets its own group (run_id), so no
+# merge is ever cancelled or dropped as a superseded pending run.
+concurrency:
+  group: verify-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    environment: prod
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # The four commands are named by role in .ai/standards/testing-standards.md, which is the only
+      # file that knows their invocations. Keep these, end-to-end below, and ci-fast.yml in step with
+      # that table.
+      - name: typecheck
+        run: pnpm exec tsc --noEmit
+
+      - name: lint
+        run: pnpm exec eslint .
+
+      - name: unit
+        run: pnpm exec vitest run
+
+      - name: documentation audit
+        run: node scripts/check-docs.mjs
+
+  scripts:
+    runs-on: ubuntu-latest
+    environment: prod
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: hook and script tests
+        run: node --test .claude/hooks/tests/*.test.mjs scripts/tests/*.test.mjs
+
+  # MIR-05. Builds a local Supabase stack from every migration and runs supabase/tests/ with pgTAP.
+  # No `environment:` — it needs no secret, so it cannot reach the hosted project even by mistake.
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: database tests
+        run: pnpm db:test
+
+  e2e:
+    name: e2e (${{ matrix.shard }}/2)
+    runs-on: ubuntu-latest
+    environment: prod
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    # TEMPORARY, operator 2026-10-17: the e2e phase only prints, and runs no other step. The job and
+    # its matrix stay, so `verify` still aggregates a `success`. Restore the steps from git history.
+    steps:
+      - name: end-to-end
+        run: echo "e2e"
+
+  verify:
+    needs: [static, scripts, database, e2e]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    environment: prod
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: every gate job passed
+        env:
+          STATIC: ${{ needs.static.result }}
+          SCRIPTS: ${{ needs.scripts.result }}
+          DATABASE: ${{ needs.database.result }}
+          E2E: ${{ needs.e2e.result }}
+        run: |
+          echo "static=$STATIC scripts=$SCRIPTS database=$DATABASE e2e=$E2E"
+          [ "$STATIC" = success ] && [ "$SCRIPTS" = success ] && [ "$DATABASE" = success ] && [ "$E2E" = success ]

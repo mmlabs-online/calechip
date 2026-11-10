@@ -1,0 +1,54 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-10-18 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: TSK-06
+title: "The task page shows the week around the selected day, with progress, and a task may carry an optional time of day"
+feature_ids: [TSK-06]
+group: TSK
+state: DONE         # `orchestrator` at /ship, 2026-10-18, on 04-review.md `gate: PASS` / `verdict: PASS`. Was REVIEW
+owner: ""
+branch: ""
+size_estimate: "M"    # Set by tech-lead-design at /plan, 2026-10-18, from 01-plan.md section 1. Gates DoR.
+size: "L"             # Seventeen paths, counted from allowed_paths below - 01-plan.md section 7. Until 2026-10-18T20:09: "M", fourteen paths;
+                      # it was L from the thirteenth. Disagrees with size_estimate M; proceed-or-split is put to the operator.
+depends_on: [TSK-01, TSK-02, TSK-03, TSK-05]   # the page, the overdue list, the PTO flag and the tick it rearranges; all DONE
+invariants_touched: []   # Written explicitly at /plan, 01-plan.md section 2: a task is in no count and the time enters none
+allowed_paths:
+  - ".ai/registry/glossary.md"
+  - "supabase/migrations/20261018120000_tsk06_task_time_of_day.sql"
+  - "src/lib/domain/types.ts"
+  - "src/lib/data/index.ts"
+  - "src/lib/data/supabase.ts"
+  - "src/lib/data/mock.ts"
+  - "src/lib/week-tasks.ts"
+  - "src/routes/Tasks.tsx"
+  - "tests/tasks.test.ts"
+  - "tests/week-tasks.test.ts"
+  - "tests/task-time.test.ts"
+  - "tests/e2e/tsk-06-task-week.spec.ts"
+  - "tests/e2e/tsk-01-tasks.spec.ts"
+  # schema ADR, ACCEPTED at /triage, ships in this PR (plan amended 2026-10-18T20:06). Comment on its own
+  # line: check-allowed-paths.mjs reads an inline comment as part of the path.
+  - ".ai/registry/decisions/ADR-062-a-task-may-carry-an-optional-time-of-day.md"
+  # Task fixture builders, one line each (timeOfDay: null). Added 2026-10-18T20:09 - 99-questions.md.
+  - "tests/overdue-prompt.test.ts"
+  - "tests/pto-tasks.test.ts"
+  - "tests/task-tick.test.ts"
+# ^ 01-plan.md section 7. ADR-057's Status note, data-model.md, rbac-and-security.md and the charter
+#   are NOT here: human and standards plane, owed to /thuki with their text in 01-plan.md section 6.
+glossary_owed: [Task, Time of day]     # Task's row says it "carries no time of day", reversed by ADR-062; Time of day has no row. PLAN writes both (ADR-047)
+schema_delta: "ADD COLUMN task.time_of_day time NULL + check task_time_of_day_shape + re-issued insert/update grants (ADR-062)"
+requires_adr: true    # .ai/registry/decisions/ADR-062-a-task-may-carry-an-optional-time-of-day.md, ACCEPTED by the operator
+rework_count: 0
+chat_budget:
+  # ADR-019 retired `ba` from the loop, so the two `->ba` edges are gone. They are not listed as
+  # zeroes: an edge nobody can walk is not a budget, it is a row that invites someone to try.
+  developer->tech-lead-design: { used: 1, max: 6 }
+  # ADR-022 removed the QA stage, and the `qa->tech-lead-design` edge with it.
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-10-18T20:04:59+07:00" }   # ADR-019 merged the `spec` and `design` gates into one
+  review: { passed: true, at: "2026-10-18T20:29:02+07:00" }   # /advance, from 04-review.md verdict PASS
+  # There is no `qa` gate. ADR-017 waived it on 2026-09-01, ADR-021 reverted that the same
+  # afternoon, and ADR-022 removed the stage outright. Tickets planned before that date carry a
+  # `qa` key; three of them carry `waived: true`. `/ship` requires `plan` and `review`.

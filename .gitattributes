@@ -1,0 +1,17 @@
+* text=auto eol=lf
+*.mjs text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+
+# Design references under .ai/board/**/design/ and .ai/board/ideas/ — added 2026-09-04 with
+# ui-design-system.md § Visual specification, the first thing in this repository that is not text.
+# `text=auto` above already auto-detects binary, so these lines are belt and braces: they make the
+# intent explicit and they stop a future `* text` from mangling an image on checkout.
+*.png  -text
+*.jpg  -text
+*.jpeg -text
+*.gif  -text
+*.webp -text
+*.pdf  -text

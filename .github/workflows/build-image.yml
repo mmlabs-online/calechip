@@ -1,0 +1,121 @@
+name: build-image
+
+# Every push to main builds ONE image from the Dockerfile, starts it, probes /healthz, and only then
+# pushes it to Docker Hub as mingming21400/calechip:sha-<first 7 of the commit>. Nothing else is
+# tagged here: :vX.Y.Z is promoted from this tag by digest, without rebuilding (CICD-04). CICD-03.
+#
+# Not a required check, and not gated on `verify` — branch protection keeps main green; this turns
+# what is on main into an image.
+#
+# NEEDS FOUR ACTIONS SECRETS, added by the operator, or every run fails at `secrets present`:
+#   DOCKERHUB_USERNAME, DOCKERHUB_TOKEN           — a Docker Hub access token, read/write on the repo
+#   VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY     — the production project. Baked into the bundle at
+#                                                   build (see the Dockerfile header): one image
+#                                                   serves one Supabase project.
+
+# TEMPORARY, operator 2026-10-17: Actions run on release branches only. Branch protection on main is
+# the operator's to lift, since its required checks no longer report there.
+on:
+  push:
+    branches: ["release/**"]
+
+permissions:
+  contents: read
+
+# One run per commit; a later merge never cancels an earlier build.
+concurrency:
+  group: build-image-${{ github.sha }}
+  cancel-in-progress: false
+
+env:
+  IMAGE: mingming21400/calechip
+
+jobs:
+  build-image:
+    runs-on: ubuntu-latest
+    environment: prod
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: secrets present
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          missing=""
+          for name in DOCKERHUB_USERNAME DOCKERHUB_TOKEN VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing Actions secrets:$missing — add them under Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+      - name: tag
+        id: tag
+        run: |
+          echo "ref=${IMAGE}:sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "version=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: ${{ steps.tag.outputs.ref }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          build-args: |
+            VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}
+            VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}
+            VITE_APP_VERSION=${{ steps.tag.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: smoke test
+        env:
+          REF: ${{ steps.tag.outputs.ref }}
+        run: |
+          docker run -d --name smoke -p 3000:3000 "$REF"
+          ok=""
+          for i in $(seq 1 30); do
+            if [ "$(curl -fsS http://127.0.0.1:3000/healthz 2>/dev/null)" = "ok" ]; then ok=1; break; fi
+            sleep 1
+          done
+          if [ -z "$ok" ] || ! curl -fsS -o /dev/null http://127.0.0.1:3000/; then
+            echo "::error::Smoke test failed: /healthz did not answer ok, or / did not answer 200."
+            docker logs smoke
+            exit 1
+          fi
+          echo "healthz ok after ${i}s; / answered 200"
+
+      - name: remove smoke container
+        if: always()
+        run: docker rm -f smoke || true
+
+      # Pushes the image that was just tested — the same local image, not a second build.
+      - name: push
+        env:
+          REF: ${{ steps.tag.outputs.ref }}
+        run: |
+          docker push "$REF"
+          digest="$(docker inspect --format '{{index .RepoDigests 0}}' "$REF")"
+          {
+            echo "### Image"
+            echo ""
+            echo "- Tag: \`$REF\`"
+            echo "- Digest: \`$digest\`"
+          } >> "$GITHUB_STEP_SUMMARY"

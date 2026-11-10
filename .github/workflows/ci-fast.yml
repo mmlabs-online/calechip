@@ -1,0 +1,46 @@
+name: ci-fast
+
+# Fast feedback on a feature branch: lint, typecheck and unit, nothing else. Not a required check —
+# the pull request's `verify` is the gate, and docs/ops/branch-protection.md names it. CICD-02.
+#
+# The three commands are named by role in .ai/standards/testing-standards.md. Keep them in step with
+# that table and with the `static` job in verify.yml.
+
+# TEMPORARY, operator 2026-10-17: Actions run on release branches only. Branch protection on main is
+# the operator's to lift, since its required checks no longer report there.
+on:
+  push:
+    branches: ["release/**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-fast-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci-fast:
+    runs-on: ubuntu-latest
+    environment: prod
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: lint
+        run: pnpm exec eslint .
+
+      - name: typecheck
+        run: pnpm exec tsc --noEmit
+
+      - name: unit
+        run: pnpm exec vitest run

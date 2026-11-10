@@ -1,0 +1,59 @@
+# Copied from .ai/templates/ticket.yaml by `claude` on 2026-10-12, recording item Phase 6 of
+# .ai/board/plans/calechip-multi-tenancy-plan.md. Not produced by /triage: no idea file promotes it.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-20
+title: "system_admin impersonation is read-only, time-boxed, reasoned and logged, and visible to the org it touched"
+feature_ids: [MIR-20]   # ADR-063 row; written by the steward on the operator's decision of 2026-10-20
+group: MIR           # ADR-063: MIR is the eighth feature group
+state: BACKLOG
+owner: ""
+branch: ""
+size_estimate: ""     # S|M - set by tech-lead-design at PLAN; gates DoR
+size: ""              # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-10, MIR-11, MIR-12, MIR-13, MIR-14, MIR-15, MIR-18, MIR-21, MIR-21-b, MIR-21-c, MIR-21-d, MIR-21-e, MIR-21-f, MIR-16, MIR-17, MIR-17-b, MIR-17-c, MIR-17-d, MIR-17-e, MIR-17-f]   # MIR-17-f added 2026-11-09 at /plan MIR-17-e (ADR-092 decision 4). MIR-17-e added 2026-11-09 at /plan MIR-17-d (ADR-091 decision 3). MIR-17-d added 2026-11-09 at /plan MIR-17-c (ADR-090 decision 3). MIR-17-c added 2026-11-08 at /plan MIR-17-b (ADR-089 decision 3). MIR-17-b added 2026-11-08 at /plan MIR-17 (ADR-088 decision 6). "Blocked by" — the MIR IDs that must be DONE first. MIR-21-b added 2026-11-05 at /plan MIR-21 (ADR-077 decision 6). MIR-21-c added 2026-11-05 at /plan MIR-21-b (ADR-078 decision 7). MIR-21-d, -e and -f added 2026-11-06 at /plan MIR-21-c (ADR-080 decision 6)
+invariants_touched: []
+allowed_paths: []
+glossary_owed: []
+schema_delta: "TODO(plan): set at PLAN — the plan item changes the schema"
+requires_adr: false
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: false, at: null }
+  review: { passed: false, at: null }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+# Not in .ai/templates/ticket.yaml. Added for the multi-tenancy plan; nothing in scripts/ reads them.
+# Plan status lives only in .ai/board/plans/multi-tenancy-status.md. `state` above is the loop's.
+mir_phase: 6
+mir_plan_item: "Phase 6"             # .ai/board/plans/calechip-multi-tenancy-plan.md:287-305
+verification_required: false   # phase 0 and phase 3 — a passing mock test is not verification
+expected_impact: []   # none
+# [predicted] at plan time. Corrected at ship in .ai/board/plans/feature-change-log.md.
+mir_detail: |
+  Short names (tea04, cal11, …) are migrations, per the File legend in
+  .ai/board/audits/multi-tenancy-audit-2026-10-12.md:38-77. "A:n" is a line of that audit;
+  "plan:n" a line of .ai/board/plans/calechip-multi-tenancy-plan.md.
+
+  Plan Phase 6 checklist (plan:287-305). Depends on Phases 3 and 4 (plan:291):
+  - Audit table: actor, target org, action, timestamp, reason
+  - Impersonation is read-only, time-boxed (30–60 min), requires a stated reason
+  - A persistent banner shows the session is impersonated
+  - `org_admin` can read the impersonation log for their own org
+  - Identity resolution hard-wired to `getUser()` then the member row (`supabase.ts:1034-1038`) — needs an "acting as" concept
+  - JWT carries no custom claims today (`supabase.ts:1042-1052`) — a time-boxed claim is needed
+  - Session expiry is enforced server-side, not by the client
+  - pgTAP proves an impersonated session cannot write
+  Exit: no path gives `system_admin` org data outside a logged session; every impersonation is visible to the org it touched.
+
+  Audit references (A:1011-1021):
+  - Every policy uses `auth.uid()`; no notion of "acting as" — all migrations in audit §5
+  - Authorization by the shared `authenticated` role; nothing tells a read-only session from a writing one
+  - `supabase.ts:1034-1038`, `supabase.ts:1042-1052`, `src/hooks/useSession.ts:72-93`
+  - "Read-only" today is an affordance — `src/lib/viewed-team.ts:90-92`
+  - No audit or log table; only actor fields `approved_by`, `notification.actor_id` — `mgr_gen_cols:102-106`, `evt04:78`
+  - Definer functions gated only by `is_admin` — `cal11:33-65`, `many_teams:53-206`
+  - The mock sets identity from `currentMemberId` in localStorage — `src/lib/data/mock.ts:244-310`

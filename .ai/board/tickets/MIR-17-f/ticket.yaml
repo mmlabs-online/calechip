@@ -1,0 +1,49 @@
+# Created by `tech-lead-design` at /plan MIR-17-e on 2026-11-09: the rest of plan item P4-2, split
+# off because MIR-17-e as ADR-091 described it counted L (ADR-092 decision 4;
+# .ai/board/tickets/MIR-17-e/01-plan.md § 1 and § 7).
+# Not produced by /triage: no idea file promotes it. It shares MIR-17's feature row, which stays
+# PLANNED until MIR-17 to MIR-17-f (and any split of it) have shipped.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-17-f
+title: "MemberList's controls are scoped per team, the team picker is re-keyed, and the router gains role guards"
+feature_ids: [MIR-17]   # split of MIR-17 (operating model § ID scheme: splits get -a, -b)
+group: MIR
+state: BACKLOG
+owner: ""
+branch: ""
+size_estimate: ""     # S|M - set by tech-lead-design at PLAN; gates DoR
+size: ""              # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. Not counted at /plan MIR-17-e; expected to split again
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-10, MIR-11, MIR-12, MIR-13, MIR-14, MIR-15, MIR-18, MIR-21, MIR-21-b, MIR-21-c, MIR-21-d, MIR-21-e, MIR-21-f, MIR-16, MIR-16-b, MIR-16-c, MIR-16-d, MIR-16-e, MIR-16-f, MIR-16-g, MIR-16-h, MIR-17, MIR-17-b, MIR-17-c, MIR-17-d, MIR-17-e]
+invariants_touched: []
+allowed_paths: []
+glossary_owed: []
+schema_delta: "TODO(plan): set at PLAN — predicted: one definer RPC returning the roster team role of a batch of members, for MemberList's toggle (ADR-092 Context)"
+requires_adr: true    # predicted (the RPC; router guards); PLAN confirms
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: false, at: null }
+  review: { passed: false, at: null }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+mir_phase: 4
+mir_plan_item: "P4-2"             # .ai/board/plans/calechip-multi-tenancy-plan.md:238-244
+verification_required: false
+expected_impact:
+  # transcribed from MIR-17-e's ticket.yaml, less EVT-01 (answered by ADR-092 decision 2)
+  - { feature: TEA-06, tag: CHANGED, why: "`canRemove`, `canPromote`, `canSetManager` are scoped (`MemberList.tsx:349-366`)" }
+  - { feature: CAL-12, tag: CHANGED, why: "the admin-only team picker is re-keyed (`viewed-team.ts:61`, `:85`, `useViewedTeam.tsx:56,76`)" }
+mir_detail: |
+  The rest of P4-2 (ADR-092 decision 4):
+  - `MemberList.tsx:151`, `:215`, `:351-361`, `:419`, `:643`. canRemove / canPromote / canSetManager
+    compare `m.teamId === me.teamId` while the database admits any of the caller's active teams
+    (member_team_ids). The Make/Remove manager toggle reads `m.role`, which is the any-team rank
+    since MIR-17-d (ADR-091), but writes the roster team's team_role; it needs each row's roster
+    team role, which `Member` does not carry — a batched definer read is predicted (ADR-092 Context)
+  - `viewed-team.ts:61`, `:85`; `useViewedTeam.tsx:56`
+  - router role guards (`src/App.tsx`): decide between intercepting at the route and the screens'
+    in-place refusals (ADR-089 Context)
+  Not counted at /plan MIR-17-e. Expected to split again at its own PLAN.

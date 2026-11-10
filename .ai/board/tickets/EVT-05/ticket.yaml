@@ -1,0 +1,39 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-10-08 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: EVT-05
+title: "A person is emailed when an event for their team is created, when they are invited, and when their request is decided"
+feature_ids: [EVT-05]
+group: EVT
+state: DONE
+owner: ""
+branch: "feat/EVT-05"
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; twelve paths, 01-plan.md § 7
+depends_on: [EVT-04]  # DONE and merged
+invariants_touched: []  # PLAN answered it: none reachable — 01-plan.md § 2, Invariants touched
+allowed_paths:
+  - ".ai/registry/decisions/ADR-053-event-email-goes-over-gmail-smtp-from-an-edge-function-the-database-calls.md"
+  - ".ai/standards/data-model.md"
+  - ".ai/standards/rbac-and-security.md"
+  - "supabase/migrations/20261009090000_evt05_event_email.sql"
+  - "supabase/functions/send-event-email/index.ts"
+  - "supabase/functions/send-event-email/template.ts"
+  - "src/lib/data/index.ts"
+  - "src/lib/data/supabase.ts"
+  - "src/lib/data/mock.ts"
+  - "src/routes/Profile.tsx"
+  - "tests/event-email.test.ts"
+  - "tests/e2e/evt-05-event-email.spec.ts"
+glossary_owed: []     # Notification is EVT-04's to write
+schema_delta: "An event_email_enabled column on public.member written only through a definer RPC, and an after-insert trigger on public.notification that hands five kinds to the send-event-email Edge Function through pg_net — ADR-051, ADR-053"
+requires_adr: true    # ADR-051, ACCEPTED by the operator 2026-10-08; ADR-053, ACCEPTED by tech-lead-design 2026-10-09
+# Unblocked 2026-10-09: the operator answered idea Q6 — Gmail over SMTP with an App Password, account
+# didi00889900@gmail.com, From `CaleChip <didi00889900@gmail.com>`, no sending domain. ADR-053 records it.
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-10-09T01:59:11+0000" }
+  review: { passed: true, at: "2026-10-09T02:48:29+0000" }

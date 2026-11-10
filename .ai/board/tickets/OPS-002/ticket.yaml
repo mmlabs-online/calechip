@@ -1,0 +1,344 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-09-03 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: OPS-002
+title: "UI copy to English — entry screens and the seam's error messages"
+feature_ids: [CAL-01, CAL-02, TEA-01, TEA-02, TEA-03, TEA-04, TEA-05]
+group: CAL           # SINGLE-VALUED FIELD, TWO GROUPS SPANNED. See §5 — the split rationale that
+                     # Definition of Ready item 6 requires is written there, and `CAL` records the
+                     # primary group rather than the whole truth.
+state: DONE          # `orchestrator` at /ship, 2026-09-07, on 04-review.md `gate: PASS` /
+                     # `next_state: DONE`. ADR-022 removed the QA stage, so REVIEW -> DONE is the
+                     # whole remaining transition (.ai/01-operating-model.md:36).
+#
+# PREVIOUS VALUE, `REVIEW`, set by `developer` at /implement. Its comment is reproduced below rather
+# than deleted, because what it records is still true and is now on its SIXTH consecutive ticket: no
+# command in `.claude/commands/` owns PLAN -> READY, so this shell went BACKLOG -> REVIEW on disk
+# while the work went through PLAN, IN_PROGRESS and REVIEW, and both gate rows had to be transcribed
+# after the fact.
+#
+# ONE CORRECTION TO IT, and it is the only part that was not accurate. It says the `false` gate
+# records "a DoR grading `/next-ticket` never ran". The grading DID run: `/next-ticket` in the
+# orchestrator session graded the full Definition of Ready, SIX OF SIX PASS, at 2026-09-07 08:29 +07,
+# after `/plan` and before `/implement`. What was missing was a WRITER for the result, not the
+# grading — which is the same defect, stated more precisely. The metrics row records it.
+#
+# state: REVIEW      # BACKLOG -> IN_PROGRESS -> REVIEW at /implement, 2026-09-07. NOTE: `gates.plan`
+#                    # below is still false while 01-plan.md carries `gate: PASS`. That records a
+#                    # DoR grading `/next-ticket` never ran, not a gate that failed — the loop went
+#                    # /plan straight to /implement. `/ship` needs it closed by a human.
+#                    # 03-impl-log.md Open questions item 3.
+owner: ""
+branch: "feat/OPS-002"   # NOT `ops/<slug>`. See §4 — this is deliberate and it is not free.
+size_estimate: M      # 01-plan.md section 1. Eleven files, no schema, no new capability.
+size: M               # 01-plan.md section 7, counted from the TWELVE allowed_paths below (the ticket
+                      # folder is not counted). M is up to 12 at .ai/01-operating-model.md:373, so
+                      # this is THE CEILING EXACTLY, with no headroom left — it was eleven until the
+                      # 2026-09-07 amendment. Anything further this ticket needs makes it L, and L
+                      # must split at PLAN. It AGREES with size_estimate, so ADR-012 never engages —
+                      # but the two figures agree about the bucket while disagreeing about which
+                      # files fill it. See section 7.
+depends_on: [CAL-03]  # see §3 — this FAILS Definition of Ready item 3 today, on purpose
+                      # NO LONGER TRUE, annotated rather than rewritten by `orchestrator` at
+                      # /ship. CAL-03 has been `DONE` since 2026-09-03, so item 3 PASSES.
+                      # §3's sentence was accurate on 2026-09-03 and stopped being so the
+                      # same day; 01-plan.md:50 is where PLAN recorded the change.
+invariants_touched: []   # REACHED AT PLAN, and no longer the template's default. 01-plan.md
+                         # section 2 carries the row-by-row reasoning. All seven range over `entry`
+                         # or `member` ROWS; none ranges over a rendered string. INV-03 is the
+                         # nearest and is unaffected: a rejection reason is USER-AUTHORED text in a
+                         # field this ticket does not touch, and no refusal sentence translated here
+                         # is ever stored — each is built at the moment of failure and rendered.
+# FILLED BY tech-lead-design AT PLAN, from 01-plan.md section 7. Twelve files (eleven at PLAN,
+# plus tests/ui-language.test.ts at the 2026-09-07 amendment — see the note on that entry below).
+#
+# FOUR OF THESE ARE NOT IN §1'S SCOPE STATEMENT AND ARE NOT IN `copyDebt` — they are ALREADY
+# ENGLISH, and are opened only to delete a duplicate label declaration and add an import.
+# §6 of this shell says three copies of the label sets must not survive this ticket. The tree now
+# holds FIVE declarations of the type labels: src/components/EntryForm.tsx:35, TeamEntries.tsx:43,
+# PendingEntries.tsx:72, WeekView.tsx:112 and YearView.tsx:101 — the last three shipped after this
+# shell was written on 2026-09-03. Folding only the three §6 knew about would leave two identical
+# English copies behind. AC-8 is unsatisfiable without them.
+#
+# `ui-language.json` IS NOT OPTIONAL. tests/ui-language.test.ts fails on "still has copy to
+# translate" the moment a listed file loses its diacritics, so the translation and the `copyDebt`
+# deletion must land in the same change. This ticket empties `copyDebt` — the sweep's stated proof.
+allowed_paths:
+  - ".ai/board/tickets/OPS-002/**"
+  - "src/lib/labels.ts"
+  - "src/components/EntryForm.tsx"
+  - "src/routes/NewEntry.tsx"
+  - "src/routes/EditEntry.tsx"
+  - "src/routes/TeamEntries.tsx"
+  - "src/routes/PendingEntries.tsx"
+  - "src/routes/WeekView.tsx"
+  - "src/routes/YearView.tsx"
+  - "src/lib/data/supabase.ts"
+  - "src/lib/data/mock.ts"
+  - "ui-language.json"
+  # ADDED 2026-09-07 by tech-lead-design, after /implement reported BLOCKED. AC-10 empties copyDebt
+  # and AC-12 assumed the two `it.each` cases over that list would go vacuous; Vitest 4.1.11 fails a
+  # suite that registers no tests ("No test found in suite"). The Developer could not reach the one
+  # file that resolves it. R5 impossible as specified -> tech-lead-design, NO rework_count increment
+  # (.ai/01-operating-model.md:145). TWELVE files now: the M ceiling exactly, no headroom left.
+  - "tests/ui-language.test.ts"
+schema_delta: none
+requires_adr: false
+rework_count: 0
+chat_budget:
+  # ADR-019 retired `ba` from the loop, so the two `->ba` edges are gone. They are not listed as
+  # zeroes: an edge nobody can walk is not a budget, it is a row that invites someone to try.
+  developer->tech-lead-design: { used: 1, max: 6 }   # OPS-002 99-questions.md, 2026-09-07
+  # ADR-022 removed the QA stage, and the `qa->tech-lead-design` edge with it.
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  # BOTH ROWS TRANSCRIBED BY `orchestrator` AT /ship ON 2026-09-07. Neither stage wrote its own, and
+  # neither value is claimed here — each is a copy of a gate somebody else reached, taken from that
+  # artifact's front-matter and not from any summary of it.
+  #
+  # From .ai/board/tickets/OPS-002/01-plan.md front-matter: `gate: PASS`, `blocking_reason: ""`,
+  # `produced_at: 2026-09-07T08:21:08+07:00`. ADR-019 merged the `spec` and `design` gates into one.
+  plan:   { passed: true, at: "2026-09-07T08:21:08+07:00" }
+  # From .ai/board/tickets/OPS-002/04-review.md front-matter: `gate: PASS`, `blocking_reason: ""`,
+  # `next_state: DONE`, `produced_at: 2026-09-07T08:59:52+07:00`.
+  review: { passed: true, at: "2026-09-07T08:59:52+07:00" }
+  # No `qa` key. ADR-022 removed the stage and this shell is created after that date, so the two
+  # gates that decide anything are `plan` and `review`. /ship requires both.
+
+# Created by `product` at /triage on 2026-09-03, on a PROMOTE verdict, from
+# .ai/board/ideas/2026-09-03-the-interface-and-its-standard-speak-different-languages.md.
+# That file's verdict section is the reasoning; this block carries only what binds PLAN.
+#
+# Definition of Ready items 1, 3, 4 and 6 are filled here — they are produced at BACKLOG (ADR-010).
+# Items 2 and 5 (invariants_touched, size_estimate) are deliberately left as the template ships
+# them: they belong to tech-lead-design at PLAN, and the gate sits after PLAN so that they can.
+#
+# ---------------------------------------------------------------------------------------------
+# 0. ***THE PRECONDITION. READ IT BEFORE ANYTHING ELSE — IT IS NOT `depends_on`.***
+#
+# PR #37 IS OPEN AND UNMERGED. The standard this ticket exists to satisfy —
+# `§ Language` in .ai/standards/ui-design-system.md — lives in exactly ONE commit, `3ccbd37`, the
+# sole commit of the `ops/ui-language-english` branch. It is NOT on `main`.
+#
+# IF PR #37 DOES NOT MERGE, THIS TICKET IS INVALID RATHER THAN BLOCKED. There is no standard, so
+# there is no chore, and the correct action is to close it — not to wait.
+#
+# THIS CANNOT BE `depends_on`. That field names TICKETS and is graded by Definition of Ready item 3
+# against ticket state. No ticket can name a pull request, so the precondition is written here in
+# prose because there is no field that will carry it and nothing in the loop will ask.
+#
+# CITE THE STANDARD AS `3ccbd37:.ai/standards/ui-design-system.md`, NEVER BARE. On any branch other
+# than `ops/ui-language-english`, .ai/standards/ui-design-system.md is the 52-line STUB — and a bare
+# line citation does not merely dangle, it RESOLVES TO THE WRONG SECTION: `:44-48` on the stub is
+# `## Selectors`. That is worse than a broken reference, because it reads as correct.
+#
+# ---------------------------------------------------------------------------------------------
+# 1. SCOPE — the entry screens and the seam's error messages. FIVE FILES.
+#
+# This is one half of a thirteen-file surface. The other half is OPS-001. The cut is at the
+# entry-management boundary and the reason it is cut at all is arithmetic, not taste:
+# .ai/01-operating-model.md:374 sizes "more than 12" files as L and says L MUST SPLIT AT PLAN.
+#
+# Interface copy to translate — each with the diacritic line count measured at triage:
+#
+#   src/routes/NewEntry.tsx      14  form titles :89-91, status words :167-170, delete confirmation
+#   src/routes/EditEntry.tsx     13  STATUS_LABELS :26-28, form titles :116-118, approval line :149
+#   src/components/EntryForm.tsx 13  TYPE_LABELS :34-37, PORTION_LABELS :42-46, field legends,
+#                                    one refusal :143
+#   src/lib/data/supabase.ts     24  every `message` value, incl. the three refusal constants :289-291
+#   src/lib/data/mock.ts         26  every `message` value — THE SAME LITERALS, see §5
+#
+# THE ERROR MESSAGES ARE INTERFACE COPY AND THE STANDARD SAYS SO IN ITS OWN WORDS, at
+# 3ccbd37:.ai/standards/ui-design-system.md:56-59: both seam implementations return `{ code, message }`
+# and "the `message` half is rendered to a user — so it is governed here and not by the fact that it
+# sits in the data layer. The `code` half is an identifier and is already English."
+# ***THE `code` VALUES MUST NOT CHANGE.*** Callers branch on them.
+#
+# ONE MEANING IS ENCODED IN THE CURRENT VIETNAMESE AND MUST SURVIVE THE TRANSLATION.
+# src/components/EntryForm.tsx:28-30 records that WFH is a TYPE and not a kind of absence — "A WFH
+# member IS working — the glossary calls this the single most costly confusion in the domain, which
+# is why the label says so rather than saying 'vắng'". The English label owes the same distinction.
+# CAL-03 has already chosen wording that keeps it (see §6): "Leave" and "Working from home".
+#
+# ---------------------------------------------------------------------------------------------
+# 2. ***OUT OF SCOPE, AND IT IS A NEGATIVE REQUIREMENT — THE KIND NOBODY CHECKS.***
+#
+#   src/lib/fixtures.ts   —  8 Vietnamese lines. DO NOT TOUCH.
+#   supabase/seed.sql     — 16 Vietnamese lines. DO NOT TOUCH.
+#
+# THIS WARNING IS ON BOTH OPS TICKETS ON PURPOSE. fixtures.ts sits in src/lib/, one directory from
+# src/lib/data/, which this ticket does edit — so this is the ticket most likely to sweep it up.
+#
+# 3ccbd37:.ai/standards/ui-design-system.md:61-74 carries a DELIBERATE EXCEPTION. Display names,
+# team names and note text in fixtures and seed data STAY VIETNAMESE, WITH DIACRITICS. They are not
+# interface copy — they are stand-in USER CONTENT, and the users of this product are a Vietnamese
+# team whose names carry diacritics. The line is BY ROLE, NOT BY FILE:
+#   "What the product says is English; what a user typed is whatever they typed."
+#
+# IT IS THE PRODUCT'S ONLY COVERAGE FOR THE DIACRITICS REQUIREMENT in CLAUDE.md § Visual direction,
+# which asks for a type face that renders Vietnamese diacritics correctly. Flatten it and NOTHING
+# ANYWHERE renders a diacritic, so the next font change breaks the real names of real people.
+#
+# ***THE FAILURE IS SILENT AND THE STANDARD PREDICTED IT IN ADVANCE***
+# (3ccbd37:.ai/standards/ui-design-system.md:70-71). The mechanism, verified in this tree:
+#
+#   src/routes/Home.tsx:26          roleLabel returns "Thành viên"  -> INTERFACE (OPS-001's)
+#   supabase/seed.sql:345, :356     display_name is "Thành viên"    -> USER CONTENT, keep
+#   tests/e2e/tea-05-sign-in.spec.ts:63  asserts home-member-name    -> the SEED row, keep
+#   tests/e2e/tea-05-sign-in.spec.ts:65  asserts home-member-role    -> the LABEL, translate
+#
+# SAME LITERAL. TWO LINES APART. OPPOSITE VERDICTS. A find-and-replace of "Thành viên" translates
+# the seed data along with the label AND EVERY TEST STILL PASSES. Nothing in the toolchain will
+# report it: scripts/check-docs.mjs has NO language check and eslint.config.js has NO rule for it.
+# The only control is whoever reads the diff.
+#
+# THE SAME TRAP EXISTS INSIDE THIS TICKET'S OWN FILES. src/lib/fixtures.ts:332 is
+# `note: "Nghỉ đã được duyệt"` and supabase/seed.sql:493 is the same note — USER CONTENT, kept —
+# while src/routes/EditEntry.tsx:27 is `approved: "Đã duyệt"`, a STATUS LABEL that must become
+# English. And src/lib/fixtures.ts:304 is `displayName: "Đã duyệt"`, which is the same string as the
+# status label and is a NAME. Three occurrences, two verdicts, one of them in this ticket.
+#
+# NOTE FOR PLAN, AND IT IS THE POINT OF THE THREE-COPY PROBLEM IN §6: the notes and names above are
+# WHY the acceptance suites keep most of their Vietnamese. Of the 24 Vietnamese lines across the four
+# e2e specs, only THREE assert interface copy, and all three are OPS-001's. This ticket should expect
+# to change NO test string — only test EXPECTATIONS that read the seam's `message`, if any exist.
+#
+# Also out of scope, each for its own reason:
+#   - REINTERPRETING § Language. It is .ai/standards/, human plane under RULE-01.
+#   - src/routes/TeamEntries.tsx's LABEL MAPS ARE IN SCOPE, the rest of that file is not. See §6.
+#   - DATE, NUMBER AND NAME-ORDER FORMATTING — open question 4 in the idea, and not here.
+#   - BUILDING A CHECK OR LINT RULE that enforces § Language. An unbuilt mechanism belongs in
+#     .ai/board/model-debt.md.
+#   - ADDING A LOCALISATION LIBRARY OR ANY NEW RUNTIME DEPENDENCY. Open question 3 in the idea is
+#     "literals in place, or a catalogue" and it is PLAN's — but a catalogue that reaches for a
+#     PACKAGE is a .ai/standards/tech-stack.md change, which needs an ADR and a human. `schema_delta`
+#     is `none` and `requires_adr` is `false` on the reading that no dependency is added. IF PLAN
+#     CONCLUDES OTHERWISE IT MUST STOP AND ASK rather than correct these two fields quietly.
+#
+# NOTE ON `invariants_touched`: left as the template's `[]`, which is the DEFAULT and not an answer.
+# .ai/registry/invariants.md warns that concluding "none" from safe behaviour is circular reasoning,
+# and this ticket edits BOTH SEAM IMPLEMENTATIONS, which is where the ledger's rows are enforced —
+# so PLAN owes this more thought here than on OPS-001, not less. What triage established as a
+# starting point: the ledger's seven rows range over `entry` and `member` ROWS; INV-03 — the nearest
+# — requires a rejected entry to carry a NON-EMPTY rejection reason, which is user-authored text, so
+# a reason typed in Vietnamese still satisfies it. PLAN reaches its own answer and writes it.
+#
+# ---------------------------------------------------------------------------------------------
+# 3. `depends_on: [CAL-03]` — AND IT FAILS DEFINITION OF READY ITEM 3 TODAY, ON PURPOSE
+#
+# Item 3 (.ai/01-operating-model.md:333) requires every ticket in `depends_on` to be DONE. CAL-03 is
+# `BACKLOG`. SO THIS TICKET IS NOT READY AND IS NOT MEANT TO LOOK READY. DoR is evaluated after
+# PLAN, and item 3 passes when CAL-03 ships.
+#
+# THE DEPENDENCY IS A FILE COLLISION, AND IT IS TIGHTER HERE THAN ON OPS-001. CAL-03's allowed_paths
+# claim THREE of the five files above: src/routes/EditEntry.tsx, src/lib/data/mock.ts and
+# src/lib/data/supabase.ts. At the time this shell was written a concurrent session was actively
+# editing all three, and adding a route, a migration and a spec beside them. Two writers in one
+# working tree is how work is lost (ADR-006, MD-013), and this repository runs ONE working directory
+# with ONE branch.
+#
+# ---------------------------------------------------------------------------------------------
+# 4. `branch: "feat/OPS-002"` — NOT `ops/<slug>`, AND THE COST IS RECORDED RATHER THAN GLOSSED
+#
+# .ai/standards/git-conventions.md:33 gives chore work the pattern `ops/<slug>` and marks its path
+# guard "inactive, correctly". THAT ROW WAS WRITTEN FOR STEWARD CHORES ON THE MODEL PLANE. This
+# chore edits FIVE SHIPPED APPLICATION FILES INCLUDING BOTH HALVES OF THE DATA-ACCESS SEAM, which is
+# the case the word "correctly" does not cover.
+#
+# MEASURED, NOT ASSUMED: scripts/check-allowed-paths.mjs:96-98 exits 0 with "nothing to check" on any
+# branch that does not begin `feat/`; :101-103 slices `feat/` off and resolves the remainder to
+# .ai/board/tickets/<ID>/ticket.yaml. So an `ops/` branch would run RULE-03 UNENFORCED across shipped
+# files, and `feat/OPS-002` is the only name under which the guard is live.
+#
+# WHAT IT COSTS, and it is the same debt `feat/BUG-001` incurred: git-conventions.md:36 says
+# `<FEATURE-ID>` is a row in .ai/registry/features.md and nothing else — and OPS-002 is not a row.
+# THE OPERATOR SETTLED THIS EXACT TRADE-OFF FOR `feat/BUG-001` ON 2026-09-03, choosing the enforced
+# guard over the documented name with the contradiction in front of them. The full record is the
+# §4 CORRECTION block at the end of .ai/board/tickets/BUG-001/ticket.yaml.
+#
+# ***DO NOT REOPEN IT HERE.*** The residual contradiction with git-conventions.md:36 is standards
+# plane under RULE-01, it is unresolved, and it is not this ticket's to resolve.
+#
+# ---------------------------------------------------------------------------------------------
+# 5. ***DEFINITION OF READY ITEM 6 — THE STATED SPLIT RATIONALE. THIS IS THE ONE THAT IS OWED.***
+#
+# Item 6 (.ai/01-operating-model.md:336) reads "Exactly one feature group, or a stated split
+# rationale". THIS TICKET SPANS TWO GROUPS — CAL and TEA — so the second clause applies and this
+# section is what discharges it. `group: CAL` above is a single-valued field recording the primary
+# group; `feature_ids` carries the truth.
+#
+# THE SPLIT IS FORCED BY A MECHANISM, NOT CHOSEN FOR CONVENIENCE. The two seam implementations
+# DUPLICATE THEIR REFUSAL LITERALS BY DESIGN, and src/lib/data/supabase.ts:286-288 says so in its own
+# words: the three sentences are "held here so the two implementations of the seam can carry the same
+# words — mock.ts repeats these literals for the same reason src/lib/fixtures.ts and
+# supabase/seed.sql repeat theirs."
+#
+# ***AND NOTHING WOULD CATCH A ONE-SIDED TRANSLATION.*** tests/seam-parity.test.ts:27-48 compares
+# EXPORT NAMES AND ARITY ONLY. It never compares message text, and its own header (:7-9) says parity
+# is "necessary and NOT sufficient". So translating one implementation and not the other is GREEN
+# against every check this project has — typecheck, lint, unit and the mock-driven end-to-end suite —
+# and diverges ONLY against a real Supabase project, where nobody is looking.
+#
+# Those two files carry BOTH the entry refusals (CAL-01, CAL-02) AND the auth, allow-list and member
+# refusals (TEA-01..TEA-05). THE SEAM PAIR THEREFORE CANNOT BE CUT BY GROUP without creating exactly
+# that hole. Splitting it is the one thing this partition may not do.
+#
+# The seven rows and what each contributes, so a reviewer can check the list rather than trust it:
+#   CAL-01  src/routes/NewEntry.tsx, src/components/EntryForm.tsx, and the entry-create refusals
+#           in both seams — supabase.ts:258-291, mock.ts:652-680
+#   CAL-02  src/routes/EditEntry.tsx, and the entry-update and entry-delete refusals in both seams
+#   TEA-01  the sign-up refusals — supabase.ts:196-219, mock.ts:315
+#   TEA-02  the allow-list refusals — supabase.ts:233-238 and :430-437, mock.ts:376-418
+#   TEA-03  the member-read refusals reached through the same seam functions
+#   TEA-04  the remove and promote refusals — supabase.ts:526-555, mock.ts:489-540
+#   TEA-05  the sign-in refusals — supabase.ts:208-216, mock.ts:598-607
+#
+# TEA-03's contribution is the THINNEST of the seven and is listed for completeness rather than
+# because a line was found that belongs only to it. Flagged so a reviewer does not read a
+# completeness judgement as a measurement.
+#
+# ---------------------------------------------------------------------------------------------
+# 6. ***THIS TICKET RECONCILES THREE COPIES OF THE SAME LABEL SETS, AND THE THIRD ALREADY EXISTS.***
+#
+# CAL-03 was ruled to PROCEED rather than absorb this work or wait, and it therefore SHIPS A
+# MIXED-LANGUAGE SCREEN. Why, recorded so nobody reads it as an oversight:
+#
+#   - ABSORBING IT IS MECHANICALLY UNAVAILABLE. .ai/board/tickets/CAL-03/ticket.yaml:16-19 records
+#     "Twelve is M's ceiling — the figure TEA-05 fixed — so nothing splits, but there is no headroom
+#     left." Adding src/components/EntryForm.tsx makes THIRTEEN, which is L, which
+#     .ai/01-operating-model.md:374 says MUST SPLIT AT PLAN.
+#   - WAITING PARKS THE ONLY TICKET IN FLIGHT behind a human merge of PR #37.
+#
+# THE RESULT IS ALREADY IN THE TREE. CAL-03's new src/routes/TeamEntries.tsx:43-60 declares
+# TYPE_LABELS, PORTION_LABELS and STATUS_LABELS in ENGLISH — "Leave", "Working from home", "Full
+# day", "Morning", "Afternoon", "Awaiting approval", "Approved", "Rejected" — against
+# src/components/EntryForm.tsx:34-46 and src/routes/EditEntry.tsx:26-28 IN VIETNAMESE.
+#
+# THAT IS A THIRD COPY OF THE SAME LABEL SETS, and CAL-03's own developer wrote the handover into the
+# file. src/routes/TeamEntries.tsx:40-42: "...translating it is not this ticket's to do. The ticket
+# that translates the other thirteen files folds these into one place."
+#
+# ***OPS-002 IS THAT TICKET.*** Reconciling all three copies into one place is in scope, and it is
+# the strongest argument for the catalogue answer to open question 3 — but PLAN decides that, not
+# this shell. What triage asserts is only that the three copies must not survive this ticket.
+#
+# CAL-03's English wording is EVIDENCE FOR PLAN, NOT A CONTRACT. It was chosen by one developer in
+# one file under time pressure; it happens to preserve the WFH distinction §1 requires, which is the
+# reason it is worth starting from rather than the reason it is right.
+#
+# ---------------------------------------------------------------------------------------------
+# 7. WHY THERE IS NO NEW ROW IN .ai/registry/features.md
+#
+# THIS IS A CHORE AGAINST ALREADY-SHIPPED SURFACE. Not a defect — nothing regressed, and the
+# Vietnamese copy was CORRECT until the standard landed on 2026-09-03. Not a capability — a row
+# would file "translate the copy" as something the product contains, and CLAUDE.md calls that file
+# "the only valid source of feature IDs". .ai/01-operating-model.md:317 declares the scheme:
+# "Defects are BUG-nnn, chores are OPS-nnn."
+#
+# CHECK D1 IS NOT TRIPPED. scripts/check-docs.mjs:184-185 builds \b(?:CAL|ADM|TEA)-\d{2}\b from the
+# declared prefixes; `OPS-002` matches neither half — wrong prefix, three digits against \d{2}.
+#
+# WHAT WAS WRITTEN INSTEAD, following .ai/board/tickets/BUG-001/ticket.yaml §2 exactly: a sentence
+# appended to the `Notes` of EACH of the seven feature rows above, citing the idea file and this
+# ticket. That plus the idea filename in this header is THE WHOLE PROVENANCE A REVIEWER GETS.
+# RULE-01 permits a feature-row edit with no ADR; CODEOWNERS review at merge is the approval.

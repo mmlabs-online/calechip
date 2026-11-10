@@ -1,0 +1,36 @@
+# Dependencies and build output — rebuilt inside the image.
+node_modules
+dist
+coverage
+.vite
+*.tsbuildinfo
+
+# Secrets. `VITE_*` values reach the build as --build-arg only, never from a file.
+.env
+.env.*
+
+# VCS, editors, OS noise.
+.git
+.gitattributes
+.github
+.vscode
+.idea
+*.swp
+.DS_Store
+Thumbs.db
+
+# Not needed to build the bundle.
+.ai
+.claude
+.runner
+.mcp.json
+_figma
+supabase
+tests
+test-results
+playwright-report
+blob-report
+playwright.config.ts
+*.md
+Dockerfile
+.dockerignore

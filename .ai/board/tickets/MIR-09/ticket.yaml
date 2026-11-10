@@ -1,0 +1,66 @@
+# Copied from .ai/templates/ticket.yaml by `claude` on 2026-10-12, recording item P2-2 of
+# .ai/board/plans/calechip-multi-tenancy-plan.md. Not produced by /triage: no idea file promotes it.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-09
+title: "Known schema inconsistencies are cleaned up: transaction wrapping, allow-list references, an index on `member.team_id`, a check on the overload threshold"
+feature_ids: [MIR-09]   # ADR-063 row; written by the steward on the operator's decision of 2026-10-20
+group: MIR           # ADR-063: MIR is the eighth feature group
+state: DONE
+owner: ""
+branch: ""
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. 12 paths
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04]   # "Blocked by" — the MIR IDs that must be DONE first
+invariants_touched: []
+allowed_paths:        # 01-plan.md §7
+  - ".ai/registry/decisions/ADR-069-member-team-id-is-indexed-and-the-overload-threshold-is-checked-in-the-database.md"
+  - "supabase/migrations/20261023120000_mir09_schema_cleanup.sql"
+  - "supabase/migrations/20260926100000_solo_issue_report.sql"
+  - "supabase/tests/110-schema-cleanup.test.sql"
+  - "supabase/bootstrap.sql"
+  - "src/lib/data/index.ts"
+  - "src/lib/data/supabase.ts"
+  - "src/lib/data/mock.ts"
+  - "src/lib/domain/types.ts"
+  - "src/lib/fixtures.ts"
+  - "tests/threshold.test.ts"
+  - "tests/draft-entry.test.ts"
+glossary_owed: []
+schema_delta: "index member_team_id_idx on public.member (team_id); check constraint team_overload_threshold_range on public.team; begin/commit added to 20260926100000_solo_issue_report.sql — ADR-069"
+requires_adr: true    # ADR-069; ADR-014: a constraint is not `none`
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 2, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-10-23T08:26:10Z" }
+  review: { passed: true, at: "2026-10-27T01:51:13Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+# Not in .ai/templates/ticket.yaml. Added for the multi-tenancy plan; nothing in scripts/ reads them.
+# Plan status lives only in .ai/board/plans/multi-tenancy-status.md. `state` above is the loop's.
+mir_phase: 2
+mir_plan_item: "P2-2"             # .ai/board/plans/calechip-multi-tenancy-plan.md:147-151
+verification_required: false   # phase 0 and phase 3 — a passing mock test is not verification
+expected_impact:
+  - { feature: ADM-01, tag: CHANGED, why: "a threshold outside the new check constraint is refused by the database" }
+  - { feature: TEA-02, tag: SUPERSEDED, why: "the allow-list table was already dropped at `member_approval:185`; this item removes the last references to it. Replaced by: sign-up followed by an admin decision (TEA-09, ADR-033)" }
+# [predicted] at plan time. Corrected at ship in .ai/board/plans/feature-change-log.md.
+mir_detail: |
+  Short names (tea04, cal11, …) are migrations, per the File legend in
+  .ai/board/audits/multi-tenancy-audit-2026-10-12.md:38-77. "A:n" is a line of that audit;
+  "plan:n" a line of .ai/board/plans/calechip-multi-tenancy-plan.md.
+
+  Plan P2-2 (plan:147-151):
+  - `issue.sql` has no `begin`/`commit`, unlike its neighbours
+  - Remove references to the dropped `allowed_email` table
+  - Add the missing index on `member.team_id`
+  - Add a check constraint on `team.overload_threshold` (currently unconstrained)
+
+  Audit references:
+  - `issue.sql` without `begin/commit` (A:246)
+  - `allowed_email` created `tea01:41-47`, dropped `member_approval:185` (A:151-154); still in
+    `db.sql:157` and `db.sql:825/841/854` (A:316-317)
+  - `member`: primary key only, no index on `team_id` (A:139)
+  - `team.overload_threshold numeric not null default 0.5`, no check constraint, `tea01:27` (A:109)

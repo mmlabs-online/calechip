@@ -1,0 +1,86 @@
+# Copied from .ai/templates/ticket.yaml by `claude` on 2026-10-12, recording item P3-4 of
+# .ai/board/plans/calechip-multi-tenancy-plan.md. Not produced by /triage: no idea file promotes it.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-13
+title: "The policy layer is rewritten against `membership` and `org_id`, and no definer function trusts a client-supplied team id alone"
+feature_ids: [MIR-13]   # ADR-063 row; written by the steward on the operator's decision of 2026-10-20
+group: MIR           # ADR-063: MIR is the eighth feature group
+state: DONE
+owner: tech-lead-design
+branch: feat/MIR-13
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. 10 paths after the split into MIR-13 + MIR-13-b (ADR-071)
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-05, MIR-06, MIR-07, MIR-08, MIR-09, MIR-10, MIR-12]   # "Blocked by" — the MIR IDs that must be DONE first
+invariants_touched: [INV-02, INV-04, INV-07]
+allowed_paths:
+  - ".ai/registry/decisions/ADR-071-writers-stamp-org-id-membership-mirrors-member-team-id-and-mir-13-splits-by-operation.md"
+  - ".ai/board/tickets/MIR-13-b/ticket.yaml"
+  - ".ai/board/tickets/MIR-21/ticket.yaml"
+  - "supabase/migrations/20261103120000_mir13_write_path_org_bound.sql"
+  - "supabase/bootstrap.sql"
+  - "supabase/tests/010-catalogue.test.sql"
+  - "supabase/tests/120-composite-fks.test.sql"
+  - "supabase/tests/130-backfill-org-public.test.sql"
+  - "supabase/tests/140-org-stamping-and-membership-mirror.test.sql"
+  - "supabase/tests/150-write-path-org-bound.test.sql"
+glossary_owed: []
+schema_delta: "non-none — ADR-070 § 4 (NOT NULL, holiday_org_id_date_key) and ADR-071 (org_id stamping, membership mirror trigger, write policies and definers org-bounded). Write slice only; the read slice is MIR-13-b"
+requires_adr: true    # ADR-070 and ADR-071, both ACCEPTED
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-11-03T02:39:15Z" }
+  review: { passed: true, at: "2026-11-03T04:33:47Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+# Not in .ai/templates/ticket.yaml. Added for the multi-tenancy plan; nothing in scripts/ reads them.
+# Plan status lives only in .ai/board/plans/multi-tenancy-status.md. `state` above is the loop's.
+mir_phase: 3
+mir_plan_item: "P3-4"             # .ai/board/plans/calechip-multi-tenancy-plan.md:189-194
+verification_required: true   # phase 0 and phase 3 — a passing mock test is not verification
+expected_impact:
+  - { feature: CAL-11, tag: SUPERSEDED, why: "an admin no longer reads *any* team's entries and roster. Replaced by: cross-team reads bounded by the caller's org, with no trust in the client-supplied `p_team_id` alone" }
+  - { feature: TEA-11, tag: SUPERSEDED, why: "an admin no longer admits a sign-up onto, or moves a member to, *any* team. Replaced by: team management bounded by the admin's org, with membership rows instead of a single `member.team_id`" }
+  - { feature: CAL-12, tag: CHANGED, why: "the teams offered are bounded by the caller's org" }
+  - { feature: TEA-03, tag: CHANGED, why: "the member list spans every team the caller belongs to (`member_select_team`, `tea03:34-36`)" }
+  - { feature: TEA-09, tag: CHANGED, why: "`admit_member` gains an org condition (`many_teams:151-170`)" }
+  - { feature: CAL-04, tag: CHANGED, why: "entries are readable for every team the caller belongs to (`entry_select_team`, `cal01:203-207`)" }
+  - { feature: CAL-05, tag: CHANGED, why: "entries are readable for every team the caller belongs to (`entry_select_team`, `cal01:203-207`)" }
+  - { feature: CAL-10, tag: CHANGED, why: "entries are readable for every team the caller belongs to (`entry_select_team`, `cal01:203-207`)" }
+  - { feature: CAL-07, tag: CHANGED, why: "`getTeam()` no longer assumes one team (`supabase.ts:2092-2095`; warning source `usePageOverload.ts:118-135`)" }
+  - { feature: CAL-13, tag: CHANGED, why: "busy days are readable across the caller's teams (`busy_day:97-105`)" }
+  - { feature: ADM-01, tag: CHANGED, why: "the threshold is set for one named team, not every admitted row (`supabase.ts:2135-2140`)" }
+  - { feature: ADM-08, tag: CHANGED, why: "approval switches are set for one named team (`supabase.ts:2374-2379`)" }
+  - { feature: EVT-01, tag: CHANGED, why: "team-scoped visibility resolves through all of the caller's teams (`evt02:332-346`)" }
+# [predicted] at plan time. Corrected at ship in .ai/board/plans/feature-change-log.md.
+mir_detail: |
+  Short names (tea04, cal11, …) are migrations, per the File legend in
+  .ai/board/audits/multi-tenancy-audit-2026-10-12.md:38-77. "A:n" is a line of that audit;
+  "plan:n" a line of .ai/board/plans/calechip-multi-tenancy-plan.md.
+
+  Plan P3-4 (plan:189-194):
+  - Replace `member_team_id(uid)` — single-valued — with a set-returning `member_team_ids(uid)`
+  - Rewrite every policy listed in audit §5 against `membership` and `org_id`
+  - `getTeam()` uses `.maybeSingle()` and will error with more than one team (`supabase.ts:2092-2095`) — fix
+  - `setOverloadThreshold` and `setApprovalSettings` send no id and update every admitted row
+    (`supabase.ts:2135-2140`, `:2374-2379`) — scope to one team
+  - Every `security definer` function in audit §5 gains an org condition; none may trust a client-supplied `p_team_id` alone
+
+  Blocked by MIR-10 (plan:167) and by MIR-12, whose `membership` rows this rewrite reads (order decided
+  2026-10-12; see MIR-12). Dropping `member.team_id` afterwards is MIR-21.
+
+  Audit references:
+  - `member_team_id()`, `member_approval:57-63` (A:969); every policy in force, audit §5 (A:607-708)
+  - Cross-team definer functions gated only by `is_admin`: `cal11:33-65` (`list_members_for_team`,
+    `list_team_entries_for_team`, `list_team_entries_overlapping_for_team`), `many_teams:53-206`
+    (`list_teams`, `list_all_members`, `create_team`, `rename_team`, `delete_team`, `admit_member`,
+    `move_member`), `cross_team_role:92-120` (A:370-371, 383, 390-393, 405-408, 540-584)
+  - `list_event_guest_emails` `evt07:434-442` via `may_manage_event` (A:445)
+  - `getTeam` `.maybeSingle()` — `supabase.ts:2092-2095` (A:980, A:996)
+  - Update-every-admitted-row — `supabase.ts:2135-2140`, `:2374-2379` (A:403-404, A:990-991)
+  - `team_update_admin` tied to single-valued `member_team_id` — `adm01:62-67` (A:992)
+  - Overload warning uses the caller's own `getTeam()` while another team is viewed —
+    `src/hooks/usePageOverload.ts:118-135`, `src/components/OverloadWarning.tsx:199` (A:995)

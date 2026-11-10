@@ -1,0 +1,73 @@
+# Copied from .ai/templates/ticket.yaml by `claude` on 2026-10-12, recording item P3-6 of
+# .ai/board/plans/calechip-multi-tenancy-plan.md. Not produced by /triage: no idea file promotes it.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-15
+title: "In Org public, the directory, public events and event notifications stay within the team, only system_admin sets its holidays, and a team can be moved to another org"
+feature_ids: [MIR-15]   # ADR-063 row; written by the steward on the operator's decision of 2026-10-20
+group: MIR           # ADR-063: MIR is the eighth feature group
+state: DONE
+owner: ""
+branch: ""
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR. This slice; as triaged it was L
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. 11 paths; split to MIR-15-b, -c, -d (ADR-076 decision 6)
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-05, MIR-06, MIR-07, MIR-08, MIR-09, MIR-10, MIR-18]   # "Blocked by" — the MIR IDs that must be DONE first
+invariants_touched: [INV-04]   # list_member_directory reads public.member; no member select policy changes (01-plan.md § 2)
+allowed_paths:
+  - ".ai/registry/decisions/ADR-076-in-org-public-a-public-event-is-a-team-event-and-the-directory-reaches-no-other-team-through-it.md"
+  - ".ai/board/tickets/MIR-15-b/ticket.yaml"
+  - ".ai/board/tickets/MIR-15-c/ticket.yaml"
+  - ".ai/board/tickets/MIR-15-d/ticket.yaml"
+  - "supabase/migrations/20261105180000_mir15_org_public_team_bound.sql"
+  - "supabase/tests/210-org-public-team-bound.test.sql"
+  - "supabase/tests/010-catalogue.test.sql"
+  - "supabase/tests/160-read-path-org-bound.test.sql"
+  - "src/routes/EventEditor.tsx"
+  - "src/routes/Events.tsx"
+  - "tests/e2e/evt-01-events.spec.ts"
+glossary_owed: []
+schema_delta: "non-none — new security definer function org_is_shared(uuid); may_read_event, is_event_audience and notify_event_created replaced; policy event_select_visible replaced. No table, column or row changes. ADR-076"
+requires_adr: true    # ADR-076, ACCEPTED under ADR-067 at /plan MIR-15
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-11-05T06:38:04Z" }
+  review: { passed: true, at: "2026-11-05T08:44:24Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+# Not in .ai/templates/ticket.yaml. Added for the multi-tenancy plan; nothing in scripts/ reads them.
+# Plan status lives only in .ai/board/plans/multi-tenancy-status.md. `state` above is the loop's.
+mir_phase: 3
+mir_plan_item: "P3-6"             # .ai/board/plans/calechip-multi-tenancy-plan.md:206-211
+verification_required: true   # phase 0 and phase 3 — a passing mock test is not verification
+expected_impact:
+  - { feature: EVT-01, tag: SUPERSEDED, why: "in Org public an event with scope `public` no longer reaches every team, and the directory no longer spans teams. Replaced by: when `is_shared_tenant`, a `public` event and the directory stay within the team. Every existing team is backfilled into Org public by MIR-12, so this applies to all of today's data" }
+  - { feature: EVT-02, tag: CHANGED, why: "in Org public a member can no longer join another team's `public` event (`is_event_audience`, `evt02:112-125`)" }
+  - { feature: EVT-04, tag: CHANGED, why: "`notify_event_created` no longer notifies across teams in Org public (`evt04:154-174`)" }
+  - { feature: ADM-03, tag: SUPERSEDED, why: "a team's admin no longer edits the holiday calendar for Org public. Replaced by: only `system_admin` sets holidays for Org public — and every existing team lands there (MIR-12)" }
+# [predicted] at plan time. Corrected at ship in .ai/board/plans/feature-change-log.md.
+mir_detail: |
+  Short names (tea04, cal11, …) are migrations, per the File legend in
+  .ai/board/audits/multi-tenancy-audit-2026-10-12.md:38-77. "A:n" is a line of that audit;
+  "plan:n" a line of .ai/board/plans/calechip-multi-tenancy-plan.md.
+
+  Plan P3-6 (plan:206-211):
+  - Disable `list_member_directory` across teams when `is_shared_tenant`
+  - Disable `event scope = 'public'` reaching outside the team when `is_shared_tenant`
+  - Trigger `notify_event_created` (`evt04:154-174`) must not notify across teams when `is_shared_tenant`
+  - Only `system_admin` sets holidays for Org public
+  - Build "move a team to another org" in the system panel — needed the day a customer buys a licence
+
+  Blocked by MIR-10 (plan:167) and MIR-18. The plan expects more Org public special cases (plan:324).
+
+  DECIDED by the operator, 2026-10-12: the system panel comes forward. MIR-18 moves into Phase 3 and this
+  item waits for it, so "move a team to another org" is built in the panel (plan:211, plan:317).
+
+  Audit references:
+  - `list_member_directory` `evt01:154-163` (A:394)
+  - `event_select_visible` `evt02:332-346` and `is_event_audience` `evt02:112-125` include `scope = 'public'` (A:423, A:439)
+  - `notify_event_created` `evt04:154-174` (A:431)
+  - `may_read_event` `evt04:97-112` (A:432)
+  - Holiday writes `holiday_*_admin` `adm03:35-50`; global `holiday_select_all` `adm02:58-59` (A:414-420)

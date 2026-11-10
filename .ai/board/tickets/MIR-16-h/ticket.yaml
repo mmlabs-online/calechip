@@ -1,0 +1,62 @@
+# Created by `tech-lead-design` at /plan MIR-16-g on 2026-11-08: the removal of 'manager' from
+# public.member_role, split off because MIR-16-g as ADR-086 described it counted L
+# (ADR-087 decision 2; .ai/board/tickets/MIR-16-g/01-plan.md § 1 and § 7).
+# Not produced by /triage: no idea file promotes it. It shares MIR-16's feature row, which stays
+# PLANNED until MIR-16 and MIR-16-b to MIR-16-h have all shipped.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-16-h
+title: "`'manager'` leaves `public.member_role`: the column is re-typed, the audit history keeps its words as text, and `set_member_role` takes text"
+feature_ids: [MIR-16]   # split of MIR-16 (operating model § ID scheme: splits get -a, -b)
+group: MIR
+state: DONE
+owner: ""
+branch: ""
+size_estimate: "M"   # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"            # S|M|L|XL - 8 allowed_paths at /plan MIR-16-h; counted roughly at /plan MIR-16-g as ~7 (320's seven casts are the eighth)
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-10, MIR-11, MIR-12, MIR-13, MIR-14, MIR-15, MIR-18, MIR-21, MIR-21-b, MIR-21-c, MIR-21-d, MIR-21-e, MIR-21-f, MIR-16, MIR-16-b, MIR-16-d, MIR-16-e, MIR-16-c, MIR-16-f, MIR-16-g]
+invariants_touched: []
+allowed_paths:
+  - "supabase/migrations/20261108200000_mir16h_member_role_drops_manager.sql"
+  - "supabase/tests/330-member-role-without-manager.test.sql"
+  - "supabase/tests/010-catalogue.test.sql"
+  - "supabase/tests/_isolation.psql"
+  - "supabase/tests/290-member-role-helper.test.sql"
+  - "supabase/tests/300-org-admin-rename.test.sql"
+  - "supabase/tests/320-set-member-role-team-role.test.sql"
+  - "supabase/seed.sql"
+glossary_owed: []
+schema_delta: "20261108200000_mir16h_member_role_drops_manager.sql — public.member_role re-created as ('member', 'org_admin'); member.role re-typed with 'manager' -> 'member' (no row trigger fires); member_role_change.from_role / to_role re-typed to text with check member_role_change_roles_known; member_record_role_change and its trigger re-created; set_member_role(uuid, text) replaces set_member_role(uuid, public.member_role) (ADR-086 decision 2, ADR-087 decision 2; 01-plan.md § 6)"
+requires_adr: true    # ADR-086 and ADR-087 name the work; the contract is this ticket's PLAN
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-11-08T06:31:26Z" }
+  review: { passed: true, at: "2026-11-08T06:46:14Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+mir_phase: 4
+mir_plan_item: "P4-1"             # .ai/board/plans/calechip-multi-tenancy-plan.md:230-236
+verification_required: false
+expected_impact:
+  - { feature: TEA-08, tag: CHANGED, why: "transcribed from MIR-16-g's ticket.yaml: ranks become `org_admin` | `member` on `member.role`, with manager per team" }
+  - { feature: TEA-12, tag: SUPERSEDED, why: "transcribed from MIR-16-g's ticket.yaml: manager is no longer one global value on `member.role`" }
+mir_detail: |
+  Last slice of P4-1 (ADR-086 decision 2, ADR-087 decision 2). After MIR-16-g every fixture names a
+  team role explicitly and spells member roles only through tests.member_role.
+  - migration: rename the old type aside; create public.member_role ('member', 'org_admin'); drop the
+    member.role default, re-type `using (case when role::text = 'manager' then 'member' else
+    role::text end)::public.member_role` (fires no row trigger), restore the default;
+    member_role_change.from_role / to_role -> text with a check in ('member', 'manager',
+    'org_admin'); member_record_role_change re-created writing ::text; set_member_role(uuid, text)
+    created, set_member_role(uuid, public.member_role) dropped, 'org_admin' still refused 42501, any
+    value other than 'member' / 'manager' / 'org_admin' refused 22023 (decide at PLAN); drop the
+    old type. Verify first that nothing else in the catalogue depends on the type.
+  - its pgTAP; supabase/tests/010-catalogue.test.sql (set_member_role's signature in the census)
+  - supabase/tests/_isolation.psql: tests.member_role's 'manager' branch returns 'member'
+  - supabase/tests/290-member-role-helper.test.sql:27 and 300-org-admin-rename.test.sql:21 (labels)
+  - supabase/seed.sql:489-490 (the membership insert's case on m.role = 'manager')
+  - the hosted check before applying (RULE-09)
+  Counted roughly at /plan MIR-16-g as about seven paths.

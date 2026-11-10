@@ -1,0 +1,72 @@
+# Created by `tech-lead-design` at /plan MIR-17 on 2026-11-08: the rest of plan item P4-2, split
+# off because MIR-17 whole counted L (ADR-088 decision 2; .ai/board/tickets/MIR-17/01-plan.md § 1, § 7).
+# Not produced by /triage: no idea file promotes it. It shares MIR-17's feature row, which stays
+# PLANNED until MIR-17 and MIR-17-b (and any split of it) have shipped.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-17-b
+title: "Client role checks take a team, the remaining admin-only guards are replaced, and the router gains role guards"
+feature_ids: [MIR-17]   # split of MIR-17 (operating model § ID scheme: splits get -a, -b)
+group: MIR
+state: DONE
+owner: ""
+branch: ""
+size_estimate: "M"   # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"            # S|M|L|XL - 11 allowed_paths at /plan MIR-17-b; as ADR-088 described it, ~25 files (L), so the rest split to MIR-17-c (ADR-089)
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-10, MIR-11, MIR-12, MIR-13, MIR-14, MIR-15, MIR-18, MIR-21, MIR-21-b, MIR-21-c, MIR-21-d, MIR-21-e, MIR-21-f, MIR-16, MIR-16-b, MIR-16-c, MIR-16-d, MIR-16-e, MIR-16-f, MIR-16-g, MIR-16-h, MIR-17]
+invariants_touched: []
+allowed_paths:
+  - ".ai/registry/decisions/ADR-089-the-admin-screen-guards-go-through-the-role-helpers-first-and-the-rest-of-p4-2-is-mir-17-c.md"
+  - ".ai/board/tickets/MIR-17-c/ticket.yaml"
+  - ".ai/board/tickets/MIR-20/ticket.yaml"
+  - "src/routes/AdminHub.tsx"
+  - "src/routes/NewSignups.tsx"
+  - "src/routes/Threshold.tsx"
+  - "src/routes/Teams.tsx"
+  - "src/routes/TeamEntries.tsx"
+  - "src/routes/Holidays.tsx"
+  - "src/components/AdminLayout.tsx"
+  - "tests/role-guards.test.ts"
+glossary_owed: []
+schema_delta: none   # confirmed at PLAN: client and one vitest (01-plan.md § 6)
+requires_adr: true   # ADR-089, written at this PLAN under ADR-067
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-11-08T11:21:53Z" }
+  review: { passed: true, at: "2026-11-08T11:28:41Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+mir_phase: 4
+mir_plan_item: "P4-2"             # .ai/board/plans/calechip-multi-tenancy-plan.md:238-244
+verification_required: false
+expected_impact:
+  # transcribed from MIR-17's ticket.yaml, less ADM-07 (MIR-17 itself)
+  - { feature: UIE-09, tag: CHANGED, why: "the hub's guard `me.role !== \"admin\"` is replaced (`AdminHub.tsx:72`)" }
+  - { feature: TEA-06, tag: CHANGED, why: "`canRemove`, `canPromote`, `canSetManager` are scoped (`MemberList.tsx:349-366`)" }
+  - { feature: TEA-11, tag: CHANGED, why: "the Teams guard is replaced (`Teams.tsx:81`) and managers stop being labelled \"Member\" (`Teams.tsx:337`)" }
+  - { feature: TEA-09, tag: CHANGED, why: "the sign-up screen guard is replaced (`NewSignups.tsx:76`)" }
+  - { feature: ADM-01, tag: CHANGED, why: "the threshold screen guard is replaced (`Threshold.tsx:125`)" }
+  - { feature: ADM-03, tag: CHANGED, why: "the holidays screen guard is replaced (`Holidays.tsx:216`)" }
+  - { feature: ADM-04, tag: CHANGED, why: "`mayDecide` / `mayDecideEntriesOf` take a team (`roles.ts:36-49`, `PendingEntries.tsx:245`, `:621`)" }
+  - { feature: CAL-03, tag: CHANGED, why: "the team-entries guard is replaced (`TeamEntries.tsx:82`)" }
+  - { feature: CAL-12, tag: CHANGED, why: "the admin-only team picker is re-keyed (`viewed-team.ts:61`, `:85`, `useViewedTeam.tsx:56,76`)" }
+  - { feature: EVT-01, tag: CHANGED, why: "`mayEditEvent` gains a team comparison (`EventDetail.tsx:51-53`)" }
+mir_detail: |
+  The rest of P4-2 (ADR-088 decision 2), transcribed from MIR-17's mir_detail less the issue-reports
+  screen, which MIR-17 itself ships:
+  - `mayAdminister`, `mayDecide`, `mayDecideEntriesOf` take a team (`src/lib/roles.ts`). The per-team
+    rank needs a member-seam read of the caller's active memberships and team roles; today
+    `Member.role` is one value per person, "manager" derived from the roster team (MIR-16-c).
+    An org parameter is the caller's own org (ADR-088 decision 4)
+  - replace the `me.role !== "admin"` guards — AdminHub, NewSignups, Threshold, Teams, TeamEntries,
+    Holidays (IssueReports went at MIR-17)
+  - `canRemove`, `canPromote`, `canSetManager` scoped (`MemberList.tsx:148-153`, `349-366`)
+  - `mayEditEvent` gains a team comparison (`EventDetail.tsx:51-53`); `EventAttendancePanel.tsx:77`
+  - `Teams.tsx:337` labels managers as "Member"
+  - router role guards (`src/App.tsx`); `AdminLayout.tsx`, `AdminTabs.tsx`, `TopBar.tsx`, `Sidebar.tsx`
+  - mock: `currentAdmin`, `eventIsAdmin`, `setRank` (`src/lib/data/mock.ts`)
+  - `MemberRole` keeps "admin" (ADR-088 decision 3)
+  Not counted at /plan MIR-17. Expected to split again at its own PLAN.

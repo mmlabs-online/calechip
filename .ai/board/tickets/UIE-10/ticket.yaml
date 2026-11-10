@@ -1,0 +1,284 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-09-09 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: UIE-10
+title: "The sidebar gives up its admin links and restyles its roster; the specs route through the hub"
+feature_ids: [UIE-10]
+group: UIE
+state: DONE
+# ^ SET BY `orchestrator` AT /ship ON 2026-09-09, on 04-review.md `gate: PASS` / `next_state: DONE`.
+#   ADR-022 removed the QA stage, so REVIEW -> DONE is the whole remaining transition
+#   (.ai/01-operating-model.md:36). The `developer`'s comment below is left standing and is right on
+#   every point but one, corrected here rather than silently: `/next-ticket` DID run for this ticket,
+#   at 2026-09-09 15:16 +07, between /plan and /implement. It graded the full Definition of Ready six
+#   of six and reported that `state:` still read `BACKLOG` — and, being report-only, wrote nothing.
+#   Graded and not recorded, which is narrower than never evaluated. Same as UIE-09, same owed item.
+#   THIS STAGE FILLED ONLY `gates.review`. `gates.plan` was already set by /implement from
+#   01-plan.md's front-matter, which is the right source; its offset is normalised below.
+# PREVIOUS VALUE, `REVIEW`:
+# SET BY `developer` AT /implement ON 2026-09-09, AND IT SKIPPED TWO VALUES RATHER THAN ONE.
+#   THE ROW ARRIVED AT THIS STAGE READING `BACKLOG` WITH `gates.plan.passed: false`, while
+#   01-plan.md's front-matter reads `gate: PASS` and `next_state: READY`. PLAN wrote the plan, the
+#   `size` verdict and `allowed_paths` below, and did not advance the state. The plan's front-matter
+#   is the record (CLAUDE.md § Replying, *quote the gate from your artifact's front-matter*), so
+#   `gates.plan` below is set from it rather than re-decided here, and 03-impl-log.md § Open
+#   questions 3 flags the gap as upstream of this stage.
+owner: "developer"
+branch: "feat/UIE-10"
+size_estimate: "M"    # Set by `tech-lead-design` at /plan on 2026-09-09, read from 01-plan.md
+                      # section 1: one component, nine shipped spec files, one new spec, two shipped
+                      # plan files whose criteria this contradicts.
+size: "L"             # Thirteen files, counted from `allowed_paths` below - 01-plan.md section 7.
+                      # THEY DISAGREE AND THE VERDICT WINS (ADR-012). The estimate missed by exactly
+                      # the two files UIE-09 added between the triage that shaped this ticket and
+                      # this plan: its own spec, and its own plan whose AC-10 states the opposite of
+                      # AC-1. §9's ten-file signal was taken before either existed.
+                      #
+                      # *** `L` PROCEEDS UNSPLIT, BY THE OPERATOR'S DECISION OF 2026-09-09. ***
+                      # .ai/01-operating-model.md:373 says an L must split at PLAN. The operator was
+                      # asked with three cuts costed and chose to accept L and record the exception.
+                      # 01-plan.md section 7 carries the reasoning: carving the roster out removes NO
+                      # file, cutting by link leaves the sidebar half-migrated for a whole ticket,
+                      # and dropping the two plan amendments leaves four shipped criteria stating the
+                      # opposite of what ships.
+                      # THIS IS MD-017 REACHED A SECOND TIME AND IT DOES NOT FIX IT. The next L
+                      # reproduces this. One line is owed in .ai/board/model-debt.md beside MD-017
+                      # and it is `/thuki`'s, on an ops/ branch - not this ticket's.
+depends_on: [UIE-09]
+# ^ AND THIS ONE IS A MECHANISM RATHER THAN A PREFERENCE, WHICH IS UNUSUAL FOR THIS FIELD.
+#   UIE-02 AC-6 requires every `home-*` id to resolve to exactly one node, and Playwright strict mode
+#   fails a .click() that matches two. So the four `home-*-link` ids cannot exist in the sidebar and
+#   on the hub at the same time: the hub must exist before the sidebar gives them up, and the
+#   sidebar cannot give them up until there is somewhere to go. Sequencing is forced by the test
+#   runner, not chosen. See §1.
+invariants_touched: []
+# ^ THIS `[]` MEANS "NOBODY HAS LOOKED YET", NOT "CONSIDERED, NONE ENGAGED". It is item 2 of PLAN's
+#   output and Definition of Ready is evaluated after PLAN. What is already on the record: nothing in
+#   this row changes a table, a policy or an arithmetic, and the whole deliverable sits above the
+#   data seam. INV-07 is named in §6 as the invariant the DEFERRED sub-group work would engage — it
+#   is not engaged by anything in this ticket, and it is written down so that a later reader finds
+#   the reason rather than the silence.
+#
+#   ANSWERED BY `tech-lead-design` AT /plan ON 2026-09-09, AND IT IS NOW AN ANSWER RATHER THAN THE
+#   TEMPLATE DEFAULT. The lines above kept their wording. No inline comment sits on the key line,
+#   deliberately: `readYamlList` slices an inline list to the LAST `]` on the line, so a comment
+#   mentioning empty brackets swallows the value.
+#   01-plan.md section 2 reasons through every id. Nothing here creates, edits, approves, rejects or
+#   counts an entry, and src/lib/data/absence.ts is imported by neither file this ticket changes.
+#   INV-07 stays named for the reason the lines above give: the DEFERRED sub-group work would engage
+#   it through a count pill one question away from a threshold per group, and that work is out of
+#   scope in 01-plan.md section 1.
+#   ONE EXPOSURE CHANGE IS STATED IN 01-plan.md SECTION 3 RATHER THAN HIDDEN UNDER AN INVARIANT:
+#   every member can now see every teammate's role. It is not new data - `member_select_team` has
+#   returned `role` to both roles since TEA-03 - but it is newly on screen for a member.
+allowed_paths:        # Enumerated by `tech-lead-design` at /plan - 01-plan.md section 7, which
+                      # says what each is for. Exact paths, no globs, no inline comments on the items.
+                      # .ai/board/tickets/UIE-10/ is absent deliberately: the guard exempts the active
+                      # ticket's own folder (.claude/hooks/guard-allowed-paths.mjs:205-206).
+                      # NINE SHIPPED SPEC FILES, NOT EIGHT AS §2.4 LISTED. The ninth is
+                      # tests/e2e/uie-09-admin-hub.spec.ts, which did not exist at that triage; it
+                      # holds four loops over a SIDEBAR_ADMIN_LINKS array and fails on all four ids.
+                      # THE TWO `01-plan.md` PATHS carry criteria this ticket contradicts outright -
+                      # UIE-02 AC-6 and AC-8, UIE-09 AC-9 and AC-10. Both are BOARD plane and
+                      # agent-writable; neither is under .ai/registry/**, so RULE-01 is not engaged.
+                      # ADM-01 AC-10, ADM-04 AC-9, CAL-03 AC-10 and TEA-05 AC-10 are NOT here: they
+                      # stay true as written and only their assertions move surface. 01-plan.md §4.5.
+  - "src/components/Sidebar.tsx"
+  - "tests/e2e/adm-01-threshold.spec.ts"
+  - "tests/e2e/adm-04-worklist.spec.ts"
+  - "tests/e2e/adm-05-approve-reject.spec.ts"
+  - "tests/e2e/adm-06-bulk-reject.spec.ts"
+  - "tests/e2e/cal-03-admin-edit-entry.spec.ts"
+  - "tests/e2e/cal-07-overload-warning.spec.ts"
+  - "tests/e2e/cal-08-holiday-shading.spec.ts"
+  - "tests/e2e/tea-05-sign-in.spec.ts"
+  - "tests/e2e/uie-09-admin-hub.spec.ts"
+  - "tests/e2e/uie-10-sidebar.spec.ts"
+  - ".ai/board/tickets/UIE-02/01-plan.md"
+  - ".ai/board/tickets/UIE-09/01-plan.md"
+schema_delta: none
+# ^ MEASURED AT THIS TRIAGE, AND UNFENCED. No table, column, policy, grant, trigger or constraint is
+#   named by anything in this row. THE ONE PART OF THE PICTURE THAT WOULD HAVE NEEDED A MIGRATION IS
+#   THE ROSTER'S FIVE SUB-GROUPS, AND IT IS OUT — §6.
+requires_adr: false
+# ^ This row decides inside envelopes that are already open. The two places an ADR WOULD be owed are
+#   named and both are out of scope: the sub-groups (§6) and the tabbed admin area (UIE-09 §7).
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  # `plan` was set by `developer` at /implement from 01-plan.md's front-matter — the right source, and
+  # the first ticket on this board where the plan gate did not wait for /ship. `orchestrator` at /ship
+  # on 2026-09-09 NORMALISED ITS OFFSET ONLY, `+0700` -> `+07:00`: same instant, and every other gate
+  # row in the repository carries the colon. The value is not re-decided and the comment is kept.
+  plan:   { passed: true, at: "2026-09-09T15:04:18+07:00" }   # From 01-plan.md front-matter, not re-decided here
+  # TRANSCRIBED BY `orchestrator` AT /ship ON 2026-09-09 from .ai/board/tickets/UIE-10/04-review.md:
+  # `gate: PASS`, `blocking_reason: ""`, `next_state: DONE`, `produced_at: 2026-09-09T15:48:45+0700`.
+  # R1-R8 all PASS on one pass, `## Findings` empty, `rework_count: 0`, no consultation and no
+  # amendment — the eleventh in a row, and the one with a recorded deviation the review upheld.
+  review: { passed: true, at: "2026-09-09T15:48:45+07:00" }
+  # No `qa` gate — ADR-022 removed the stage. /ship requires `plan` and `review`.
+impl:
+  # Recorded by `developer` at /implement. 03-impl-log.md front-matter is the record; this is the
+  # index. Every command named in .ai/standards/testing-standards.md was RUN, exit code read:
+  # tsc 0, eslint 0, vitest 0 (208 passed), playwright 0 (208 passed, 0 failed) — and the last of
+  # those is the one MD-029 records CAL-09 skipping on a stale table. 13 files changed, exactly
+  # `allowed_paths`; `node scripts/check-allowed-paths.mjs` PASS.
+  gate: PASS
+  at: "2026-09-09T15:36:04+0700"
+  deviations: 1   # ADM-04 AC-9's asserted text. 01-plan.md section 4.4 states that the hub row for
+                  # /entries/pending "carries the same words" as `home-pending-entries-link` did.
+                  # It does not - src/routes/AdminHub.tsx:59-63 names it `Pending approvals` - so
+                  # `toHaveText("Waiting for a decision")` cannot pass against it under any casing.
+                  # What AC-9 is FOR, that the link carries no count, is asserted directly instead.
+                  # 03-impl-log.md section Deviations carries it in full.
+
+# -----------------------------------------------------------------------------------------------
+# Written by `product` at /triage on 2026-09-09, from
+# .ai/board/ideas/2026-09-09-the-sidebar-holds-every-address-and-grows-with-the-role.md, on a
+# PROMOTE verdict. That file's `# Verdict — PROMOTE, as two rows: UIE-09 then UIE-10` section is the
+# reasoning and is not repeated here. Nothing below is an acceptance criterion; all of them are
+# PLAN's.
+#
+# 1. THIS IS THE MIGRATION HALF. EVERY UNIT OF RISK IN THE OPERATOR'S REQUEST IS HERE, IN ONE
+#    REVIEWABLE PLACE, AND THAT IS THE WHOLE POINT OF THE SPLIT. A reviewer should be able to read
+#    this ticket as one sentence: *this is the migration*. As one ticket with UIE-09 the work is 14
+#    files and therefore `L`, which the sizing table says must split
+#    (.ai/01-operating-model.md:373). It was split AT TRIAGE and not at PLAN because
+#    .ai/board/model-debt.md MD-017 records that no command owns a ticket shell created by a split at
+#    DESIGN, so a ticket that splits loses half of itself silently. `product` issued both rows under
+#    ADR-007 and both shells under ADR-010, so that defect never gets its chance.
+#
+# 2. THE COST OF THIS ROW, MEASURED, AND IT IS THE THING A REVIEWER MUST NOT DISCOVER LATE.
+#    IT AMENDS ACCEPTANCE CRITERIA THAT FIVE `DONE` TICKETS SHIPPED, AND NO AVAILABLE SHAPE AVOIDS
+#    IT. The seven sidebar link ids are referenced 41 times across 12 spec files under tests/e2e/;
+#    read line by line that is 11 comments and 30 executable statements across 11 executing files —
+#    13 navigation and 17 visibility.
+#    2.1 THE 13 NAVIGATION ASSERTIONS ARE CHEAP. One inserted step per call site — reach the hub,
+#        then click the link that is now on it — and THE FOUR `home-*-link` IDS MAY RELOCATE ONTO
+#        THE HUB UNRENAMED, exactly as UIE-02 relocated eleven ids letter for letter. No id in that
+#        group has to change.
+#    2.2 THE 17 VISIBILITY ASSERTIONS CANNOT BE REPAIRED, BECAUSE EACH OF THEM *IS* A SHIPPED
+#        ACCEPTANCE CRITERION WRITTEN AS A TEST. Positive toBeVisible() at adm-01:53,103,199,
+#        adm-02:84,293,301, adm-03:59, adm-04:411, cal-03:476, tea-05:147; negative toHaveCount(0)
+#        at adm-01:206, adm-04:319,335, cal-03:302,487, tea-05:156; plus adm-04:415, a text
+#        assertion. Named: ADM-01 AC-10, ADM-02 AC-15, ADM-04 AC-9, CAL-03 AC-10, TEA-05's
+#        visibility pair, and in the plan plane UIE-02 AC-6 and AC-8.
+#    2.3 UIE-02'S RELOCATION TRICK DOES NOT SAVE THIS ONE. It worked because the relocated ids stayed
+#        VISIBLE FROM EVERY ROUTE. Any shape that puts them behind a control makes them absent from
+#        the route the spec is standing on. NO SHAPE PRESERVES THE 17 EXCEPT LEAVING THE LINKS IN THE
+#        SIDEBAR, which is what the request forbids.
+#    2.4 THE EIGHT SPEC FILES THAT EXECUTE AGAINST THE FOUR ADMIN IDS AND WILL ENTER
+#        `allowed_paths`: adm-01-threshold, adm-04-worklist, adm-05-approve-reject, adm-06-bulk-reject,
+#        cal-03-admin-edit-entry, cal-07-overload-warning, cal-08-holiday-shading, tea-05-sign-in.
+#
+# 3. THE ONE CRITERION THIS TICKET OWES THAT NOBODY WOULD MISS UNTIL IT WAS TOO LATE.
+#    THE SIX NEGATIVE ASSERTIONS PASS *VACUOUSLY* ONCE THE IDS THEY NAME STOP EXISTING. They are the
+#    only shipped statements anywhere that a member is not offered the admin surface, and an
+#    assertion that a named node is absent is satisfied by the name never having existed. A reviewer
+#    who sees six green assertions after this ships is seeing nothing.
+#    WHICH NODE ASSERTS THE MEMBER CASE INSTEAD IS AN ACCEPTANCE CRITERION THIS ROW MUST WRITE. It is
+#    open question 3 of the idea file, carried here unanswered on purpose.
+#
+# 4. THE THREE GENERAL LINKS STAY, AND IT IS A DECISION TAKEN AT TRIAGE RATHER THAN AN OVERSIGHT.
+#    `home-week-link`, `home-year-link` and `home-holidays-link` are NOT removed. Where the
+#    operator's words and the picture differ, THE WORDS GOVERN: the request names the ADMIN links;
+#    the transcription's sidebar has no navigation links at all. Two verified facts make the
+#    picture's version unbuildable as written:
+#    4.1 THE TOP BAR IS NOT A SUBSTITUTE OFF THE PERIOD ROUTES. periodNavFor returns null when the
+#        second path segment is absent or unrecognised (src/lib/period.ts:315), and
+#        src/components/TopBar.tsx:89 and :150 gate the entire left cluster AND the entire
+#        Week/Month/Year switcher on `nav !== null`. So on /allow-list, /members, /holidays,
+#        /threshold, /entries/new, /entries/:id/edit, /entries/team and /entries/pending there is no
+#        switcher, no anchor and no Today control at all — and on the three of those with no
+#        back-link of their own the sidebar's week and year links are the ONLY route to a calendar.
+#        They are redundant on the six period routes and load-bearing everywhere else.
+#    4.2 /holidays WOULD BE STRANDED. It is linked from exactly one place in the entire product
+#        (src/components/Sidebar.tsx:209) and the screen itself only links to other years. THE ADMIN
+#        CONTROL COULD NOT ADOPT IT: /holidays is guarded on a SESSION AND NOT A ROLE, on the stated
+#        ground that holiday_select_all is `using (true)`, and ADM-02 AC-15 asserts the link is
+#        offered to BOTH ROLES (tests/e2e/adm-02-holidays.spec.ts:291-302). Moving it behind an admin
+#        control would break a shipped criterion and take the national holiday calendar away from
+#        every member.
+#    Emptying the nav block entirely remains available AS ITS OWN IDEA, and it owes a second answer
+#    for /holidays before it can be one.
+#
+# 5. THE FIRST CLAUSE OF THE REQUEST — *change layout of left side bar* — IS SERVED HERE AND MUST NOT
+#    BE QUIETLY DROPPED. The buildable part is the ROLE WORD ON EACH ROSTER ROW, which sits inside
+#    the `.ai/standards/ui-design-system.md` § *Visual specification* grant as arrangement. It comes
+#    with two obligations that must reach acceptance criteria:
+#    5.1 IT REVERSES A STATED UIE-02 DECISION — src/components/Sidebar.tsx:182-184, "No role badge,
+#        no count and no control on a row". An AC must say the decision changed. A reversal nobody
+#        marked is the thing § *Visual specification* exists to prevent.
+#    5.2 IT NEEDS A NEW SELECTOR, NEVER A REUSED OR RENAMED ONE. `home-member-role` already names the
+#        ACCOUNT FOOTER's role line and tests/e2e/tea-05-sign-in.spec.ts:65, :146 and :155 read it by
+#        text. A second node under that name fails UIE-02 AC-6's exactly-one count under strict mode.
+#    5.3 It also creates a THIRD copy of the roleLabel mapping; src/components/Sidebar.tsx:30-33
+#        already flags that MemberList.tsx holds the second and that folding them is nobody's ticket
+#        yet. PLAN says whether it folds them or names the duplication in Out-of-scope.
+#
+# 6. OUT OF SCOPE, AND THIS FIRST ONE IS THE ITEM THE OPERATOR MAY WANT BACK.
+#    THE ROSTER'S FIVE SUB-GROUPS — CORE ENGINEERING, FRONTEND TEAM, BACKEND TEAM, QA / TESTING,
+#    DESIGN / PRODUCT, each with a count pill and a collapse chevron — ARE DEFERRED RATHER THAN
+#    DROPPED (idea file, open question 9).
+#    THERE IS NO COLUMN ANYWHERE THAT GROUPS MEMBERS WITHIN A TEAM: public.member carries id,
+#    team_id, display_name, avatar, role, removed_at, created_at
+#    (supabase/migrations/20260831150024_tea01_membership.sql:31,
+#    .ai/standards/data-model.md:33-41) and no later migration adds one. So it is a migration,
+#    therefore XL by the sizing table and A HUMAN'S UNDER RULE-09.
+#    AND BEFORE THE COLUMN THERE IS A DECISION: INV-07 scopes counting to the team
+#    (.ai/registry/invariants.md:39), and A COUNT PILL ON EVERY GROUP HEADER IS ONE QUESTION AWAY
+#    FROM A THRESHOLD PER GROUP, which would give INV-04 a second arithmetic. *Is a sub-group ever a
+#    counting unit?* is the ADR, and it is not this ticket's.
+#    The same picture has now shown those five subtitles FOUR TIMES and nothing has acted on them —
+#    .ai/board/tickets/UIE-05/design/README.md § 4.1, UIE-06/design/README.md § 4.1,
+#    UIE-08/design/README.md § 4.4, and now this ticket's design/README.md.
+#    ALSO OUT, EACH BECAUSE IT REVERSES SOMETHING DECIDED:
+#    6.1 THE FOURTH LEGEND ROW `Quá tải (>50%)`. It reverses UIE-02 AC-11 and AC-20 AND STATES A
+#        FALSEHOOD. The token exists (src/index.css:174) so it is not a schema question, but
+#        src/index.css:146-149 carries the reason that is still true: "a row would have to state a
+#        threshold that ADM-01 lets an admin change, so >50% becomes a lie the moment somebody uses
+#        the feature." Rendering it truthfully needs a seam.getTeam() call the shell deliberately
+#        makes nowhere. Its own row if the operator wants it, and its first AC writes itself.
+#    6.2 THE PALETTE ICON. Declined once already ONE TICKET AGO on stated grounds — UIE-02 AC-20 and
+#        src/components/Sidebar.tsx:273-275: "what a control DOES is behaviour, and the § Visual
+#        specification grant does not reach behaviour." There is also nothing to switch to: § *Colour*
+#        is a bare TODO(project) and the product has one theme.
+#    6.3 ALL VIETNAMESE COPY, for the fifth time, per § *Language* — lint-enforced, so several of the
+#        picture's strings fail the build rather than failing review.
+#    6.4 THE FOUR ADMIN SCREENS THEMSELVES. /entries/pending, /entries/team, /allow-list and
+#        /threshold keep their content, their behaviour and their own in-screen refusals. This row
+#        moves links, not screens.
+#
+# 7. NOTHING HERE IS A CONTROL, AND NO PERMISSION CHANGES. Every element involved is an affordance
+#    over row-level security already in force (ADR-005, src/components/Sidebar.tsx:10-15). A member
+#    who types any of the four addresses still reaches the screen and is still refused BY IT —
+#    allow-list-refused, team-entries-refused, threshold-refused, pending-entries-refused. Hiding or
+#    moving a link saves a pointless journey and refuses nobody. If any part of this ticket starts to
+#    read as restricting something, it has left its scope.
+#
+# 8. `depends_on: [UIE-09]` AND NOTHING ELSE, MEASURED. Every ticket on the board other than CAL-10
+#    and UIE-09 is DONE, and `allowed_paths` is `[]` on every ticket, so nothing else claims a path.
+#    CAL-10 is not a dependency: it edits src/App.tsx and the year addresses, and this row edits the
+#    sidebar and eight spec files, none of which is cal-06-year-view. One working tree holds one
+#    branch (ADR-006). Definition of Ready item 6 passes: all of `feature_ids` is one group.
+#
+# 9. THE SIZE SIGNAL, RECORDED AS A SIGNAL. The technical half counted ten files —
+#    src/components/Sidebar.tsx plus the eight spec files in §2.4, plus the hub's adoption of the
+#    four ids if that is the chosen migration — and called it `M`. `size_estimate` stays empty; it is
+#    item 5 of PLAN's output. THE ONE THING THAT WILL MOVE IT is §3: whether the member case is
+#    re-asserted with one new node on the hub or with a new assertion in each of the affected specs.
+#
+# 10. THE VISUAL REFERENCE IS A TRANSCRIPTION AND NOT AN IMAGE.
+#    .ai/board/tickets/UIE-10/design/README.md is a verbatim copy of the hand transcription written
+#    by the only session that saw the pasted picture. THERE IS NO IMAGE FILE AND THERE NEVER WAS —
+#    MD-030, and the CORRECTION 2026-09-09 block in `.ai/standards/ui-design-system.md`
+#    § *Visual specification*. A later reader cannot check a single sentence of it against the
+#    picture it describes. It is evidence of intent; it is NOT a specification.
+#    `/plan` must not be handed a second image.
+#
+# 11. WHAT WAS NOT VERIFIED, AND IT IS THE HONEST LIMIT OF THIS SHELL. THE SUITE WAS NOT RUN. The
+#    13/17 classification in §2 was read line by line from the spec sources and has not been
+#    confirmed by making a change and watching the assertions fail. 17 IS THE ESTIMATE OF THE COST
+#    AND NOT A MEASUREMENT OF IT, and this ticket's plan is where it stops being an estimate.

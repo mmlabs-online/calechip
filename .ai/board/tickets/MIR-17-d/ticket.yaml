@@ -1,0 +1,60 @@
+# Created by `tech-lead-design` at /plan MIR-17-c on 2026-11-09: the rest of plan item P4-2, split
+# off because MIR-17-c as ADR-089 described it counted L (ADR-090 decision 2;
+# .ai/board/tickets/MIR-17-c/01-plan.md § 1 and § 7).
+# Not produced by /triage: no idea file promotes it. It shares MIR-17's feature row, which stays
+# PLANNED until MIR-17 to MIR-17-d (and any split of it) have shipped.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-17-d
+title: "The member, entry and event affordances are scoped, the entry points ask per team, and the router gains role guards"
+feature_ids: [MIR-17]   # split of MIR-17 (operating model § ID scheme: splits get -a, -b)
+group: MIR
+state: DONE
+owner: ""
+branch: ""
+size_estimate: "M"   # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"            # S|M|L|XL - 8 allowed_paths at /plan MIR-17-d; as ADR-090 described it, ~16 files (L), so the rest split to MIR-17-e (ADR-091)
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-10, MIR-11, MIR-12, MIR-13, MIR-14, MIR-15, MIR-18, MIR-21, MIR-21-b, MIR-21-c, MIR-21-d, MIR-21-e, MIR-21-f, MIR-16, MIR-16-b, MIR-16-c, MIR-16-d, MIR-16-e, MIR-16-f, MIR-16-g, MIR-16-h, MIR-17, MIR-17-b, MIR-17-c]
+invariants_touched: []
+allowed_paths:
+  - ".ai/registry/decisions/ADR-091-the-applications-manager-is-whoever-manages-a-team-and-the-rest-of-p4-2-is-mir-17-e.md"
+  - ".ai/board/tickets/MIR-17-e/ticket.yaml"
+  - ".ai/board/tickets/MIR-20/ticket.yaml"
+  - "supabase/migrations/20261109120000_mir17d_manages_a_team.sql"
+  - "supabase/tests/340-manages-a-team.test.sql"
+  - "supabase/tests/010-catalogue.test.sql"
+  - "src/lib/data/supabase.ts"
+  - "tests/org-admin-role-mapping.test.ts"
+glossary_owed: []
+schema_delta: "20261109120000_mir17d_manages_a_team.sql — adds member_manages_a_team(uuid) (definer) and the computed field manages_a_team(public.member). No table, column, enum, policy, trigger, constraint, grant or row change (ADR-091; 01-plan.md § 6)"
+requires_adr: true   # ADR-091, written at this PLAN under ADR-067
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-11-09T13:57:52Z" }
+  review: { passed: true, at: "2026-11-09T14:06:56Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+mir_phase: 4
+mir_plan_item: "P4-2"             # .ai/board/plans/calechip-multi-tenancy-plan.md:238-244
+verification_required: false
+expected_impact:
+  # transcribed from MIR-17-c's ticket.yaml, less ADM-04 (MIR-17-c itself)
+  - { feature: TEA-06, tag: CHANGED, why: "`canRemove`, `canPromote`, `canSetManager` are scoped (`MemberList.tsx:349-366`)" }
+  - { feature: CAL-12, tag: CHANGED, why: "the admin-only team picker is re-keyed (`viewed-team.ts:61`, `:85`, `useViewedTeam.tsx:56,76`)" }
+  - { feature: EVT-01, tag: CHANGED, why: "`mayEditEvent` gains a team comparison (`EventDetail.tsx:51-53`)" }
+mir_detail: |
+  The rest of P4-2 (ADR-090 decision 2), transcribed from MIR-17-c's mir_detail less the worklist:
+  - `MemberList.tsx:151`, `:215`, `:352-361`, `:419`, `:643` (canRemove, canPromote, canSetManager)
+  - `EditEntry.tsx:88`, `EventEditor.tsx:282`, `EventDetail.tsx:87` (mayEditEvent),
+    `EventAttendancePanel.tsx:138`
+  - `viewed-team.ts:61`, `:85`; `useViewedTeam.tsx:56`
+  - `Sidebar.tsx:540`; `TopBar.tsx:304-308`; `AdminLayout.tsx:189` and `AdminTabs.tsx:315`, the
+    entry points to the worklist that still ask the global rank (ADR-090 Consequences)
+  - `src/lib/roles.ts`: `mayDecideEntriesOf` is read only by the mock after MIR-17-c; its comment
+    ("kept for MIR-17") goes stale
+  - router role guards (`src/App.tsx`): decide between intercepting at the route and the screens'
+    in-place refusals (ADR-089 Context)
+  Not counted at /plan MIR-17-c. Expected to split again at its own PLAN.

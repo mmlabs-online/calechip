@@ -1,0 +1,215 @@
+-- MIR-06. The isolation suite's fixture and helpers, included by every `0n0-*.test.sql` with `\ir`.
+-- Not a test: the `.psql` extension keeps it out of pg_prove's `*.sql` run (01-plan.md § 4.1).
+--
+-- Runs inside the including file's transaction, which ends in `rollback`, so the `tests` schema and
+-- every fixture row vanish with it. Nothing here alters a policy, a grant or a trigger.
+
+create extension if not exists pgtap with schema extensions;
+
+create schema tests;
+grant usage on schema tests to anon, authenticated;
+
+-- The fixture's fixed ids (01-plan.md § 4.3), declared once. Tests refer to rows by these labels and
+-- never by a literal uuid. Labels are fixture names, not schema fields.
+create function tests.id(p_label text) returns uuid
+  language sql immutable security invoker set search_path = '' as $$
+  select ('00000000-0000-4000-8000-0000000000' || v.nn)::uuid
+    from (values
+      ('team_t', '01'), ('team_u', '02'),
+      ('admin_t', '11'), ('manager_t', '12'), ('member_t', '13'), ('member_t2', '14'),
+      ('removed_t', '15'), ('removed_admin_t', '16'),
+      ('admin_u', '21'), ('manager_u', '22'), ('member_u', '23'), ('member_u2', '24'),
+      ('removed_u', '25'),
+      ('pending_p', '31'),
+      ('entry_t', '41'), ('entry_u', '42'), ('entry_u_approved', '43'),
+      ('event_t', '51'), ('event_u', '52'), ('event_t_public', '53'), ('event_u_public', '54')
+    ) as v(label, nn)
+   where v.label = p_label;
+$$;
+
+-- Become X: the role PostgREST would use for a signed-in caller, and claims whose `sub` is X, so
+-- `auth.uid()` returns X. Transaction-local, like every setting below.
+create function tests.authenticate_as(p_id uuid) returns void
+  language plpgsql security invoker set search_path = '' as $$
+begin
+  perform set_config('request.jwt.claims',
+                     json_build_object('sub', p_id, 'role', 'authenticated')::text, true);
+  perform set_config('role', 'authenticated', true);
+end;
+$$;
+
+-- Become signed out: the anon key and no session.
+create function tests.authenticate_anon() returns void
+  language plpgsql security invoker set search_path = '' as $$
+begin
+  perform set_config('request.jwt.claims', '{"role":"anon"}', true);
+  perform set_config('role', 'anon', true);
+end;
+$$;
+
+-- Back to the session user, which owns every table and so reads without RLS.
+create function tests.clear_authentication() returns void
+  language plpgsql security invoker set search_path = '' as $$
+begin
+  perform set_config('role', 'none', true);
+  perform set_config('request.jwt.claims', '', true);
+end;
+$$;
+
+-- Execute one update or delete as the current role and return its row count. Exists because a
+-- data-modifying CTE cannot sit inside pgTAP's is().
+create function tests.rows_affected(p_sql text) returns bigint
+  language plpgsql security invoker set search_path = '' as $$
+declare
+  v_n bigint;
+begin
+  execute p_sql;
+  get diagnostics v_n = row_count;
+  return v_n;
+end;
+$$;
+
+-- MIR-16-g, ADR-087 decision 1. The application's role words to a team role, in one place.
+create function tests.team_role_for(p_role text) returns public.team_role
+  language sql immutable set search_path = '' as $$
+  select case p_role when 'manager' then 'manager'::public.team_role
+                     else 'member'::public.team_role end;
+$$;
+
+-- MIR-21-e (ADR-080 decision 3). Writes the one `membership` row the mirror's INSERT branch wrote for
+-- a member inserted with a team (20261105210000_mir21b_writers_write_membership.sql:348-362), so a
+-- fixture that no longer names `member.team_id` gets the same row. Owner only; call it after the
+-- member insert and before any entry, event or busy_day of that member (their stamps read the
+-- primary team from `membership`).
+--
+-- MIR-16-g, ADR-087 decision 1: the team role is the caller's own third argument, not a value
+-- derived from `member.role`.
+create function tests.put_on_team(p_member_id uuid, p_team_id uuid,
+                                  p_team_role public.team_role default 'member')
+  returns void
+  language sql security invoker set search_path = '' as $$
+  insert into public.membership (org_id, team_id, member_id, team_role, is_primary, joined_at, left_at)
+  select m.org_id, p_team_id, m.id,
+         p_team_role,
+         m.removed_at is null,
+         m.created_at,
+         case when m.removed_at is null then null else greatest(m.removed_at, m.created_at) end
+    from public.member m
+   where m.id = p_member_id;
+$$;
+
+-- MIR-16-d, ADR-084 decision 1. **THE ONE PLACE A TEST SPELLS THE DATABASE VALUE OF THE ADMIN
+-- ROLE.** A test names a role in the application's words ('member', 'manager', 'admin') and this
+-- returns the public.member_role value that means it. MIR-16-e renamed 'admin' to 'org_admin' and
+-- changed the first branch below; no test that calls this changed with it. MIR-16-h: 'manager' is a
+-- team role, not a value of public.member_role, since that migration — tests.team_role_for is where
+-- it lives now.
+create function tests.member_role(p_role text) returns public.member_role
+  language sql stable set search_path = '' as $$
+  select case p_role
+           when 'admin' then 'org_admin'::public.member_role
+           when 'manager' then 'member'::public.member_role
+           else p_role::public.member_role
+         end;
+$$;
+
+-- The fixture of 01-plan.md § 4.3, inserted as the session user before any authenticate. Every row
+-- goes in with auth.uid() null, so the notify* and email_* triggers do nothing.
+create function tests.seed() returns void
+  language plpgsql security invoker set search_path = '' as $$
+declare
+  v_person record;
+begin
+  insert into public.team (id, name, overload_threshold, wfh_need_approve, pto_need_approve) values
+    (tests.id('team_t'), 'Team T', 0.5, true, true),
+    (tests.id('team_u'), 'Team U', 0.5, true, true);
+
+  for v_person in
+    select * from (values
+      ('admin_t',         'team_t', 'admin',   'approved', false),
+      ('manager_t',       'team_t', 'manager', 'approved', false),
+      ('member_t',        'team_t', 'member',  'approved', false),
+      ('member_t2',       'team_t', 'member',  'approved', false),
+      ('removed_t',       'team_t', 'member',  'approved', true),
+      ('removed_admin_t', 'team_t', 'admin',   'approved', true),
+      ('admin_u',         'team_u', 'admin',   'approved', false),
+      ('manager_u',       'team_u', 'manager', 'approved', false),
+      ('member_u',        'team_u', 'member',  'approved', false),
+      ('member_u2',       'team_u', 'member',  'approved', false),
+      ('removed_u',       'team_u', 'member',  'approved', true),
+      ('pending_p',       null,     'member',  'pending',  false)
+    ) as p(label, team, role, status, removed)
+  loop
+    -- email_confirmed_at stays null, so admit_allow_listed_member admits nobody.
+    insert into auth.users (id, email)
+    values (tests.id(v_person.label), v_person.label || '@mir06.test');
+    insert into public.member (id, display_name, avatar, role, status, removed_at, email)
+    values (tests.id(v_person.label),
+            v_person.label, '1.png',
+            tests.member_role(v_person.role), v_person.status::public.member_status,
+            case when v_person.removed then now() end,
+            v_person.label || '@mir06.test');
+
+    if v_person.team is not null then
+      perform tests.put_on_team(tests.id(v_person.label), tests.id(v_person.team),
+                                tests.team_role_for(v_person.role));
+    end if;
+  end loop;
+
+  insert into public.entry (id, member_id, type, portion, start_date, end_date) values
+    (tests.id('entry_t'), tests.id('member_t'), 'pto', 'full', '2026-11-02', '2026-11-03'),
+    (tests.id('entry_u'), tests.id('member_u'), 'pto', 'full', '2026-11-02', '2026-11-03');
+  insert into public.entry (id, member_id, type, portion, start_date, end_date, status,
+                            approved_by, approved_at) values
+    (tests.id('entry_u_approved'), tests.id('member_u2'), 'pto', 'full', '2026-11-04', '2026-11-04',
+     'approved', tests.id('admin_u'), now());
+
+  insert into public.event (id, creator_id, name, start_date, end_date, scope) values
+    (tests.id('event_t'),        tests.id('member_t'), 'Event T',        '2026-11-10', '2099-12-31', 'team'),
+    (tests.id('event_u'),        tests.id('member_u'), 'Event U',        '2026-11-10', '2099-12-31', 'team'),
+    (tests.id('event_t_public'), tests.id('member_t'), 'Event T public', '2026-11-10', '2099-12-31', 'public'),
+    (tests.id('event_u_public'), tests.id('member_u'), 'Event U public', '2026-11-10', '2099-12-31', 'public');
+
+  insert into public.busy_day (member_id, date) values
+    (tests.id('member_t'), '2026-11-05'),
+    (tests.id('member_u'), '2026-11-05');
+
+  insert into public.task (member_id, date, title) values
+    (tests.id('member_t'),  '2026-11-05', 'Task of member_t'),
+    (tests.id('removed_t'), '2026-11-05', 'Task of removed_t');
+
+  insert into public.notification (recipient_id, kind, event_id, event_name, actor_id) values
+    (tests.id('member_t'),  'event_created', tests.id('event_t'), 'Event T', tests.id('admin_t')),
+    (tests.id('removed_t'), 'event_created', tests.id('event_t'), 'Event T', tests.id('admin_t'));
+
+  insert into public.issue_report (member_id, kind, message, page) values
+    (tests.id('member_t'), 'bug', 'MIR-06 fixture report', '/');
+
+  insert into public.event_invitee (event_id, member_id) values
+    (tests.id('event_t'), tests.id('member_t2')),
+    (tests.id('event_u'), tests.id('member_u2'));
+
+  insert into public.event_attendance (event_id, member_id, status) values
+    (tests.id('event_t_public'), tests.id('member_t2'), 'attending'),
+    (tests.id('event_u_public'), tests.id('member_u2'), 'attending');
+
+  insert into public.event_guest_link (event_id, token) values
+    (tests.id('event_t'),        repeat('a', 64)),
+    (tests.id('event_u'),        repeat('b', 64)),
+    (tests.id('event_t_public'), repeat('c', 64)),
+    (tests.id('event_u_public'), repeat('d', 64));
+
+  -- status and event_name are set by event_guest_guard, as register_guest relies on.
+  insert into public.event_guest (event_id, name, email, manage_token_hash) values
+    (tests.id('event_t_public'), 'Guest T', 'guest-t@mir06.test',
+     encode(sha256(convert_to(repeat('e', 64), 'UTF8')), 'hex')),
+    (tests.id('event_u_public'), 'Guest U', 'guest-u@mir06.test',
+     encode(sha256(convert_to(repeat('f', 64), 'UTF8')), 'hex'));
+
+  insert into public.event_email_invitation (event_id, email, invited_by) values
+    (tests.id('event_t'), 'invited-t@mir06.test', tests.id('member_t')),
+    (tests.id('event_u'), 'invited-u@mir06.test', tests.id('member_u'));
+end;
+$$;
+
+grant execute on all functions in schema tests to anon, authenticated;

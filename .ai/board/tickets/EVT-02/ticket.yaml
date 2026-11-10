@@ -1,0 +1,117 @@
+# Copied from .ai/templates/ticket.yaml by `product` at /triage, 2026-09-29 (ADR-010).
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: EVT-02
+title: "A member joins an event they can read, within its capacity, approval mode and deadline, and everyone who can read it sees who is coming"
+feature_ids: [EVT-02]
+group: EVT
+state: DONE      # orchestrator at /ship, 2026-09-29, on 04-review.md `gate: PASS` / `verdict: PASS` /
+                 # `next_state: DONE`. `DONE` means MERGED, so it is written ahead of the pull request
+                 # a human must merge — RULE-09. ALL FIVE Definition of Done items are met, which is
+                 # not what EVT-01 could say this morning. Item 3 rests on the developer's recorded
+                 # run in 03-impl-log.md § *Verification run* — `tsc`, `eslint`, `vitest` (27 files,
+                 # 454 tests) and the FULL `playwright test` suite all exit 0 at 306 passed. /ship
+                 # step 1 was skipped on the operator's standing instruction (*tạm ignore bước này*),
+                 # so those figures were NOT re-run here; they are transcribed, not reproduced.
+                 # WORTH READING TWICE: the 20 pre-existing Playwright failures EVT-01 shipped
+                 # alongside do not appear in this run. Nothing in this ticket claims to have fixed
+                 # them and no artifact explains their absence, so the honest statement is that this
+                 # run is clean and the reason for the difference is unestablished.
+                 # Item 4: `invariant_violation: false` in 04-review.md. Item 5: § *Files touched*
+                 # lists eleven rows against eleven `allowed_paths`.
+# PREVIOUS VALUE, `REVIEW`:
+#                # developer at /implement, 2026-09-29T15:53:05+0700, on 03-impl-log.md `gate: PASS` /
+                 # `next_state: REVIEW`. tsc, eslint, vitest (454) and playwright (306) all exit 0.
+# PREVIOUS VALUE, `READY`: orchestrator at /advance, 2026-09-29, on 01-plan.md `gate: PASS` /
+                 # `next_state: READY`, with all six Definition of Ready items passing. Item 3 is the
+                 # one that was genuinely blocking until today: `depends_on: [EVT-01]`, and EVT-01 is
+                 # `DONE` with its pull request MERGED — #105 at 2026-09-29T04:44:20Z. Item 4 was read
+                 # the same way as EVT-01's: `schema_delta` is not `none`, and the approved ADR it
+                 # requires is ADR-045 (`ACCEPTED by the operator`), linked from 01-plan.md section 6
+                 # rather than named inside the `schema_delta` string. Section 6 also declares that
+                 # `event_select_visible` is REPLACED, which ADR-014 makes a policy change and
+                 # therefore not `none` — the plan caught that against itself rather than leaving it
+                 # to REVIEW.
+# PREVIOUS VALUE, `BACKLOG`: set at /triage on 2026-09-29 and never moved, because PLAN ran and the
+# recording step did not — the same gap EVT-01 sat in this morning. 01-plan.md was produced at
+# 2026-09-29T11:51:56+0700 carrying `gate: PASS` and `next_state: READY`; until this run
+# `gates.plan.passed` was still `false` on disk. ADR-036 created this command to close it.
+owner: ""
+branch: ""
+size_estimate: "M"    # Set by tech-lead-design at /plan, 2026-09-29, from 01-plan.md section 1. Gates DoR.
+size: "M"             # Eleven files, counted from allowed_paths below - 01-plan.md section 7. Agrees
+                      # with size_estimate. Not XL: no existing seam signature changes (section 5).
+depends_on: [EVT-01]
+# ^ EVT-01 creates the event, its scopes and its visibility. There is nothing to join, and no read
+#   rule for an attendee list to inherit, until it ships.
+invariants_touched: [INV-04]
+# ^ tech-lead-design at /plan, 2026-09-29. Reached through the chain ADR-045 point 4 fences: the
+#   attendee list shows people across teams, and listMembers() is INV-04's denominator. Held by
+#   reading ids and states only and resolving names through EVT-01's directory read; no policy on
+#   public.member changes. 01-plan.md section 2 and section 5.
+allowed_paths:
+  - "supabase/migrations/20260929140000_evt02_attendance.sql"
+  - "src/lib/domain/types.ts"
+  - "src/lib/event-registration.ts"
+  - "src/lib/data/index.ts"
+  - "src/lib/data/supabase.ts"
+  - "src/lib/data/mock.ts"
+  - "src/routes/EventDetail.tsx"
+  - "src/routes/EventEditor.tsx"
+  - "src/components/EventAttendancePanel.tsx"
+  - "tests/event-attendance.test.ts"
+  - "tests/e2e/evt-02-attendance.spec.ts"
+schema_delta: "new attendance table with row-level security; capacity, approval mode and deadline on the event; a database-held capacity check — no change to any table outside EVT"
+# ^ DoR item 4. ADR: .ai/registry/decisions/ADR-045-charter-refusals-4-and-5-are-lifted-for-events.md
+#   (ACCEPTED by the operator), § Consequences on capacity. Names are tech-lead-design's at /plan.
+#   A read-then-write capacity check in the seam or the client is OUT OF BOUNDS — ADR-005 leaves the
+#   database as the only place it can hold. The attendee list reads through EVT-01's narrow
+#   projection, never a widened member policy (ADR-045 point 4).
+requires_adr: false
+# ^ False because ADR-045 is the ADR and is accepted. Capacity is deliberately NOT an invariant
+#   (ADR-045 § Consequences); it is acceptance criteria written at PLAN.
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: 2026-09-29T15:24:26+0700 }   # orchestrator at /advance, transcribed
+                                                          # from 01-plan.md front-matter `gate: PASS`.
+  review: { passed: true, at: 2026-09-29T16:06:35+0700 }   # orchestrator at /advance, transcribed
+                                                          # from 04-review.md front-matter: `gate: PASS`,
+                                                          # `verdict: PASS`, `failed_checks: []`,
+                                                          # `invariant_violation: false`, `route_to: none`,
+                                                          # `increments_rework: false`. `gate` and `verdict`
+                                                          # agree, so the artifact is not void under RULE-13.
+                                                          # `state` STAYS `REVIEW`; 04-review.md says
+                                                          # `next_state: DONE` and /advance never writes it —
+                                                          # `/ship` does, when the pull request opens.
+                                                          #
+                                                          # ONE DISCREPANCY, RECORDED AND NOT ACTED ON:
+                                                          # `inputs_read` in 04-review.md lists exactly two
+                                                          # files, 01-plan.md and 03-impl-log.md — no source,
+                                                          # no migration, no registry, no diff, where the
+                                                          # ARTIFACTS_FOR[REVIEW] row in
+                                                          # .ai/01-operating-model.md names `git diff` and the
+                                                          # registry too, and EVT-01's review declared 20.
+                                                          # The BODY contradicts it: the report cites 12
+                                                          # distinct file:line locations across
+                                                          # supabase.ts, mock.ts, index.ts and
+                                                          # EventAttendancePanel.tsx, so the code WAS read and
+                                                          # the front-matter under-declares its own provenance.
+                                                          # That is an accuracy defect in a field /advance does
+                                                          # not transcribe, not a contradiction among the five
+                                                          # routing fields, so it does not void the artifact
+                                                          # and it is not this command's to correct — /advance
+                                                          # never edits an artifact.
+
+# Provenance: .ai/board/ideas/2026-09-29-a-gathering-has-nowhere-to-be-announced-or-joined.md,
+# § Re-triage verdict — PROMOTE. DoR item 6: feature_ids is one group, EVT.
+#
+# The concurrency clause is the load-bearing one: two approvals of the last seat, or an instant join
+# racing an approval, must not exceed the cap. Exceeding it is ADR-045 revert condition 2.
+#
+# No visual reference was attached at /idea or /triage. The layout is tech-lead-design's to
+# originate at /plan § 2b. /plan must not be handed an image.
+#
+# The idea's seven § Guesses are product's, not the operator's; PLAN confirms or overturns each.

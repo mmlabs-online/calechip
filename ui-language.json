@@ -1,0 +1,23 @@
+{
+  "$comment": [
+    "§ Language, declared once. .ai/standards/ui-design-system.md § Language is the standard; this",
+    "file is the state its two enforcement mechanisms share, in the shape .ai/registry/boundaries.json",
+    "already uses for RULE-02 — one declaration, two consumers, so neither can drift from the other.",
+    "Consumed by eslint.config.js (the lint rule) and tests/ui-language.test.ts (the half a lint rule",
+    "cannot express). It is NOT in .ai/registry/: copyDebt changes every time a ticket translates a",
+    "file, and the registry is for things that need an ADR to move.",
+    "",
+    "copyDebt only ever SHRINKS. It is a ratchet, not a suppression list: twelve files predated the",
+    "standard, OPS-001 translated seven and OPS-002 the last five, and THE LIST IS NOW EMPTY — which",
+    "is the standard's own stated proof that the sweep is complete. It must stay empty: adding a file",
+    "here is the failure mode, and it is now the only way this list can change. tests/ui-language.test.ts",
+    "fails when an entry no longer has copy to translate, so a paid debt cannot stay listed.",
+    "",
+    "userContent is PERMANENT and means the opposite. Those files must CONTAIN diacritics — they are",
+    "the standard's stated exception and the product's only coverage for the type requirement in",
+    "CLAUDE.md § Visual direction. Never move an entry from userContent into copyDebt."
+  ],
+  "diacritic": "[\\u00C0-\\u024F\\u1E00-\\u1EFF]",
+  "copyDebt": [],
+  "userContent": ["src/lib/fixtures.ts", "supabase/seed.sql"]
+}

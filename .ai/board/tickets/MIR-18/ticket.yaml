@@ -1,0 +1,66 @@
+# Copied from .ai/templates/ticket.yaml by `claude` on 2026-10-12, recording item P4-3 of
+# .ai/board/plans/calechip-multi-tenancy-plan.md. Not produced by /triage: no idea file promotes it.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-18
+title: "A separate system admin panel, unindexed, with its own account store, 2FA and org management"
+feature_ids: [MIR-18]   # ADR-063 row; written by the steward on the operator's decision of 2026-10-20
+group: MIR           # ADR-063: MIR is the eighth feature group
+state: DONE
+owner: ""
+branch: ""
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR. This slice; the feature as a whole was L
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. 12 paths; the rest split to MIR-18-b (ADR-074 decision 8)
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-05, MIR-06, MIR-07, MIR-08, MIR-09, MIR-10, MIR-12]   # "Blocked by" — the MIR IDs that must be DONE first
+invariants_touched: []
+allowed_paths:
+  - ".ai/registry/decisions/ADR-074-system-admin-is-a-separate-account-table-behind-totp-in-its-own-entry.md"
+  - ".ai/registry/glossary.md"
+  - ".ai/standards/rbac-and-security.md"
+  - ".ai/board/tickets/MIR-18-b/ticket.yaml"
+  - "supabase/migrations/20261104150000_mir18_system_admin.sql"
+  - "supabase/tests/190-system-admin.test.sql"
+  - "supabase/config.toml"
+  - "vite.config.ts"
+  - "system.html"
+  - "src/system/main.tsx"
+  - "src/lib/data/system.ts"
+  - "tests/e2e/mir-18-system-panel.spec.ts"
+glossary_owed: ["System admin"]   # added at /plan MIR-18: ADR-059 § Consequences; MIR-10 01-plan.md:93-95 names MIR-18
+schema_delta: "non-none — new table public.system_admin (RLS, policy system_admin_select_self, select grant); functions is_system_admin(), grant_system_admin(uuid), system_admin_refuse_member(), member_refuse_system_admin(); new BEFORE INSERT trigger on public.member. ADR-074"
+requires_adr: true    # ADR-074, ACCEPTED under ADR-067 at /plan MIR-18
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-11-04T07:08:49Z" }
+  review: { passed: true, at: "2026-11-05T01:29:29Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+# Not in .ai/templates/ticket.yaml. Added for the multi-tenancy plan; nothing in scripts/ reads them.
+# Plan status lives only in .ai/board/plans/multi-tenancy-status.md. `state` above is the loop's.
+mir_phase: 3
+mir_plan_item: "P4-3"             # .ai/board/plans/calechip-multi-tenancy-plan.md:246-251
+verification_required: true   # phase 0 and phase 3 — a passing mock test is not verification
+expected_impact: []   # none
+# [predicted] at plan time. Corrected at ship in .ai/board/plans/feature-change-log.md.
+mir_detail: |
+  Short names (tea04, cal11, …) are migrations, per the File legend in
+  .ai/board/audits/multi-tenancy-audit-2026-10-12.md:38-77. "A:n" is a line of that audit;
+  "plan:n" a line of .ai/board/plans/calechip-multi-tenancy-plan.md.
+
+  Plan P4-3 (plan:246-251):
+  - Separate route, not indexed: `X-Robots-Tag: noindex` header, **not** `robots.txt` — listing it there publishes the path
+  - Separate account store, 2FA required
+  - IP allow-list if feasible
+  - Rate limiting and failed-login logging
+  - Org CRUD, caps, licence state, move-team-between-orgs
+
+  MOVED FORWARD by the operator, 2026-10-12. The plan places this in Phase 4 (P4-3); MIR-15 (Phase 3)
+  needs its move-team-between-orgs, so it now runs in Phase 3 — after MIR-10 (the `org` design) and
+  MIR-12 (the `org` rows exist) — and Phase 4 waits for it. As a phase 3 item it now needs `Verified`.
+
+  Audit references:
+  - A `system_admin` with no `member` row lands on the member-less screen — `src/hooks/useSession.ts:89-93` (A:949)
+  - The router has no role-based guards; every guard is on `membership.state` (A:536)
