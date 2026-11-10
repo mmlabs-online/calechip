@@ -4,6 +4,11 @@ name: build-image
 # pushes it to Docker Hub as mingming21400/calechip:sha-<first 7 of the commit>. Nothing else is
 # tagged here: :vX.Y.Z is promoted from this tag by digest, without rebuilding (CICD-04). CICD-03.
 #
+# Job `staging` then opens a pull request in the deployment repository that pins CaleChip STAGING
+# (calechip-staging.mmlabs.online, apps/calechip-staging/) to that same image by digest — so cutting or
+# pushing a release branch puts it on staging once that pull request is merged. Production is unchanged:
+# it moves only on a vX.Y.Z tag (release.yml).
+#
 # Not a required check, and not gated on `verify` — branch protection keeps main green; this turns
 # what is on main into an image.
 #
@@ -12,6 +17,7 @@ name: build-image
 #   VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY     — the production project. Baked into the bundle at
 #                                                   build (see the Dockerfile header): one image
 #                                                   serves one Supabase project.
+# Job `staging` also needs DEPLOY_REPO_TOKEN and variable DEPLOY_REPO — the same two release uses.
 
 # TEMPORARY, operator 2026-10-17: Actions run on release branches only. Branch protection on main is
 # the operator's to lift, since its required checks no longer report there.
@@ -35,6 +41,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: prod
     timeout-minutes: 20
+    outputs:
+      ref: ${{ steps.tag.outputs.ref }}
+      digest: ${{ steps.push.outputs.digest }}
     steps:
       - uses: actions/checkout@v7
 
@@ -108,14 +117,126 @@ jobs:
 
       # Pushes the image that was just tested — the same local image, not a second build.
       - name: push
+        id: push
         env:
           REF: ${{ steps.tag.outputs.ref }}
         run: |
           docker push "$REF"
           digest="$(docker inspect --format '{{index .RepoDigests 0}}' "$REF")"
+          echo "digest=${digest#*@}" >> "$GITHUB_OUTPUT"
           {
             echo "### Image"
             echo ""
             echo "- Tag: \`$REF\`"
             echo "- Digest: \`$digest\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # The image just pushed goes to STAGING (calechip-staging.mmlabs.online) — the same bytes a later
+  # vX.Y.Z tag promotes to production, so staging tests exactly what would ship. Opens a pull request
+  # release/calechip-staging-sha-<7> in the deployment repository that changes only
+  # apps/calechip-staging/release.env, and closes the earlier staging pull requests it supersedes.
+  # Merging it is the deploy (RULE-09); production (apps/calechip/) is never touched here.
+  #
+  # NEEDS the same two inputs as release: secret DEPLOY_REPO_TOKEN and variable DEPLOY_REPO. Without
+  # them this job fails at `inputs present`; the image is already pushed either way.
+  staging:
+    needs: build-image
+    runs-on: ubuntu-latest
+    environment: prod
+    timeout-minutes: 10
+    steps:
+      - name: inputs present
+        env:
+          DEPLOY_REPO_TOKEN: ${{ secrets.DEPLOY_REPO_TOKEN }}
+          DEPLOY_REPO: ${{ vars.DEPLOY_REPO }}
+          DIGEST: ${{ needs.build-image.outputs.digest }}
+        run: |
+          missing=""
+          for name in DEPLOY_REPO_TOKEN DEPLOY_REPO; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing Actions secrets or variables:$missing — add them under Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+          if ! [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::build-image reported digest '$DIGEST', not sha256:<64 hex>. Nothing was pushed."
+            exit 1
+          fi
+
+      - name: checkout deployment
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ vars.DEPLOY_REPO }}
+          ref: main
+          path: deployment
+          token: ${{ secrets.DEPLOY_REPO_TOKEN }}
+
+      - name: staging pull request
+        id: pr
+        working-directory: deployment
+        env:
+          GH_TOKEN: ${{ secrets.DEPLOY_REPO_TOKEN }}
+          DEPLOY_REPO: ${{ vars.DEPLOY_REPO }}
+          DEPLOY_FILE: apps/calechip-staging/release.env
+          REF: ${{ needs.build-image.outputs.ref }}
+          DIGEST: ${{ needs.build-image.outputs.digest }}
+        run: |
+          short="${GITHUB_SHA::7}"
+          branch="release/calechip-staging-sha-${short}"
+          # Shown in the sidebar footer; the container keeps only [0-9A-Za-z.+-] (Dockerfile CMD).
+          version="$(printf '%s' "${GITHUB_REF_NAME#release/}" | tr -c '0-9A-Za-z.-' '-')+sha-${short}"
+          dir="$(dirname "$DEPLOY_FILE")"
+          if [ ! -d "$dir" ]; then
+            echo "::error::$DEPLOY_REPO has no $dir/ on main. Apply the calechip-staging layout there first (docs/ops/deployment-repo/). Nothing was pushed."
+            exit 1
+          fi
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null; then
+            url="$(gh pr list --repo "$DEPLOY_REPO" --head "$branch" --state open --json url --jq '.[0].url // empty')"
+            if [ -z "$url" ]; then
+              echo "::error::$branch already exists in $DEPLOY_REPO with no open pull request. Delete the branch, then re-run."
+              exit 1
+            fi
+            echo "Reusing the open pull request $url."
+            echo "url=$url" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git switch -c "$branch"
+          {
+            echo "# Written by the calechip build-image workflow for ${GITHUB_REF_NAME} (commit ${GITHUB_SHA}). Do not edit by hand."
+            echo "CALECHIP_STAGING_IMAGE=${REF}@${DIGEST}"
+            echo "CALECHIP_STAGING_VERSION=${version}"
+          } > "$DEPLOY_FILE"
+          changed="$(git status --porcelain --untracked-files=all | awk '{print $2}')"
+          if [ "$changed" != "$DEPLOY_FILE" ]; then
+            echo "::error::Expected exactly $DEPLOY_FILE to change; got: ${changed:-nothing}. Nothing was pushed."
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "$DEPLOY_FILE"
+          git commit -m "calechip-staging ${version}"
+          git push origin "$branch"
+          url="$(gh pr create --repo "$DEPLOY_REPO" --base main --head "$branch" \
+            --title "calechip-staging ${version}" \
+            --body "Pins CaleChip **staging** (https://calechip-staging.mmlabs.online) to \`${REF}@${DIGEST}\`, built from ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA} on \`${GITHUB_REF_NAME}\`. Opened by ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. Merging deploys it to staging only; production is unchanged.")"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          # Only the newest build needs to reach staging: close the open staging pull requests before it.
+          gh pr list --repo "$DEPLOY_REPO" --base main --state open --json number,headRefName \
+            --jq '.[] | select(.headRefName | startswith("release/calechip-staging-")) | select(.headRefName != "'"$branch"'") | .number' \
+          | while read -r n; do
+              gh pr close "$n" --repo "$DEPLOY_REPO" --delete-branch --comment "Superseded by $url." || true
+            done
+
+      - name: summary
+        env:
+          REF: ${{ needs.build-image.outputs.ref }}
+          DIGEST: ${{ needs.build-image.outputs.digest }}
+          PR_URL: ${{ steps.pr.outputs.url }}
+        run: |
+          {
+            echo "### Staging"
+            echo ""
+            echo "- Image: \`${REF}@${DIGEST}\`"
+            echo "- Deployment pull request: $PR_URL"
           } >> "$GITHUB_STEP_SUMMARY"

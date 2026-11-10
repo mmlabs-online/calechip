@@ -2,3 +2,4 @@
 # workflows are the operator's. Change the handle if the deployment repository belongs elsewhere.
 /.github/        @didi-code0980
 /apps/calechip/  @didi-code0980
+/apps/calechip-staging/  @didi-code0980

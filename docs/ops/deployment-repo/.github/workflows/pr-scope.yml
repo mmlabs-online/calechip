@@ -1,7 +1,7 @@
 name: pr-scope
 
-# DRAFT for the deployment repository (calechip CICD-05). A pull request from release/<app>-v... may
-# change only apps/<app>/. Any other pull request is not checked here. Runs on GitHub's runners,
+# DRAFT for the deployment repository (calechip CICD-05). A pull request from release/<app>-v... or
+# release/<app>-sha-<7> (calechip-staging) may change only apps/<app>/. Any other pull request is not checked here. Runs on GitHub's runners,
 # never on the self-hosted one: pull request code must never reach the server.
 
 on:
@@ -23,7 +23,7 @@ jobs:
           HEAD_REF: ${{ github.head_ref }}
           PR: ${{ github.event.pull_request.number }}
         run: |
-          if ! [[ "$HEAD_REF" =~ ^release/([a-z0-9-]+)-v[0-9] ]]; then
+          if ! [[ "$HEAD_REF" =~ ^release/([a-z0-9-]+)-(v[0-9]|sha-[0-9a-f]{7}$) ]]; then
             echo "$HEAD_REF is not a release branch; no scope rule applies."
             exit 0
           fi

@@ -79,10 +79,14 @@ apps/
   calechip/
     compose.yml        # this folder's draft
     release.env        # written by CICD-04's release pull request; never by hand
+  calechip-staging/
+    compose.yml        # staging, calechip-staging.mmlabs.online — see "Staging" below
+    release.env        # written by build-image's `staging` pull request; never by hand
 .github/
   CODEOWNERS
   workflows/
     deploy-calechip.yml
+    deploy-calechip-staging.yml
     pr-scope.yml
     runner-check.yml
 runner-setup.md        # the runner's setup runbook
@@ -94,6 +98,24 @@ only. `pr-scope` already covers any `apps/<app>/`.
 `release.env` holds no secret: an image name, a tag and a digest. The only environment CaleChip
 reads at runtime is `CALECHIP_VERSION`, the label in the sidebar footer. Every `VITE_*` value is
 baked into the image at build, and nginx's port is fixed.
+
+## Staging
+
+A second CaleChip, `calechip-staging`, runs next to production at `calechip-staging.mmlabs.online`.
+It is its own app in this layout: folder `apps/calechip-staging/`, compose project
+`calechip-staging`, service name `calechip-staging`, workflow `deploy-calechip-staging.yml` with its
+own concurrency group. Production's folder, project and workflow are not touched by it.
+
+- **What puts a build on staging.** Every push to a `release/**` branch in the calechip repository
+  runs `build-image`; its `staging` job opens `release/calechip-staging-sha-<7>` here, changing only
+  `apps/calechip-staging/release.env`, and closes the staging pull requests it supersedes. Merging it
+  is the deploy (RULE-09).
+- **Which image.** The per-commit build `mingming21400/calechip:sha-<7>@sha256:<digest>`, the same
+  bytes a later `vX.Y.Z` tag promotes to production. It therefore talks to the production Supabase
+  project; a separate staging project would need a separate build.
+- **Before the first staging merge:** add the tunnel's public hostname
+  `calechip-staging.mmlabs.online` → `http://calechip-staging:3000`, and merge the layout itself.
+  The layout's merge carries no `release.env`; its run is green and deploys nothing.
 
 ## How a deploy runs
 

@@ -1,0 +1,35 @@
+# CaleChip STAGING on the home server, project `calechip-staging`, next to production (apps/calechip/,
+# untouched). The image comes only from release.env, which calechip's build-image workflow (job
+# `staging`) writes in a release/calechip-staging-sha-<7> pull request every time a release/** branch
+# is cut or pushed in the calechip repository:
+#   CALECHIP_STAGING_IMAGE=mingming21400/calechip:sha-<7>@sha256:<digest>
+#   CALECHIP_STAGING_VERSION=<release branch>+sha-<7>
+# It is the same image a later vX.Y.Z tag promotes to production, so it uses the production
+# Supabase project (VITE_* are baked in at build).
+# Merging it runs .github/workflows/deploy-calechip-staging.yml. By hand:
+#   docker compose -p calechip-staging -f apps/calechip-staging/compose.yml --env-file apps/calechip-staging/release.env up -d --wait
+#
+# Static nginx on :3000, no ports, no secrets: cloudflared reaches it as `calechip-staging` on the network
+# (Cloudflare published application calechip-staging.mmlabs.online -> http://calechip-staging:3000).
+
+name: calechip-staging
+
+services:
+  calechip-staging:
+    image: ${CALECHIP_STAGING_IMAGE:?CALECHIP_STAGING_IMAGE is unset - pass --env-file apps/calechip-staging/release.env}
+    restart: unless-stopped
+    environment:
+      CALECHIP_VERSION: ${CALECHIP_STAGING_VERSION:-}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/healthz"]
+      interval: 5s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+    networks: [tunnel]
+
+networks:
+  tunnel:
+    external: true
+    # The network cloudflared is on — `web`, created by proxy/compose.yml.
+    name: web
