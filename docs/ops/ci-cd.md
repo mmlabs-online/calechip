@@ -27,8 +27,9 @@ release pull request it opens in the deployment repository is the deploy: mergin
 | `verify` | `.github/workflows/verify.yml` | `pull_request`; push to `main` | typecheck, lint, unit, documentation audit, hook and script tests, two e2e shards; job `verify` passes only if all did | **yes** — job `verify` | toolchain chore (2026-08-31); reshaped by CICD-02 |
 | `allowed-paths` | `.github/workflows/allowed-paths.yml` | `pull_request` | `scripts/check-allowed-paths.mjs` — RULE-03 over the whole branch | **yes** | toolchain chore (2026-08-31) |
 | `mir-tracking` | `.github/workflows/mir-tracking.yml` | `pull_request` (opened, edited, synchronize, reopened) | `.github/scripts/check-mir-tracking.mjs` — MIR status index and change log in step | **yes** | MIR plan (2026-10-12) |
-| `build-image` | `.github/workflows/build-image.yml` | push to `main` | builds one image, smoke-tests `/healthz` and `/`, pushes `:sha-<7>` | no | CICD-03 |
+| `build-image` | `.github/workflows/build-image.yml` | push to `release/**` (temporary, operator 2026-10-17) | builds one image, smoke-tests `/healthz` and `/`, pushes `:sha-<7>`; job `staging` then opens `release/calechip-staging-sha-<7>` in the deployment repository | no | CICD-03; `staging` job added 2026-11-10 |
 | `release` | `.github/workflows/release.yml` | push of a tag matching `v*.*.*` | promotes `:sha-<7>` to `:vX.Y.Z` by digest, opens the deployment pull request, creates the GitHub Release | no | CICD-04 |
+| `deploy-calechip-staging` | deployment repository, `.github/workflows/deploy-calechip-staging.yml` | push to `main` touching `apps/calechip-staging/**` | same as `deploy-calechip`, for staging (`calechip-staging.mmlabs.online`), compose project `calechip-staging` | no | 2026-11-10 |
 | `deploy-calechip` | deployment repository, `.github/workflows/deploy-calechip.yml` — *draft, not applied* | push to `main` touching `apps/calechip/**` | on the self-hosted runner: pull, `up --wait`, restore the previous version if unhealthy | no | CICD-05 |
 | `pr-scope` | deployment repository, `.github/workflows/pr-scope.yml` — *draft, not applied* | `pull_request` to `main` | a `release/<app>-v…` pull request may change only `apps/<app>/` | optional, once it has passed | CICD-05 |
 | `runner-check` | deployment repository, `.github/workflows/runner-check.yml` — *draft, not applied* | `workflow_dispatch` | on the self-hosted runner: proves it runs as `gh-runner` and reaches Docker | no | CICD-07 |
@@ -48,8 +49,8 @@ Names only. No value of any of these belongs in any file.
 | `DOCKERHUB_TOKEN` | secret | this repository | `build-image`, `release` | a Docker Hub access token, read/write on that repository |
 | `VITE_SUPABASE_URL` | secret | this repository | `build-image` | the production Supabase project's URL |
 | `VITE_SUPABASE_ANON_KEY` | secret | this repository | `build-image` | the production project's anon key |
-| `DEPLOY_REPO_TOKEN` | secret | this repository | `release` | a **fine-grained** token on the deployment repository **only** — Contents and Pull requests read/write, nothing else |
-| `DEPLOY_REPO` | variable | this repository, *Variables* tab | `release` | the deployment repository as `owner/name` |
+| `DEPLOY_REPO_TOKEN` | secret | this repository | `release`, `build-image` (job `staging`) | a **fine-grained** token on the deployment repository **only** — Contents and Pull requests read/write, nothing else |
+| `DEPLOY_REPO` | variable | this repository, *Variables* tab | `release`, `build-image` (job `staging`) | the deployment repository as `owner/name` |
 
 - **The `VITE_*` values are baked into the image at build**, as build arguments (see the
   `Dockerfile` header). One image serves one Supabase project; pointing at another project means
@@ -97,6 +98,24 @@ Names only. No value of any of these belongs in any file.
 6. **Confirm it.** The merge starts `deploy-calechip` in the deployment repository. It is green when
    the new version is running and healthy, and it comments `deployed: …` on the release pull request
    with the run's URL. Any other comment is a case in the [Rollback runbook](#rollback-runbook).
+
+## Staging
+
+Cutting a release branch puts it on staging, `calechip-staging.mmlabs.online`; production moves only
+on a `vX.Y.Z` tag, as above.
+
+1. **Cut or push a `release/**` branch.** `build-image` builds and pushes `:sha-<7>`, then its
+   `staging` job opens `release/calechip-staging-sha-<7>` in the deployment repository. It changes
+   one file, `apps/calechip-staging/release.env`, and closes the older staging pull requests it
+   supersedes.
+2. **Merge that pull request.** `deploy-calechip-staging` deploys it, with the same health check and
+   restore as production.
+3. **Tag the same commit `vX.Y.Z`** when staging is good. `release` promotes that very digest to
+   production.
+
+Staging runs the production build, so it reads and writes the production Supabase project. The
+layout and its prerequisites are in
+[deployment-repo/README.md § Staging](deployment-repo/README.md#staging).
 
 ## Rollback runbook
 
