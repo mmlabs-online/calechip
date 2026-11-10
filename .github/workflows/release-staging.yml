@@ -1,0 +1,111 @@
+# Cutting (or pushing to) a branch `release/vX.Y.Z` deploys that commit to STAGING:
+#   1. builds the image and pushes mingming21400/calechip:vX.Y.Z-rc.<short-sha> to Docker Hub
+#   2. opens a pull request release/calechip-staging-vX.Y.Z-rc.<short-sha> on mmlabs-online/deployment
+#      that changes only apps/calechip-staging/release.env (image pinned by digest)
+# Merging that pull request runs deploy-calechip-staging on macbook-runner, which serves
+# https://calechip-staging.mmlabs.online. Production (apps/calechip/) is not touched.
+# Based on mmlabs-online/deployment docs/app-release.yml.
+#
+# Secrets in this repo:
+#   DOCKERHUB_USERNAME, DOCKERHUB_TOKEN  push to mingming21400/calechip
+#   DEPLOY_REPO_TOKEN                    fine-grained PAT on mmlabs-online/deployment only:
+#                                        Contents read/write, Pull requests read/write
+# Optional repository variables, passed to the build as VITE_* build args (the values are baked into
+# the static bundle, so staging can point at its own Supabase project):
+#   STAGING_VITE_SUPABASE_URL, STAGING_VITE_SUPABASE_ANON_KEY, STAGING_VITE_SUPABASE_PUBLISHABLE_KEY
+
+name: release-staging
+
+on:
+  push:
+    branches: ['release/v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-staging-${{ github.ref_name }}
+  cancel-in-progress: true # only the newest commit on a release branch needs to reach staging
+
+env:
+  APP: calechip-staging # folder apps/<APP>/ in the deployment repo
+  IMAGE: mingming21400/calechip # Docker Hub repository (same one production uses)
+
+jobs:
+  release-staging:
+    runs-on: ubuntu-latest # GitHub's runner: app code never runs on the home server
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: guards
+        id: version
+        env:
+          DH_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+          DH_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_REPO_TOKEN }}
+        run: |
+          if ! [[ "$GITHUB_REF_NAME" =~ ^release/(v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))$ ]]; then
+            echo "::error::branch '$GITHUB_REF_NAME' is not release/vX.Y.Z (for example release/v3.5.0)"; exit 1
+          fi
+          tag="${BASH_REMATCH[1]}-rc.${GITHUB_SHA::7}"
+          echo "staging version: $tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          for name in DH_USER DH_TOKEN DEPLOY_TOKEN; do
+            if [ -z "${!name}" ]; then
+              echo "::error::repository secret for $name is empty (see the header of this workflow)"; exit 1
+            fi
+          done
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: build and push
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          tags: ${{ env.IMAGE }}:${{ steps.version.outputs.tag }}
+          build-args: |
+            VITE_SUPABASE_URL=${{ vars.STAGING_VITE_SUPABASE_URL }}
+            VITE_SUPABASE_ANON_KEY=${{ vars.STAGING_VITE_SUPABASE_ANON_KEY }}
+            VITE_SUPABASE_PUBLISHABLE_KEY=${{ vars.STAGING_VITE_SUPABASE_PUBLISHABLE_KEY }}
+          cache-from: type=gha,scope=staging
+          cache-to: type=gha,mode=max,scope=staging
+
+      - name: pull request on the deployment repo
+        env:
+          GH_TOKEN: ${{ secrets.DEPLOY_REPO_TOKEN }}
+          TAG: ${{ steps.version.outputs.tag }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          branch="release/$APP-$TAG"
+          ref="$IMAGE:$TAG@$DIGEST"
+          git clone --depth 1 "https://x-access-token:$GH_TOKEN@github.com/mmlabs-online/deployment.git" deployment
+          cd deployment
+          git switch -c "$branch"
+          mkdir -p "apps/$APP"
+          {
+            echo "# Written by the calechip release-staging workflow for $TAG (commit $GITHUB_SHA, branch $GITHUB_REF_NAME). Do not edit by hand."
+            echo "CALECHIP_STAGING_IMAGE=$ref"
+            echo "CALECHIP_STAGING_VERSION=$TAG"
+          } > "apps/$APP/release.env"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "apps/$APP/release.env"
+          if [ "$(git diff --cached --name-only)" != "apps/$APP/release.env" ]; then
+            echo "::error::release commit must change only apps/$APP/release.env"; exit 1
+          fi
+          git commit -m "$APP $TAG"
+          git push origin "$branch"
+          gh pr create --repo mmlabs-online/deployment --base main --head "$branch" \
+            --title "$APP $TAG" \
+            --body "Deploys \`$ref\` to https://calechip-staging.mmlabs.online ($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA, branch \`$GITHUB_REF_NAME\`). Merging runs deploy-$APP on macbook-runner. Production is not touched."
