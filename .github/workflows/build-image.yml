@@ -41,8 +41,10 @@ jobs:
     runs-on: ubuntu-latest
     environment: prod
     timeout-minutes: 20
+    # Only the digest crosses to `staging`. The image name holds the Docker Hub account, which is also
+    # the DOCKERHUB_USERNAME secret, so GitHub drops any job output containing it ("may contain
+    # secret") — `staging` rebuilds the name from env.IMAGE and the commit instead.
     outputs:
-      ref: ${{ steps.tag.outputs.ref }}
       digest: ${{ steps.push.outputs.digest }}
     steps:
       - uses: actions/checkout@v7
@@ -179,10 +181,15 @@ jobs:
           GH_TOKEN: ${{ secrets.DEPLOY_REPO_TOKEN }}
           DEPLOY_REPO: ${{ vars.DEPLOY_REPO }}
           DEPLOY_FILE: apps/calechip-staging/release.env
-          REF: ${{ needs.build-image.outputs.ref }}
           DIGEST: ${{ needs.build-image.outputs.digest }}
         run: |
           short="${GITHUB_SHA::7}"
+          REF="${IMAGE}:sha-${short}"
+          # The same pin deploy-calechip-staging accepts; never open a pull request it would refuse.
+          if ! [[ "${REF}@${DIGEST}" =~ ^[a-z0-9]+/calechip:sha-[0-9a-f]{7}@sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::Refusing to pin '${REF}@${DIGEST}': not <account>/calechip:sha-<7>@sha256:<64 hex>. Nothing was pushed."
+            exit 1
+          fi
           branch="release/calechip-staging-sha-${short}"
           # Shown in the sidebar footer; the container keeps only [0-9A-Za-z.+-] (Dockerfile CMD).
           version="$(printf '%s' "${GITHUB_REF_NAME#release/}" | tr -c '0-9A-Za-z.-' '-')+sha-${short}"
@@ -230,10 +237,10 @@ jobs:
 
       - name: summary
         env:
-          REF: ${{ needs.build-image.outputs.ref }}
           DIGEST: ${{ needs.build-image.outputs.digest }}
           PR_URL: ${{ steps.pr.outputs.url }}
         run: |
+          REF="${IMAGE}:sha-${GITHUB_SHA::7}"
           {
             echo "### Staging"
             echo ""
