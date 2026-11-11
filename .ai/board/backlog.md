@@ -22,7 +22,8 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
-| 1 | BUG-005 | EVT-02 AC-28 and EVT-10 AC-2/3/4 fail on first attempt under full-suite load and pass on retry | S | — |
+
+**`BUG-005` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-11 from `03-impl-log.md` gate PASS (`produced_at: 2026-11-11T04:57:00+00:00`); its row left this table.
 
 **`BUG-005` moved here at /advance on 2026-11-11**, from `01-plan.md` gate PASS (`produced_at: 2026-11-11T04:37:27+00:00`) with all six Definition of Ready items passing; `schema_delta: none`. It had no row in `## BACKLOG`, so there was nothing to remove. Run by `/run-ticket BUG-005`.
 

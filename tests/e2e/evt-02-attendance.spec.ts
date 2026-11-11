@@ -82,6 +82,10 @@ test.describe("EVT-02 — attendance", () => {
     await openEvents(page);
     await page.getByTestId("events-new-button").click();
 
+    // BUG-005. `EventEditor` shows a loader until its seam reads resolve, and `evaluateAll` does not
+    // wait — so under load it read an empty list and every index was -1. Wait for the form first.
+    await expect(page.getByTestId("event-form")).toBeVisible();
+
     const ids = await page
       .getByTestId("event-form")
       .locator("[data-testid]")
