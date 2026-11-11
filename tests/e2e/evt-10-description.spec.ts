@@ -130,11 +130,51 @@ async function reopenEvent(page: Page, id: string): Promise<void> {
   await expect(page.getByTestId("event-detail")).toBeVisible();
 }
 
-/** Puts the caret on the line holding `text`, and selects that line when `select` is set. */
+/** BUG-005. The editor's own state, read through the `editor` property TipTap sets on its root
+ *  (`@tiptap/core` dist/index.js:6635). Read only — the test never drives the editor through it. */
+type EditorRoot = HTMLElement & {
+  editor?: {
+    state: {
+      selection: {
+        from: number;
+        to: number;
+        empty: boolean;
+        $from: { parent: { textContent: string; content: { size: number } }; parentOffset: number };
+        $to: { parent: unknown };
+      };
+      doc: { textBetween(from: number, to: number): string };
+    };
+  };
+};
+
+/** Puts the caret on the line holding `text`, and selects that line when `select` is set. Returns
+ *  only once the editor itself holds that selection, so the next toolbar press lands on it. */
 async function onLine(page: Page, editor: Locator, text: string, select = true): Promise<void> {
+  // BUG-005 (1). Apply on the link row, or a colour swatch, ends in TipTap's `focus()` with focus
+  // outside the editor, which hands focus back on the NEXT animation frame and writes the editor's
+  // old selection into the page as it does. Clicking a line before that frame lets it drag the caret
+  // back. Frame callbacks run in the order they were requested, so once this one has run, that has.
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
   await editor.getByText(text, { exact: true }).click();
   await page.keyboard.press("End");
   if (select) await page.keyboard.press("Shift+Home");
+  // BUG-005 (2). End and Shift+Home move the page's selection; ProseMirror copies it into its state
+  // on `selectionchange`, a later task a toolbar click can overtake under load.
+  await expect
+    .poll(() =>
+      editor.evaluate((root) => {
+        const state = (root as EditorRoot).editor?.state;
+        if (!state) return null;
+        const { selection: sel, doc } = state;
+        return {
+          line: sel.$from.parent.textContent,
+          oneBlock: sel.$from.parent === sel.$to.parent,
+          selected: doc.textBetween(sel.from, sel.to),
+          caretAtEnd: sel.empty && sel.$from.parentOffset === sel.$from.parent.content.size,
+        };
+      }),
+    )
+    .toEqual({ line: text, oneBlock: true, selected: select ? text : "", caretAtEnd: !select });
 }
 
 async function typeLines(page: Page, editor: Locator, lines: string[]): Promise<void> {
