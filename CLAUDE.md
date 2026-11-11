@@ -215,7 +215,8 @@ past it.
 each stage as its own top-level `claude` process, which is what makes the session lifetimes real
 rather than a matter of which window someone typed into (ADR-036). `auto "<request>"` without a file
 still asks its own questions at the terminal; `/auto` starts a run detached and **cannot ask**, so
-it is for a file or a ticket that is already settled.
+it is for a file or a ticket that is already settled. `/run-ticket <ID>` runs the same runner for
+one existing ticket and waits for it, then reports how it ended from `REPORT.md`.
 
 **Outside the loop** — `/solo`, for work where the loop's overhead exceeds its value. It skips every
 stage and every gate, deliberately.
