@@ -22,6 +22,9 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
+| 1 | MIR-19-b | The e2e specs that assert an in-app link read it through an org-prefix helper"   # narrowed at /plan MIR-19-b, 2026-11-11 (01-plan.md § 1, Changelog). Was: "Every authenticated page moves to `/{org_code}`: the specs learn the prefix, then the root addresses send a member to their org | M | — |
+
+**`MIR-19-b` moved here at /advance on 2026-11-11**, from `01-plan.md` gate PASS (`produced_at: 2026-11-11T13:50:31Z`) with all six Definition of Ready items passing; `schema_delta: none`. PLAN split again (ADR-097 decision 5): the rest of Phase 5 is `MIR-19-c` (`BACKLOG`). Run by `/run-ticket MIR-19-b`.
 
 **`MIR-19` shipped on 2026-11-11, `state: DONE`.** `features.md` row `MIR-19` left `PLANNED`: its own PLAN split the flip and the rest of Phase 5 to `MIR-19-b` (still `BACKLOG`). One rework cycle (R5). Moved to `## ARCHIVE`, whose oldest row (MIR-16) left the rolling twenty.
 
