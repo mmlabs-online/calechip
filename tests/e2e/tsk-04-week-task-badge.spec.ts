@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { appHref } from "./support/org-prefix";
 
 // TSK-04 — the week view shows, in each day's header, how many of the viewer's own tasks are done out
 // of the total. 01-plan.md § 2 and § 5.
@@ -320,7 +321,7 @@ test.describe("TSK-04 — my task tally on the week view", () => {
     await expect(dialog.getByTestId("task-day-list").getByTestId("task-row")).toHaveCount(2);
     await expect(dialog.getByTestId("task-move")).toHaveCount(0);
     await expect(dialog.getByTestId("task-add-form")).toBeVisible();
-    await expect(page.getByTestId("task-day-open-page")).toHaveAttribute("href", `/tasks/${TODAY}`);
+    await expect.poll(() => appHref(page.getByTestId("task-day-open-page"))).toBe(`/tasks/${TODAY}`);
 
     // A tick in the dialog moves the panel behind it.
     await dialog.getByTestId("task-row").filter({ hasText: "Dialog one" }).getByTestId("task-done").click();

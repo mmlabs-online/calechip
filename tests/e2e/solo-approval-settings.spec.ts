@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { choosePortion, chooseType, pickRange } from "./support/entry-form";
+import { appHref } from "./support/org-prefix";
 
 // SOLO, 2026-09-11 — which entries need an admin's approval, set per team on `/setting`.
 //
@@ -99,7 +100,7 @@ test.describe("SOLO — which entries need approval", () => {
 
     const tab = page.getByTestId("admin-hub-threshold-link");
     await expect(tab).toHaveText("Settings");
-    await expect(tab).toHaveAttribute("href", SETTING);
+    await expect.poll(() => appHref(tab)).toBe(SETTING);
   });
 
   test("2: both switches start on — the product as it was before this work", async ({ page }) => {

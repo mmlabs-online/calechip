@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { appHref } from "./support/org-prefix";
 
 // SOLO, 2026-09-11 — the team's settings: its name, its size, and the threshold.
 //
@@ -85,7 +86,7 @@ test.describe("SOLO — team settings", () => {
     // reads moved, because the screen now carries more than the threshold.
     const tab = page.getByTestId("admin-hub-threshold-link");
     await expect(tab).toHaveText("Settings");
-    await expect(tab).toHaveAttribute("href", THRESHOLD);
+    await expect.poll(() => appHref(tab)).toBe(THRESHOLD);
 
     await tab.click();
     await expect(page.getByTestId("team-settings")).toBeVisible();

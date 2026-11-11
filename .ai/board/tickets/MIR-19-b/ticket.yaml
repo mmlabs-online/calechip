@@ -8,7 +8,7 @@ id: MIR-19-b
 title: "The e2e specs that assert an in-app link read it through an org-prefix helper"   # narrowed at /plan MIR-19-b, 2026-11-11 (01-plan.md § 1, Changelog). Was: "Every authenticated page moves to `/{org_code}`: the specs learn the prefix, then the root addresses send a member to their org" — the rest is MIR-19-c
 feature_ids: [MIR-19]   # split of MIR-19 (operating model § ID scheme: splits get -a, -b)
 group: MIR
-state: READY
+state: REVIEW
 owner: ""
 branch: ""
 size_estimate: "M"   # set by tech-lead-design at /plan MIR-19-b, 2026-11-11 (01-plan.md § 1)

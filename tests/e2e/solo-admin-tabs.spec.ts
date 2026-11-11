@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { appHref } from "./support/org-prefix";
 
 // SOLO, 2026-09-09 — the admin area is a tab strip, and each tab is one admin page.
 //
@@ -91,10 +92,7 @@ test.describe("SOLO — the admin area is a tab strip", () => {
     ).toEqual(TABS.map((t) => t.path));
 
     for (const tab of TABS) {
-      await expect(page.getByTestId(tab.testId)).toHaveAttribute(
-        "href",
-        tab.path,
-      );
+      await expect.poll(() => appHref(page.getByTestId(tab.testId))).toBe(tab.path);
     }
   });
 

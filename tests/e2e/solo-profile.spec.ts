@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { appHref } from "./support/org-prefix";
 
 // SOLO, 2026-09-10 — the profile screen: view, and edit avatar, display name and password.
 //
@@ -50,10 +51,7 @@ test.describe("SOLO — the profile screen", () => {
 
     // The affordance is the row that already shows the name, the avatar and the role — not a fourth
     // nav link. Following it is the whole navigation contract of this screen.
-    await expect(page.getByTestId("home-profile-link")).toHaveAttribute(
-      "href",
-      "/profile",
-    );
+    await expect.poll(() => appHref(page.getByTestId("home-profile-link"))).toBe("/profile");
     await page.getByTestId("home-profile-link").click();
 
     await expect(page.getByTestId("profile")).toBeVisible();
@@ -273,7 +271,7 @@ test.describe("SOLO — the profile screen", () => {
 
     const calendar = page.getByTestId("profile-calendar");
     await expect(calendar).toBeVisible();
-    await expect(calendar).toHaveAttribute("href", "/");
+    await expect.poll(() => appHref(calendar)).toBe("/");
 
     // **AN ANCHOR AND NOT A BUTTON, which is the assertion that matters inside a `<form>`.** A
     // `<button>` with no `type` submits — the trap test 9 records for the reveal controls — so a
