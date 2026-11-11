@@ -8,7 +8,7 @@ id: MIR-15-d
 title: "The mock seam reproduces Org public's team-bound public events, and the seam tests assert it"
 feature_ids: [MIR-15]   # split of MIR-15 (operating model § ID scheme: splits get -a, -b)
 group: MIR
-state: REVIEW
+state: DONE
 owner: ""
 branch: ""
 size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR
