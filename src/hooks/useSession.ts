@@ -19,6 +19,12 @@ import type { Membership, Result, Session } from "@/lib/domain/types";
 export interface SessionState {
   membership: Membership;
   /**
+   * MIR-19. `seam.getOwnOrgCode()`, read in the same `resolve()` pass as `membership` and set with it.
+   * `null` unless `membership.state === "member"`; may be `null` for a member when the read raced a
+   * removal.
+   */
+  orgCode: string | null;
+  /**
    * True until the first resolution completes. AC-9 must not flash the sign-in screen at somebody
    * who IS signed in, and `signed-out` is indistinguishable from `not yet known` without this.
    *
@@ -46,6 +52,7 @@ export interface SessionState {
 
 export function useSession(): SessionState {
   const [membership, setMembership] = useState<Membership>({ state: "signed-out" });
+  const [orgCode, setOrgCode] = useState<string | null>(null);
   const [resolving, setResolving] = useState(true);
   // SOLO 2026-09-10. Bumping this re-runs the effect below, which re-resolves. A counter and not a
   // lifted `resolve`: `resolve` closes over `live` and `latest`, the two guards that stop a slow
@@ -67,6 +74,7 @@ export function useSession(): SessionState {
     async function resolve(): Promise<void> {
       const sequence = ++latest;
       let next: Membership = { state: "signed-out" };
+      let nextOrgCode: string | null = null;
 
       try {
         const session = await seam.getSession();
@@ -91,6 +99,10 @@ export function useSession(): SessionState {
             : member.status === "approved"
               ? { state: "member", user: session.user, member }
               : { state: "undecided", user: session.user, member };
+
+          // MIR-19, ADR-097 decision 2. Only an approved member has an org address to be served.
+          // A throw here falls into the catch below and fails closed, like every read above.
+          if (next.state === "member") nextOrgCode = await seam.getOwnOrgCode();
         }
       } catch {
         // A transport failure, or the Supabase client raising on an unusable configuration before
@@ -99,10 +111,12 @@ export function useSession(): SessionState {
         // cannot show anybody something they may not be allowed to see. It is not a true sentence
         // about whether they are signed in, and it is the safe one.
         next = { state: "signed-out" };
+        nextOrgCode = null;
       }
 
       if (!live || sequence !== latest) return;
       setMembership(next);
+      setOrgCode(nextOrgCode);
       setResolving(false);
     }
 
@@ -144,5 +158,5 @@ export function useSession(): SessionState {
   const signOut = useCallback(() => seam.signOut(), []);
   const refresh = useCallback(() => setRefreshCount((n) => n + 1), []);
 
-  return { membership, resolving, signIn, signOut, refresh };
+  return { membership, orgCode, resolving, signIn, signOut, refresh };
 }

@@ -1704,6 +1704,14 @@ export const seam: DataSeam = {
     return readCurrentMember();
   },
 
+  // MIR-19, ADR-097 decision 2. The database answers the caller's own org code and nobody else's;
+  // the function takes no argument.
+  async getOwnOrgCode(): Promise<string | null> {
+    const { data, error } = await client().rpc("own_org_code");
+    if (error) throw new Error(`getOwnOrgCode failed: ${error.message}`);
+    return (data as string | null) ?? null;
+  },
+
   /**
    * SOLO, 2026-09-10. Everybody waiting on a decision, newest first. Replaces `listAllowedEmails`.
    *

@@ -537,6 +537,10 @@ const newBusyDayId = (): string =>
 // reaches the dedicated org through `__setDedicatedOrgMembersForTest`, never through this type.
 type MockOrg = "org_public" | "dedicated";
 
+// MIR-19. The two orgs' codes, matching the system panel's mock (`system.ts`, `mockOrgs`).
+const MOCK_ORG_PUBLIC_CODE = "shared";
+const MOCK_DEDICATED_ORG_CODE = "acme";
+
 // MIR-15-e. localStorage key: a JSON array of member ids placed in the dedicated org. Read once at
 // module load, the way SESSION_STORAGE_KEY is above, so an e2e spec sets it with
 // `page.addInitScript` before the application's first load.
@@ -1767,6 +1771,13 @@ export const seam: DataSeam = {
   // TEA-02 AC-1, AC-9.
   async getCurrentMember(): Promise<Member | null> {
     return members.find((m) => m.id === currentMemberId) ?? null;
+  },
+
+  // MIR-19, ADR-097 decision 2. `public.own_org_code()` reproduced: null for nobody signed in, a
+  // pending, removed or member-less caller (`mockOrgOf` answers null for each).
+  async getOwnOrgCode(): Promise<string | null> {
+    const org = mockOrgOf(currentMemberId);
+    return org === null ? null : org === "dedicated" ? MOCK_DEDICATED_ORG_CODE : MOCK_ORG_PUBLIC_CODE;
   },
 
   /**
