@@ -5,14 +5,17 @@ id: BUG-005
 title: "EVT-02 AC-28 and EVT-10 AC-2/3/4 fail on first attempt under full-suite load and pass on retry"
 feature_ids: [EVT-02, EVT-10]
 group: EVT
-state: BACKLOG
+state: READY
 owner: ""
 branch: ""
-size_estimate: ""     # S|M - set by tech-lead-design at PLAN; gates DoR
-size: ""              # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting
+size_estimate: "S"    # S|M - set by tech-lead-design at PLAN; gates DoR. 01-plan.md section 1.
+size: "S"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. Three allowed_paths, 01-plan.md section 7.
 depends_on: []
-invariants_touched: []
-allowed_paths: []
+invariants_touched: []  # considered at PLAN, none engaged - 01-plan.md section 2
+allowed_paths:          # 01-plan.md section 7
+  - "tests/e2e/evt-02-attendance.spec.ts"
+  - "tests/e2e/evt-10-description.spec.ts"
+  - "docs/ops/e2e-quarantine.md"
 glossary_owed: []     # terms /triage found missing from .ai/registry/glossary.md; PLAN writes the rows (ADR-047)
 schema_delta: none
 requires_adr: false
@@ -24,7 +27,7 @@ chat_budget:
   # ADR-022 removed the QA stage, and the `qa->tech-lead-design` edge with it.
 tracker: { provider: "", external_id: "", sync_enabled: false }
 gates:
-  plan:   { passed: false, at: null }   # ADR-019 merged the `spec` and `design` gates into one
+  plan:   { passed: true, at: "2026-11-11T04:44:15Z" }   # ADR-019 merged the `spec` and `design` gates into one
   review: { passed: false, at: null }
   # There is no `qa` gate. ADR-017 waived it on 2026-09-01, ADR-021 reverted that the same
   # afternoon, and ADR-022 removed the stage outright. Tickets planned before that date carry a
