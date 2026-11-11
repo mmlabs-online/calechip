@@ -22,6 +22,9 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
+| 1 | MIR-18-c | The system panel is served unindexed at an unguessable path, with rate limiting and failed-login logging on its second factor | M | — |
+
+**`MIR-18-c` moved here at /advance on 2026-11-11**, from `01-plan.md` gate PASS (`produced_at: 2026-11-11T08:40:00Z`) with all six Definition of Ready items passing; `schema_delta` is non-none and cites ADR-095, `ACCEPTED by tech-lead-design` under ADR-067. Applying its migration and enabling the MFA hook on a hosted project stay human (RULE-09). Run by `/run-ticket MIR-18-c`.
 
 **`MIR-17-f` shipped on 2026-11-11, `state: DONE`.** `features.md` row `MIR-17` left `PLANNED`: its own PLAN split the router guards to a new slice, `MIR-17-g` (still `BACKLOG`). Moved to `## ARCHIVE`, whose oldest row (MIR-21-d) left the rolling twenty.
 
