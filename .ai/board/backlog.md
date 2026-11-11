@@ -23,6 +23,8 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
 
+**`MIR-15-c` was at `REVIEW` in `ticket.yaml`, `gates.review` passed** — recorded at /advance on 2026-11-11 from `04-review.md` (`produced_at: 2026-11-11T07:32:40Z`): `gate: PASS`, `verdict: PASS`, `invariant_violation: false`, `route_to: none`. `state` stays `REVIEW` until /ship.
+
 **`MIR-15-c` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-11 from `03-impl-log.md` gate PASS (`produced_at: 2026-11-11T07:30:00Z`); its row left this table.
 
 **`MIR-15-c` moved here at /advance on 2026-11-11**, from `01-plan.md` gate PASS (`produced_at: 2026-11-11T07:10:00Z`) with all six Definition of Ready items passing; `schema_delta` is non-none and cites [ADR-093](../registry/decisions/ADR-093-a-system-admin-moves-one-team-out-of-org-public-and-every-link-to-a-person-who-stays-is-cut.md), `ACCEPTED by tech-lead-design` under ADR-067. Applying its migration to a hosted database stays human (RULE-09). It had no row in `## BACKLOG`, so there was nothing to remove. Run by `/run-ticket MIR-15-c`.
