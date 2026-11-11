@@ -22,6 +22,9 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
+| 1 | BUG-004 | EVT-09 AC-6, the failed-invitation handoff, fails in CI on both attempts and passes locally | S | — |
+
+**`BUG-004` moved here at /advance on 2026-11-11**, from `01-plan.md` gate PASS (`produced_at: 2026-11-11T03:51:15+00:00`) with all six Definition of Ready items passing; `schema_delta: none`. It had no row in `## BACKLOG`, so there was nothing to remove. Run by `/run-ticket BUG-004`.
 
 **`BUG-003` shipped on 2026-11-11, `state: DONE`.** `features.md` row `UIE-10` already reads `DONE` (UIE-10 shipped; BUG-003 repairs it), so no registry write. Moved to `## ARCHIVE`, whose oldest row (MIR-21-b) left the rolling twenty.
 
