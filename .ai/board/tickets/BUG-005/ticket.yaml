@@ -5,7 +5,7 @@ id: BUG-005
 title: "EVT-02 AC-28 and EVT-10 AC-2/3/4 fail on first attempt under full-suite load and pass on retry"
 feature_ids: [EVT-02, EVT-10]
 group: EVT
-state: REVIEW
+state: DONE
 owner: ""
 branch: ""
 size_estimate: "S"    # S|M - set by tech-lead-design at PLAN; gates DoR. 01-plan.md section 1.
