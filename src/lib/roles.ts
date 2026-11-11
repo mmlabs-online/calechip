@@ -11,7 +11,7 @@
 //
 // ABOVE THE SEAM AND IMPORTING ONLY DOMAIN TYPES, so RULE-02 and the `supabase-client-in-seam`
 // boundary are untouched.
-import type { Member, MemberRole } from "@/lib/domain/types";
+import type { Member, MemberRole, TeamRole } from "@/lib/domain/types";
 
 /**
  * May this person administer — the holiday calendar, the roster, the threshold, the sign-up queue,
@@ -60,6 +60,52 @@ export const mayDecide = (role: MemberRole): boolean =>
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- `ownerId` is unused; see the comment above
 export const mayDecideEntriesOf = (me: Member, ownerId: string): boolean =>
   me.status === "approved" && me.removedAt === null && mayDecide(me.role);
+
+/**
+ * MIR-17-f, ADR-094 decision 2. What MemberList knows about the caller's reach over the roster.
+ * `ownTeamIds` is `member_team_ids(auth.uid())`; `teamRoles` is each row's roster team role.
+ */
+export interface RosterScope {
+  ownTeamIds: readonly string[];
+  teamRoles: ReadonlyMap<string, TeamRole>;
+}
+
+/** The scope of a caller who administers nothing: no team, no rank read. */
+export const NO_ROSTER_SCOPE: RosterScope = { ownTeamIds: [], teamRoles: new Map() };
+
+/** An admin, not the row itself, and the row's roster team is one of the caller's active teams —
+ *  the bound `member_update_admin`, `promote_member_to_admin` and `set_member_role` share. */
+const administersRow = (me: Member, m: Member, scope: RosterScope): boolean =>
+  mayAdminister(me.role) && m.id !== me.id && m.teamId !== null && scope.ownTeamIds.includes(m.teamId);
+
+/**
+ * MIR-17-f. Offer *Delete account* on `m`? An affordance (ADR-005); the control is
+ * `member_update_admin`: `is_org_admin` and the row's roster team in `member_team_ids(auth.uid())`.
+ */
+export const mayRemoveMember = (me: Member, m: Member, scope: RosterScope): boolean =>
+  administersRow(me, m, scope);
+
+/**
+ * MIR-17-f. Offer *Promote* on `m`? An affordance (ADR-005); the control is
+ * `promote_member_to_admin`. The rank condition stays the any-team `m.role === "member"`.
+ */
+export const mayPromoteMember = (me: Member, m: Member, scope: RosterScope): boolean =>
+  administersRow(me, m, scope) && m.role === "member";
+
+/**
+ * MIR-17-f. Offer the manager toggle on `m`? An affordance (ADR-005); the control is
+ * `set_member_role`, which never writes `org_admin`. Needs the row's roster team role to be known.
+ */
+export const maySetManager = (me: Member, m: Member, scope: RosterScope): boolean =>
+  administersRow(me, m, scope) && !mayAdminister(m.role) && scope.teamRoles.has(m.id);
+
+/** The manager toggle for a row whose roster team role is `teamRole`: what it says, and what it writes. */
+export const managerToggleFor = (
+  teamRole: TeamRole,
+): { label: "Make manager" | "Remove manager"; next: TeamRole } =>
+  teamRole === "manager"
+    ? { label: "Remove manager", next: "member" }
+    : { label: "Make manager", next: "manager" };
 
 /**
  * The word for a role, in the interface's language.
