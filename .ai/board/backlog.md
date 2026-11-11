@@ -23,6 +23,8 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
 
+**`MIR-19-b` was at `REVIEW` in `ticket.yaml`, `gates.review` passed** — recorded at /advance on 2026-11-11 from `04-review.md` (`produced_at: 2026-11-11T14:12:15Z`): `gate: PASS`, `verdict: PASS`, `invariant_violation: false`, `route_to: none`. `state` stays `REVIEW` until /ship.
+
 **`MIR-19-b` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-11 from `03-impl-log.md` gate PASS (`/implement` had already set `state: REVIEW`, so `already recorded`); its row left this table.
 
 **`MIR-19-b` moved here at /advance on 2026-11-11**, from `01-plan.md` gate PASS (`produced_at: 2026-11-11T13:50:31Z`) with all six Definition of Ready items passing; `schema_delta: none`. PLAN split again (ADR-097 decision 5): the rest of Phase 5 is `MIR-19-c` (`BACKLOG`). Run by `/run-ticket MIR-19-b`.
