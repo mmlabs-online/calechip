@@ -23,6 +23,14 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
 
+**`MIR-15-c` shipped on 2026-11-11, `state: DONE`.** `features.md` row `MIR-15` left `PLANNED`: its slice `MIR-15-d` is still `BACKLOG`. The MIR status index (`.ai/board/plans/multi-tenancy-status.md`) is outside this ticket's `allowed_paths` and was not touched — the operator's to update. Moved to `## ARCHIVE`, whose oldest row (MIR-15-e) left the rolling twenty.
+
+**`MIR-15-c` was at `REVIEW` in `ticket.yaml`, `gates.review` passed** — recorded at /advance on 2026-11-11 from `04-review.md` (`produced_at: 2026-11-11T07:32:40Z`): `gate: PASS`, `verdict: PASS`, `invariant_violation: false`, `route_to: none`. `state` stays `REVIEW` until /ship.
+
+**`MIR-15-c` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-11 from `03-impl-log.md` gate PASS (`produced_at: 2026-11-11T07:30:00Z`); its row left this table.
+
+**`MIR-15-c` moved here at /advance on 2026-11-11**, from `01-plan.md` gate PASS (`produced_at: 2026-11-11T07:10:00Z`) with all six Definition of Ready items passing; `schema_delta` is non-none and cites [ADR-093](../registry/decisions/ADR-093-a-system-admin-moves-one-team-out-of-org-public-and-every-link-to-a-person-who-stays-is-cut.md), `ACCEPTED by tech-lead-design` under ADR-067. Applying its migration to a hosted database stays human (RULE-09). It had no row in `## BACKLOG`, so there was nothing to remove. Run by `/run-ticket MIR-15-c`.
+
 **`BUG-005` shipped on 2026-11-11, `state: DONE`.** `features.md` rows `EVT-02` and `EVT-10` already read `DONE`, so no registry write. Moved to `## ARCHIVE`, whose oldest row (MIR-15-b) left the rolling twenty.
 
 **`BUG-005` was at `REVIEW` in `ticket.yaml`, `gates.review` passed** — recorded at /advance on 2026-11-11 from `04-review.md` (`produced_at: 2026-11-11T05:00:17+00:00`): `gate: PASS`, `verdict: PASS`, `invariant_violation: false`, `route_to: none`. `state` stays `REVIEW` until /ship.
@@ -1831,26 +1839,26 @@ các tính năng mới và đưa vào backlog"*. The four solo rows registered e
 
 | # | Ticket | Title | Shipped | PR |
 |---|--------|-------|---------|-----|
-| 1 | MIR-15-e | The member app stops offering holiday edits in Org public, and the mock seam reproduces Org public's holiday policies — member slice (ADR-079 decision 5) | 2026-11-06 | PENDING_PR |
-| 2 | MIR-21-d | Writers stop writing `member.team_id`, and no test reads it — writer slice (ADR-080 decision 2; the drop is MIR-21-f) | 2026-11-07 | PENDING_PR |
-| 3 | MIR-21-e | No fixture names `member.team_id`: every fixture writes `membership` itself — fixture slice (ADR-081; the fixtures of 100, 160 and 240 move to MIR-21-f) | 2026-11-07 | PENDING_PR |
-| 4 | MIR-21-f | `member.team_id`, `member_team_id()` and the mirror's insert branch are dropped — drop slice (ADR-080 decision 4, ADR-081) | 2026-11-07 | PENDING_PR |
-| 5 | MIR-16 | The database splits admin into system_admin, org_admin and a per-team manager — first slice: issue reports go to the system panel (ADR-082; `org_admin` is MIR-16-b, `manager` is MIR-16-c) | 2026-11-07 | PENDING_PR |
-| 6 | MIR-16-b | `is_org_admin(uid, org_id)` replaces `is_admin(uid)` at every call site — second slice of the role split (ADR-083; the `org_admin` rename is MIR-16-d) | 2026-11-07 | PENDING_PR |
-| 7 | MIR-16-d | The pgTAP fixtures name the admin role through one helper, `tests.member_role`: the harness and seven files — fixture slice of the role split (ADR-084; the in-place rename is MIR-16-e) | 2026-11-07 | PENDING_PR |
-| 8 | MIR-16-e | The value `admin` is renamed `org_admin` in place: the type, the five bodies, bootstrap, seed, the seam's mapping, and the last five fixtures — rename slice (ADR-084 decision 2) | 2026-11-07 | PENDING_PR |
-| 9 | MIR-16-c | `manager` leaves `member.role`: every manager check reads `membership.team_role` — read slice of the manager rank (ADR-085; the write side and the enum removal move to MIR-16-f) | 2026-11-08 | PENDING_PR |
-| 10 | MIR-16-f | `set_member_role` writes the team role, not `member.role` — write slice of the manager rank (ADR-086; the column retype and enum removal move to MIR-16-g) | 2026-11-08 | PENDING_PR |
-| 11 | MIR-16-g | The pgTAP fixtures say which team role they mean, and stop spelling `'manager'` as a member role — fixture slice of the manager rank (ADR-087; the column retype moves to MIR-16-h) | 2026-11-08 | PENDING_PR |
-| 12 | MIR-16-h | `'manager'` leaves `public.member_role`: the column is re-typed, the audit history keeps its words as text, and `set_member_role` takes text — last slice of the role split (ADR-086 decision 2, ADR-087 decision 2) | 2026-11-08 | PENDING_PR |
-| 13 | MIR-17 | Issue reports leave the member app — first slice of the client role-guard work (ADR-088; the rest of P4-2 is MIR-17-b) | 2026-11-08 | PENDING_PR |
-| 14 | MIR-17-b | Every `me.role !== "admin"` guard goes through `mayAdminister`, and a manager is labelled a manager on Teams — second slice of the client role-guard work (ADR-089; the rest of P4-2 is MIR-17-c) | 2026-11-08 | PENDING_PR |
-| 15 | MIR-17-c | The approval worklist decides per row, per team, from `listEntryOwners` — third slice of the client role-guard work (ADR-090; the rest of P4-2 is MIR-17-d) | 2026-11-09 | PENDING_PR |
-| 16 | MIR-17-d | The seam's `appRole` reads the manager rank from `manages_a_team`, not a single team's role — fourth slice of the client role-guard work (ADR-091; the rest of P4-2 is MIR-17-e) | 2026-11-09 | PENDING_PR |
-| 17 | MIR-17-e | The entry and event affordances ask `mayAdminister` — fifth slice of the client role-guard work (ADR-092; the rest of P4-2 is MIR-17-f) | 2026-11-09 | PENDING_PR |
-| 18 | BUG-003 | The sidebar's week, year and holidays links are commented out, so twenty shipped end-to-end criteria fail | 2026-11-11 | PENDING_PR |
-| 19 | BUG-004 | EVT-09 AC-6, the failed-invitation handoff, fails in CI on both attempts and passes locally | 2026-11-11 | PENDING_PR |
-| 20 | BUG-005 | EVT-02 AC-28 and EVT-10 AC-2/3/4 fail on first attempt under full-suite load and pass on retry | 2026-11-11 | PENDING_PR |
+| 1 | MIR-21-d | Writers stop writing `member.team_id`, and no test reads it — writer slice (ADR-080 decision 2; the drop is MIR-21-f) | 2026-11-07 | PENDING_PR |
+| 2 | MIR-21-e | No fixture names `member.team_id`: every fixture writes `membership` itself — fixture slice (ADR-081; the fixtures of 100, 160 and 240 move to MIR-21-f) | 2026-11-07 | PENDING_PR |
+| 3 | MIR-21-f | `member.team_id`, `member_team_id()` and the mirror's insert branch are dropped — drop slice (ADR-080 decision 4, ADR-081) | 2026-11-07 | PENDING_PR |
+| 4 | MIR-16 | The database splits admin into system_admin, org_admin and a per-team manager — first slice: issue reports go to the system panel (ADR-082; `org_admin` is MIR-16-b, `manager` is MIR-16-c) | 2026-11-07 | PENDING_PR |
+| 5 | MIR-16-b | `is_org_admin(uid, org_id)` replaces `is_admin(uid)` at every call site — second slice of the role split (ADR-083; the `org_admin` rename is MIR-16-d) | 2026-11-07 | PENDING_PR |
+| 6 | MIR-16-d | The pgTAP fixtures name the admin role through one helper, `tests.member_role`: the harness and seven files — fixture slice of the role split (ADR-084; the in-place rename is MIR-16-e) | 2026-11-07 | PENDING_PR |
+| 7 | MIR-16-e | The value `admin` is renamed `org_admin` in place: the type, the five bodies, bootstrap, seed, the seam's mapping, and the last five fixtures — rename slice (ADR-084 decision 2) | 2026-11-07 | PENDING_PR |
+| 8 | MIR-16-c | `manager` leaves `member.role`: every manager check reads `membership.team_role` — read slice of the manager rank (ADR-085; the write side and the enum removal move to MIR-16-f) | 2026-11-08 | PENDING_PR |
+| 9 | MIR-16-f | `set_member_role` writes the team role, not `member.role` — write slice of the manager rank (ADR-086; the column retype and enum removal move to MIR-16-g) | 2026-11-08 | PENDING_PR |
+| 10 | MIR-16-g | The pgTAP fixtures say which team role they mean, and stop spelling `'manager'` as a member role — fixture slice of the manager rank (ADR-087; the column retype moves to MIR-16-h) | 2026-11-08 | PENDING_PR |
+| 11 | MIR-16-h | `'manager'` leaves `public.member_role`: the column is re-typed, the audit history keeps its words as text, and `set_member_role` takes text — last slice of the role split (ADR-086 decision 2, ADR-087 decision 2) | 2026-11-08 | PENDING_PR |
+| 12 | MIR-17 | Issue reports leave the member app — first slice of the client role-guard work (ADR-088; the rest of P4-2 is MIR-17-b) | 2026-11-08 | PENDING_PR |
+| 13 | MIR-17-b | Every `me.role !== "admin"` guard goes through `mayAdminister`, and a manager is labelled a manager on Teams — second slice of the client role-guard work (ADR-089; the rest of P4-2 is MIR-17-c) | 2026-11-08 | PENDING_PR |
+| 14 | MIR-17-c | The approval worklist decides per row, per team, from `listEntryOwners` — third slice of the client role-guard work (ADR-090; the rest of P4-2 is MIR-17-d) | 2026-11-09 | PENDING_PR |
+| 15 | MIR-17-d | The seam's `appRole` reads the manager rank from `manages_a_team`, not a single team's role — fourth slice of the client role-guard work (ADR-091; the rest of P4-2 is MIR-17-e) | 2026-11-09 | PENDING_PR |
+| 16 | MIR-17-e | The entry and event affordances ask `mayAdminister` — fifth slice of the client role-guard work (ADR-092; the rest of P4-2 is MIR-17-f) | 2026-11-09 | PENDING_PR |
+| 17 | BUG-003 | The sidebar's week, year and holidays links are commented out, so twenty shipped end-to-end criteria fail | 2026-11-11 | PENDING_PR |
+| 18 | BUG-004 | EVT-09 AC-6, the failed-invitation handoff, fails in CI on both attempts and passes locally | 2026-11-11 | PENDING_PR |
+| 19 | BUG-005 | EVT-02 AC-28 and EVT-10 AC-2/3/4 fail on first attempt under full-suite load and pass on retry | 2026-11-11 | PENDING_PR |
+| 20 | MIR-15-c | A system admin moves a team from Org public to another org from the system panel | 2026-11-11 | PENDING_PR |
 
 **The window displaced `MIR-21` at MIR-17-e's ship** — *MIR-21, `member.team_id` is dropped once every reader has moved to `membership` — read slice (ADR-077, roster team), shipped 2026-11-05,* PENDING_PR.
 

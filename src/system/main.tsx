@@ -15,6 +15,7 @@ import {
   systemSeamName,
   __setMockIssueReports,
   type OrgSummary,
+  type SharedTeam,
   type SystemGate,
   type SystemIssueReport,
   type TotpEnrolment,
@@ -823,6 +824,225 @@ function IssueReports(): JSX.Element {
   );
 }
 
+// MIR-15-c — moving a team out of Org public (01-plan.md §§ 2b, 4.5; ADR-093). Every refusal is the
+// database's; this renders the sentence the seam maps it to, and what the database said is in the way.
+function MoveTeamForm({
+  team,
+  targets,
+  targetsLoaded,
+  onDone,
+  onCancel,
+}: {
+  team: SharedTeam;
+  targets: OrgSummary[];
+  targetsLoaded: boolean;
+  onDone: (line: string) => void;
+  onCancel: () => void;
+}): JSX.Element {
+  const [targetId, setTargetId] = useState("");
+  const [error, setError] = useState<{ message: string; detail: string | null } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  // The select's value is the first dedicated org until one is chosen, and follows the list if it changes.
+  const chosen = targets.find((org) => org.id === targetId) ?? targets[0] ?? null;
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!chosen) return;
+    setError(null);
+    setBusy(true);
+    const result = await systemSeam.moveTeamToOrg({ teamId: team.id, targetOrgId: chosen.id });
+    setBusy(false);
+    if (!result.ok) {
+      setError({ message: result.error.message, detail: result.error.detail });
+      return;
+    }
+    const { movedMembers, deletedLinks } = result.value;
+    onDone(`Moved ${team.name} to ${chosen.name} — ${movedMembers} members, ${deletedLinks} links removed.`);
+  };
+
+  return (
+    <form
+      data-testid="system-move-form"
+      className="flex flex-col gap-3 rounded-xl bg-field/50 p-4"
+      onSubmit={(event) => void submit(event)}
+    >
+      {chosen ? (
+        <label className={labelClass}>
+          <span className="text-sm font-bold text-ink">Move {team.name} to</span>
+          <select
+            data-testid="system-move-target"
+            className={formFieldClass}
+            value={chosen.id}
+            onChange={(event) => setTargetId(event.target.value)}
+          >
+            {targets.map((org) => (
+              <option key={org.id} value={org.id}>
+                {org.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : (
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-bold text-ink">Move {team.name} to</span>
+          {targetsLoaded ? (
+            <p data-testid="system-move-no-target" className="text-sm text-ink-2">
+              Create an org first.
+            </p>
+          ) : (
+            <p className="text-sm text-ink-3">Loading orgs…</p>
+          )}
+        </div>
+      )}
+      <p className="text-xs text-ink-3">
+        Its members, their entries and the team's events go with it. Links to people who stay in Org public
+        are removed. This cannot be undone from the panel.
+      </p>
+      <div className="flex items-center gap-4">
+        <button
+          data-testid="system-move-submit"
+          type="submit"
+          className={smallPrimaryButtonClass}
+          disabled={busy || !chosen}
+        >
+          Move team
+        </button>
+        <button data-testid="system-move-cancel" type="button" className={textButtonClass} onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+      {error ? (
+        <div data-testid="system-move-error" role="alert" className="flex flex-col text-sm text-danger">
+          <span>{error.message}</span>
+          {error.detail ? <span>{`In the way: ${error.detail}`}</span> : null}
+        </div>
+      ) : null}
+    </form>
+  );
+}
+
+function SharedTeams({ orgs }: { orgs: OrgSummary[] | null }): JSX.Element {
+  const [teams, setTeams] = useState<SharedTeam[] | null>(null);
+  const [listError, setListError] = useState<string | null>(null);
+  const [moving, setMoving] = useState<SharedTeam | null>(null);
+  const [doneLine, setDoneLine] = useState<string | null>(null);
+
+  // Read again after every successful move rather than patching local state. The list already shown
+  // stays while a re-read is in flight.
+  const load = async () => {
+    setListError(null);
+    const result = await systemSeam.listSharedTeams();
+    if (!result.ok) {
+      setListError(result.error.message);
+      return;
+    }
+    setTeams(result.value);
+  };
+
+  useEffect(() => {
+    void load();
+  }, []); // Read once on arriving at `signed-in`.
+
+  const targets = (orgs ?? []).filter((org) => !org.isSharedTenant);
+
+  let list: JSX.Element;
+  if (listError) {
+    list = (
+      <div className="flex flex-col items-start gap-2">
+        <p data-testid="system-teams-error" role="alert" className="text-sm text-danger">
+          {listError}
+        </p>
+        <button data-testid="system-teams-retry" type="button" className={textButtonClass} onClick={() => void load()}>
+          Try again
+        </button>
+      </div>
+    );
+  } else if (teams === null) {
+    list = (
+      <p data-testid="system-teams-loading" role="status" className="text-ink-3">
+        Loading teams…
+      </p>
+    );
+  } else if (teams.length === 0) {
+    list = (
+      <p data-testid="system-teams-empty" className="text-ink-3">
+        No teams in Org public.
+      </p>
+    );
+  } else {
+    list = (
+      <div data-testid="system-teams-list" className="overflow-x-auto">
+        <table className="w-full text-left text-sm whitespace-nowrap text-ink">
+          <thead>
+            <tr className="border-b border-line">
+              <th className={headerCellClass}>Team</th>
+              <th className={`${headerCellClass} text-right`}>Active members</th>
+              <th className={headerCellClass}>
+                <span className="sr-only">Actions</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {teams.map((team) => (
+              <tr key={team.id} data-testid="system-team-row" data-team-id={team.id} className="border-b border-line last:border-b-0">
+                <td data-testid="system-team-name" className="px-3 py-2">
+                  {team.name}
+                </td>
+                <td data-testid="system-team-members" className="px-3 py-2 text-right tabular-nums">
+                  {team.activeMembers}
+                </td>
+                <td className="px-3 py-2 text-right">
+                  <button
+                    data-testid="system-team-move"
+                    type="button"
+                    className={textButtonClass}
+                    onClick={() => {
+                      setDoneLine(null);
+                      setMoving(team);
+                    }}
+                  >
+                    Move
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  return (
+    <section data-testid="system-teams" className="flex flex-col gap-4">
+      <h2 className="text-lg font-bold text-ink">
+        Teams in Org public {teams ? <span className="font-normal text-ink-3">{teams.length}</span> : null}
+      </h2>
+      {doneLine ? (
+        <p data-testid="system-move-done" role="status" className="text-sm text-ink-2">
+          {doneLine}
+        </p>
+      ) : null}
+      {/* One form at a time; the key remounts it when another team's Move is pressed. */}
+      {moving ? (
+        <MoveTeamForm
+          key={moving.id}
+          team={moving}
+          targets={targets}
+          targetsLoaded={orgs !== null}
+          onDone={(line) => {
+            setMoving(null);
+            setDoneLine(line);
+            void load();
+          }}
+          onCancel={() => setMoving(null)}
+        />
+      ) : null}
+      {list}
+    </section>
+  );
+}
+
 type OpenForm = { kind: "create" } | { kind: "edit"; org: OrgSummary } | null;
 
 function OrgManagement({ email, onSignOut }: { email: string; onSignOut: () => void }): JSX.Element {
@@ -970,6 +1190,8 @@ function OrgManagement({ email, onSignOut }: { email: string; onSignOut: () => v
         ) : null}
         {list}
       </section>
+
+      <SharedTeams orgs={orgs} />
 
       <NationalHolidays />
 
