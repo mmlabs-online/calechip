@@ -5,14 +5,25 @@ id: BUG-003
 title: "The sidebar's week, year and holidays links are commented out, so twenty shipped end-to-end criteria fail"
 feature_ids: [UIE-10]
 group: UIE
-state: BACKLOG
+state: DONE
 owner: ""
 branch: ""
-size_estimate: ""     # S|M - set by tech-lead-design at PLAN; gates DoR
-size: ""              # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR. 01-plan.md section 1.
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. Nine allowed_paths
+                      # (01-plan.md section 7); agrees with size_estimate, ADR-012 not engaged.
 depends_on: []
-invariants_touched: []
-allowed_paths: []
+invariants_touched: []   # 01-plan.md section 2: renders three links and edits test declarations;
+                         # no entry/member row is read or written, no seam call. Explicit, not absent.
+allowed_paths:          # 01-plan.md section 7
+  - "src/components/Sidebar.tsx"
+  - "tests/e2e/adm-01-threshold.spec.ts"
+  - "tests/e2e/adm-02-holidays.spec.ts"
+  - "tests/e2e/adm-03-holiday-writes.spec.ts"
+  - "tests/e2e/adm-04-worklist.spec.ts"
+  - "tests/e2e/cal-06-year-view.spec.ts"
+  - "tests/e2e/uie-09-admin-hub.spec.ts"
+  - "tests/e2e/uie-10-sidebar.spec.ts"
+  - "docs/ops/e2e-quarantine.md"
 glossary_owed: []     # terms /triage found missing from .ai/registry/glossary.md; PLAN writes the rows (ADR-047)
 schema_delta: none
 requires_adr: false
@@ -24,8 +35,8 @@ chat_budget:
   # ADR-022 removed the QA stage, and the `qa->tech-lead-design` edge with it.
 tracker: { provider: "", external_id: "", sync_enabled: false }
 gates:
-  plan:   { passed: false, at: null }   # ADR-019 merged the `spec` and `design` gates into one
-  review: { passed: false, at: null }
+  plan:   { passed: true, at: "2026-11-11T03:30:15Z" }   # ADR-019 merged the `spec` and `design` gates into one
+  review: { passed: true, at: "2026-11-11T03:42:47Z" }
   # There is no `qa` gate. ADR-017 waived it on 2026-09-01, ADR-021 reverted that the same
   # afternoon, and ADR-022 removed the stage outright. Tickets planned before that date carry a
   # `qa` key; three of them carry `waived: true`. `/ship` requires `plan` and `review`.

@@ -127,8 +127,7 @@ test.describe("ADM-02 the national holiday calendar", () => {
     if (await loading.isVisible()) await expect(loading).toBeHidden();
   });
 
-  // QUARANTINED BUG-003 under ADR-060 — row in docs/ops/e2e-quarantine.md; do not fix here.
-  test.fixme("AC-1: a signed-in member reads the calendar for the displayed year", async ({ page }) => {
+  test("AC-1: a signed-in member reads the calendar for the displayed year", async ({ page }) => {
     await openHolidays(page, MEMBER_EMAIL);
     await page.getByTestId("holidays-next").click();
     await page.getByTestId("holidays-prev").click();
@@ -139,8 +138,7 @@ test.describe("ADM-02 the national holiday calendar", () => {
     await expect(page.getByTestId("holidays-beyond-calendar")).toHaveCount(0);
   });
 
-  // QUARANTINED BUG-003 under ADR-060 — row in docs/ops/e2e-quarantine.md; do not fix here.
-  test.fixme("AC-2: an admin sees exactly the same rows, in the same order, as the member", async ({
+  test("AC-2: an admin sees exactly the same rows, in the same order, as the member", async ({
     page,
   }) => {
     await openHolidays(page, MEMBER_EMAIL);
@@ -156,8 +154,7 @@ test.describe("ADM-02 the national holiday calendar", () => {
     expect(await drawnDates(page)).toEqual(asMember);
   });
 
-  // QUARANTINED BUG-003 under ADR-060 — row in docs/ops/e2e-quarantine.md; do not fix here.
-  test.fixme("AC-3: a row shows its date, its name and its effect, and the two kinds differ", async ({
+  test("AC-3: a row shows its date, its name and its effect, and the two kinds differ", async ({
     page,
   }) => {
     await openHolidays(page, MEMBER_EMAIL);
@@ -184,8 +181,7 @@ test.describe("ADM-02 the national holiday calendar", () => {
     expect(workingEffect?.trim()).not.toHaveLength(0);
   });
 
-  // QUARANTINED BUG-003 under ADR-060 — row in docs/ops/e2e-quarantine.md; do not fix here.
-  test.fixme("AC-4: the rows are in ascending date order", async ({ page }) => {
+  test("AC-4: the rows are in ascending date order", async ({ page }) => {
     await openHolidays(page, MEMBER_EMAIL);
 
     const dates = await drawnDates(page);
@@ -228,8 +224,7 @@ test.describe("ADM-02 the national holiday calendar", () => {
     await expect(page.getByTestId("holidays-beyond-calendar")).toHaveCount(0);
   });
 
-  // QUARANTINED BUG-003 under ADR-060 — row in docs/ops/e2e-quarantine.md; do not fix here.
-  test.fixme("AC-8: the year is the address, and typing it is the same as pressing next", async ({
+  test("AC-8: the year is the address, and typing it is the same as pressing next", async ({
     page,
   }) => {
     await openHolidays(page, MEMBER_EMAIL);
@@ -248,8 +243,7 @@ test.describe("ADM-02 the national holiday calendar", () => {
     expect(await drawnDates(page)).toEqual(byNavigation);
   });
 
-  // QUARANTINED BUG-003 under ADR-060 — row in docs/ops/e2e-quarantine.md; do not fix here.
-  test.fixme("AC-9: no year in the address, or a malformed one, resolves to the caller's own year", async ({
+  test("AC-9: no year in the address, or a malformed one, resolves to the caller's own year", async ({
     page,
   }) => {
     // The year the BROWSER thinks it is, read the same way the screen reads it. Not a literal: a
@@ -266,8 +260,7 @@ test.describe("ADM-02 the national holiday calendar", () => {
     await expect(page.getByTestId("holidays-year")).toHaveAttribute("data-year", thisYear);
   });
 
-  // QUARANTINED BUG-003 under ADR-060 — row in docs/ops/e2e-quarantine.md; do not fix here.
-  test.fixme("AC-10: a year the calendar does not reach says so, and is not shown as a year without holidays", async ({
+  test("AC-10: a year the calendar does not reach says so, and is not shown as a year without holidays", async ({
     page,
   }) => {
     await openHolidays(page, MEMBER_EMAIL);
@@ -312,8 +305,7 @@ test.describe("ADM-02 the national holiday calendar", () => {
   // The eleven tests around this comment are untouched and must stay so: a green run of them is the
   // evidence that ADM-03 added a write path without disturbing the read one (ADM-03 AC-18).
 
-  // QUARANTINED BUG-003 under ADR-060 — row in docs/ops/e2e-quarantine.md; do not fix here.
-  test.fixme("AC-14: the calendar is national — a caller on another team reads the same rows", async ({
+  test("AC-14: the calendar is national — a caller on another team reads the same rows", async ({
     page,
   }) => {
     await openHolidays(page, MEMBER_EMAIL);
@@ -330,8 +322,7 @@ test.describe("ADM-02 the national holiday calendar", () => {
     expect(await drawnDates(page)).toEqual(onOurTeam);
   });
 
-  // QUARANTINED BUG-003 under ADR-060 — row in docs/ops/e2e-quarantine.md; do not fix here.
-  test.fixme("AC-15: a route to the calendar is offered to both roles", async ({ page }) => {
+  test("AC-15: a route to the calendar is offered to both roles", async ({ page }) => {
     // **AMENDED BY SOLO 2026-09-12, AND THE TITLE MOVED WITH IT.** As shipped this read *"the LINK
     // is offered to both roles"* and asserted one id in one place for both. The operator moved
     // Public holidays into the admin panel, so the two roles are now offered DIFFERENT controls.

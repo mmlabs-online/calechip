@@ -307,5 +307,6 @@ One row per escalation, kept separately because they halt rather than queue.
 
 | ts | ticket | invariant or check | decided by | outcome |
 |----|--------|--------------------|------------|---------|
+| 2026-11-11T03:43:12Z | BUG-003 | DoD 1–5 (gates plan + review; allowed-paths PASS; checks per 04-review.md; no invariant violation; impl-log complete) | orchestrator (/ship via /run-ticket) | DONE, PR opened |
 
 Empty because no ticket has run.

@@ -72,7 +72,7 @@ import { useRoster } from "@/hooks/useRoster";
 import { useViewedTeam } from "@/hooks/useViewedTeam";
 import { seam } from "@/lib/data";
 import type { Member, MemberRole, Result } from "@/lib/domain/types";
-import { ROLE_LABELS } from "@/lib/roles";
+import { mayAdminister, ROLE_LABELS } from "@/lib/roles";
 // SOLO, 2026-09-11 — the loading mark that replaced this screen's "Loading…" sentence. The
 // sentence itself is still announced: `Loader.tsx` keeps it as `sr-only` text, because the element
 // below carries `role="status"` and an emptied one announces nothing.
@@ -102,9 +102,8 @@ const roleLabel = (role: MemberRole): string => ROLE_LABELS[role];
 // 10. It describes what the board holds and asserts no capability.
 const TAGLINE = "Leave and working from home";
 
-// Used only by the <nav> a /solo run commented out on 2026-09-12, when the third link moved into
-// the admin panel. Kept so restoring that block is one edit rather than two.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// The look of the three general links in the sidebar <nav>. That <nav> was commented out by
+// 2259136 ("chaneg UI") and restored by BUG-003 — 20 shipped e2e criteria depend on it.
 const NAV_LINK =
   "block rounded-pill px-3 py-1.5 text-[13px] font-semibold text-ink-2 transition-colors " +
   "hover:bg-field hover:text-ink " +
@@ -530,19 +529,19 @@ export default function Sidebar({ member, signOut }: SidebarProps) {
           Each of the three is linked with NO anchor, so the screen resolves the current period from
           the caller's clock — a date computed here would be a second clock in a second file, and this
           component holds none. */}
-      {/* <nav className="flex flex-col gap-0.5">
+      <nav className="flex flex-col gap-0.5">
         <Link data-testid="home-week-link" to="/week" className={NAV_LINK}>
           This week
         </Link>
         <Link data-testid="home-year-link" to="/year" className={NAV_LINK}>
           The year
         </Link>
-        {member.role === "admin" ? null : (
+        {mayAdminister(member.role) ? null : (
           <Link data-testid="home-holidays-link" to="/holidays" className={NAV_LINK}>
             Public holidays
           </Link>
         )}
-      </nav> */}
+      </nav>
 
       {/* § 4.9. The spacer that pins the legend and the account footer to the bottom. */}
       <div className="flex-1" />
