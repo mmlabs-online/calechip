@@ -307,6 +307,7 @@ One row per escalation, kept separately because they halt rather than queue.
 
 | ts | ticket | invariant or check | decided by | outcome |
 |----|--------|--------------------|------------|---------|
+| 2026-11-11T09:25:55Z | MIR-17-g | DoD 1–5 (gates plan + review; allowed-paths PASS; checks per 04-review.md; no invariant violation; impl-log complete) | orchestrator (/ship via /run-ticket) | DONE, PR opened; features.md MIR-17 → DONE |
 | 2026-11-11T08:38:23Z | MIR-18-c | DoD 1–5 (gates plan + review; allowed-paths PASS; checks per 04-review.md; no invariant violation; impl-log complete); verification.md owed | orchestrator (/ship via /run-ticket) | DONE, PR opened; features.md MIR-18 → DONE |
 | 2026-11-11T08:16:27Z | MIR-17-f | DoD 1–5 (gates plan + review; allowed-paths PASS; checks per 04-review.md; no invariant violation; impl-log complete) | orchestrator (/ship via /run-ticket) | DONE, PR opened |
 | 2026-11-11T07:34:19Z | MIR-15-c | DoD 1–5 (gates plan + review; allowed-paths PASS; checks per 04-review.md incl. pgTAP 89/89 on a stand-in Postgres; no invariant violation; impl-log complete) | orchestrator (/ship via /run-ticket) | DONE, PR opened |
