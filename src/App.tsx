@@ -95,7 +95,7 @@ function BareLayout() {
 /**
  * EVT-14 § 4.2 — the `/signin` route's signed-in arm. Sends the caller to `?next=` when it is a path
  * on this origin (AC-8, AC-9) and to `/` otherwise, exactly as before this ticket (AC-10). A component
- * of its own because it must sit inside <BrowserRouter key={base} basename={base}> to read the query string, and `App` does not.
+ * of its own because it must sit inside <BrowserRouter> to read the query string, and `App` does not.
  * `replace` is what keeps Back from showing the sign-in screen again (AC-8).
  */
 function AfterSignIn(): JSX.Element {
@@ -677,7 +677,7 @@ export default function App() {
 
 
   return (
-    <BrowserRouter>
+    <BrowserRouter key={base} basename={base}>
       {/* UIE-02 § 4.7 — THE `TODO(project)` IN THE FEATURE ROW, ANSWERED RATHER THAN DISCOVERED.
           `app-root` KEEPS its name and its position on the element wrapping <Routes>, and
           `seam-banner` KEEPS its name and its position as that element's FIRST child — one spec

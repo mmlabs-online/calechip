@@ -2,7 +2,7 @@
 ticket: MIR-19
 stage: IN_PROGRESS
 agent: developer
-produced_at: 2026-11-11T13:35:00Z
+produced_at: 2026-11-11T13:21:00Z
 inputs_read: [ .ai/board/tickets/MIR-19/01-plan.md, .ai/board/tickets/MIR-19/ticket.yaml, src/App.tsx, src/hooks/useSession.ts, src/lib/data/index.ts, src/lib/data/supabase.ts, src/lib/data/mock.ts, supabase/migrations/20261027120000_mir11_composite_foreign_keys.sql, supabase/migrations/20261103120000_mir13_write_path_org_bound.sql, supabase/tests/010-catalogue.test.sql, supabase/tests/_isolation.psql, .ai/board/tickets/MIR-19/99-questions.md, tests/route-role-guards.test.ts ]
 consulted:
   - with: tech-lead-design
@@ -26,7 +26,7 @@ next_state: REVIEW
 | `src/lib/data/supabase.ts` | modified | `rpc("own_org_code")`, throws on transport error | § 4.3 |
 | `src/lib/data/mock.ts` | modified | `getOwnOrgCode()` over `mockOrgOf`, with the two code constants | § 4.3 |
 | `src/hooks/useSession.ts` | modified | `orgCode` read in the same `resolve()` pass, only for an approved member | § 4.4 |
-| `src/App.tsx` | modified | basename state and crossings, `EnterOrg`, `LeaveOrg`, `OrgNotFound`, `shellRoutes` written once and placed in both tables | § 4.5 |
+| `src/App.tsx` | modified | (rework 1: `key`/`basename` on `BrowserRouter`) basename state and crossings, `EnterOrg`, `LeaveOrg`, `OrgNotFound`, `shellRoutes` written once and placed in both tables | § 4.5 |
 | `tests/org-path.test.ts` | created | AC-13 client half, AC-14, helper examples, migration-array equality | § 4.6 |
 | `tests/e2e/mir-19-org-routing.spec.ts` | created | one test per AC-1 to AC-11 | § 4.6 |
 | `supabase/tests/010-catalogue.test.sql` | modified | one line in the AC-12 definer census for `public.own_org_code()` (added to allowed_paths by the answer) | § 4.6 |
@@ -44,6 +44,14 @@ ADR-097 and `.ai/board/tickets/MIR-19-b/ticket.yaml` were written at PLAN and ar
 | 4.4 | `src/hooks/useSession.ts` | a throw falls into the existing catch (signed-out) |
 | 4.5 | `src/App.tsx` | `<BrowserRouter key={base} basename={base}>`; popstate listener; `cross()` replaces history; `OrgNotFound` button pushes |
 | 4.6 | the three test files | see Verification |
+
+## Rework 1 (review R5)
+
+The review found `<BrowserRouter>` at `src/App.tsx:680` without `key={base} basename={base}`: my first
+edit's string replace had hit a doc comment instead of the element. Fixed at `src/App.tsx:680`, and the
+comment at line 98 restored. Nothing else changed. I had also reported the Playwright spec as not run
+because `playwright install chromium` failed; the browsers are present in this environment and I did
+not check further. Both are mine.
 
 ## Deviations from the design
 
@@ -71,7 +79,8 @@ ADR-097 and `.ai/board/tickets/MIR-19-b/ticket.yaml` were written at PLAN and ar
 | `pnpm build` | 0 | |
 | `node scripts/check-allowed-paths.mjs` | 0 | PASS |
 | pgTAP `370-own-org-code.test.sql` | not run | no PostgreSQL in this environment |
-| Playwright `mir-19-org-routing.spec.ts` | not run | browsers cannot be installed here (`playwright install chromium` fails); the spec is typechecked and linted only |
+| `pnpm exec playwright test tests/e2e/mir-19-org-routing.spec.ts` | 0 | 12 passed (seam-guard + AC-1 to AC-11) |
+| `pnpm exec playwright test` (full suite) | 0 | 523 passed, no existing spec edited |
 
 ## Testability contract
 
@@ -82,5 +91,4 @@ ADR-097 and `.ai/board/tickets/MIR-19-b/ticket.yaml` were written at PLAN and ar
 
 ## Open questions
 
-None. Unrun suites (pgTAP, Playwright) are for CI or the
-reviewer's environment.
+None. The pgTAP suites (`370`, `010`) were not run: no PostgreSQL server is running here.

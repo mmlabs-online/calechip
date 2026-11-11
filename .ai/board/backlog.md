@@ -23,6 +23,8 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
 
+**`MIR-19` was at `REWORK` (routed to `developer`), moved back to `REVIEW`** — recorded at /advance on 2026-11-11 from `03-impl-log.md` rework 1 gate PASS (`BrowserRouter` given `key`/`basename`; `mir-19-org-routing.spec.ts` 12/12, full e2e 523 passed).
+
 **`MIR-19` was at `REVIEW` in `ticket.yaml`, routed to `REWORK`** — recorded at /advance on 2026-11-11 from `04-review.md` (`produced_at: 2026-11-11T13:14:29Z`): `gate: FAIL`, `verdict: FAIL`, `failed_checks: [R5]`, `invariant_violation: false`, `route_to: developer`, `increments_rework: true`. `rework_count` 0 → 1 (RULE-06 escalates at 2).
 
 **`MIR-19` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-11 from `03-impl-log.md` second pass gate PASS. The first pass was BLOCKED on a plan defect (`010-catalogue.test.sql` outside `allowed_paths`); tech-lead-design answered in `99-questions.md`, amended the plan and set `size: L` (not split; reason in plan § 7). Its row left this table.

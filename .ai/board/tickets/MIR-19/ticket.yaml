@@ -6,7 +6,7 @@ id: MIR-19
 title: "Every authenticated page is served under `/{org_code}`"
 feature_ids: [MIR-19]   # ADR-063 row; written by the steward on the operator's decision of 2026-10-20
 group: MIR           # ADR-063: MIR is the eighth feature group
-state: REWORK
+state: REVIEW
 owner: ""
 branch: ""
 size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR
