@@ -9,23 +9,26 @@ id: MIR-17-g
 title: "The router gains role guards, or records why the screens' in-place refusals are the guards"
 feature_ids: [MIR-17]   # split of MIR-17 (operating model § ID scheme: splits get -a, -b)
 group: MIR
-state: BACKLOG
+state: READY
 owner: ""
 branch: ""
-size_estimate: ""     # S|M - set by tech-lead-design at PLAN; gates DoR
-size: ""              # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting
+size_estimate: "S"    # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "S"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. 3 paths (01-plan.md § 7)
 depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-10, MIR-11, MIR-12, MIR-13, MIR-14, MIR-15, MIR-18, MIR-21, MIR-21-b, MIR-21-c, MIR-21-d, MIR-21-e, MIR-21-f, MIR-16, MIR-16-b, MIR-16-c, MIR-16-d, MIR-16-e, MIR-16-f, MIR-16-g, MIR-16-h, MIR-17, MIR-17-b, MIR-17-c, MIR-17-d, MIR-17-e, MIR-17-f]
-invariants_touched: []
-allowed_paths: []
+invariants_touched: []   # reasoned at PLAN, not defaulted: 01-plan.md § 2
+allowed_paths:
+  - ".ai/registry/decisions/ADR-096-the-admin-screens-in-place-refusals-are-the-role-guards-and-the-router-guards-membership-only.md"
+  - "src/App.tsx"
+  - "tests/route-role-guards.test.ts"
 glossary_owed: []
-schema_delta: "TODO(plan): set at PLAN — predicted none: router guards are client affordances (ADR-005)"
-requires_adr: true    # predicted: interception versus the in-place refusals is a design decision (ADR-089 Context, ADR-094 decision 3); PLAN confirms
+schema_delta: "none"   # confirmed at PLAN: 01-plan.md § 6
+requires_adr: true    # confirmed at PLAN: ADR-096 decides the in-place refusals are the role guards
 rework_count: 0
 chat_budget:
   developer->tech-lead-design: { used: 0, max: 6 }
 tracker: { provider: "", external_id: "", sync_enabled: false }
 gates:
-  plan:   { passed: false, at: null }
+  plan:   { passed: true, at: "2026-11-11T09:20:00Z" }
   review: { passed: false, at: null }
 
 # --- MIR extra fields ---------------------------------------------------------------------------

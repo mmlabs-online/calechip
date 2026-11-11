@@ -22,6 +22,9 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
+| 1 | MIR-17-g | The router gains role guards, or records why the screens' in-place refusals are the guards | S | — |
+
+**`MIR-17-g` moved here at /advance on 2026-11-11**, from `01-plan.md` gate PASS (`produced_at: 2026-11-11T09:13:54Z`) with all six Definition of Ready items passing; `schema_delta: none`. PLAN wrote ADR-096 (`ACCEPTED by tech-lead-design` under ADR-067). Run by `/run-ticket MIR-17-g`.
 
 **`MIR-18-c` shipped on 2026-11-11, `state: DONE`.** This is the last of MIR-18's slices (MIR-18, -b, -c); `features.md` row `MIR-18` is set to `DONE`, Invariants unchanged (every slice `[]`). `verification_required: true`: AC-1–AC-5 and AC-17 were not run (no Docker daemon, no Postgres) and `verification.md` does not exist — a person runs them before merge. Moved to `## ARCHIVE`, whose oldest row (MIR-21-e) left the rolling twenty.
 
