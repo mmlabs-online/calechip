@@ -1,6 +1,6 @@
 ---
 name: run-ticket
-description: Run every stage of one ticket through the loop runner, in the foreground, and report how it ended
+description: Run every stage of one ticket inside this session — subagents for PLAN, IMPLEMENT and REVIEW, this session for /advance and /ship — until a pull request or a stop
 ---
 
 # `/run-ticket` — Antigravity shim

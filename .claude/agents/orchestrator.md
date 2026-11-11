@@ -60,6 +60,18 @@ the order of its steps: escalation check first, WIP check second, ticket selecti
   (RULE-13, `.ai/standards/session-model.md`). You are the lead session and you **print** the next
   command and the session it belongs in; you never invoke a stage owner. That transition is a
   context boundary. A reviewer that inherits the developer's session has inherited its framing.
+
+  **One exception: `/run-ticket <ID>`** (`.claude/commands/run-ticket.md`, modelled on stoktok's
+  run command). There, and only there, you dispatch `/plan`, `/implement` and `/review` as **subagents**
+  (Agent tool, the stage owner's `subagent_type`, never `fork`), and you run `/advance` and `/ship`
+  yourself. The boundary is kept by what you send, not by a separate process. A subagent starts with
+  none of this conversation, and its prompt is the ticket id and the command file to follow, nothing
+  else. `tech-lead-review` is new for every review and is never continued. You relay nothing between
+  stage agents (RULE-12), and you still never merge.
+  *Until 2026-11-11 this bullet ended at "inherited its framing.", with no exception. Every stage
+  then ran in a session a person or the runner started (ADR-036). The runner's `claude -p`
+  processes cannot be granted a permission mid-run, which stopped run `20261111-023147-54dc40` at
+  `/plan` step 0.*
 - Dispatching `ARTIFACTS_FOR[state]`, never the whole ticket folder. QA in particular must not see
   `04-review.md`.
 
