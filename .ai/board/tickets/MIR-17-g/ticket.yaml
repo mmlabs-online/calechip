@@ -9,7 +9,7 @@ id: MIR-17-g
 title: "The router gains role guards, or records why the screens' in-place refusals are the guards"
 feature_ids: [MIR-17]   # split of MIR-17 (operating model § ID scheme: splits get -a, -b)
 group: MIR
-state: READY
+state: REVIEW
 owner: ""
 branch: ""
 size_estimate: "S"    # S|M - set by tech-lead-design at PLAN; gates DoR
