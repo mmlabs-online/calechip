@@ -99,6 +99,12 @@ only. `pr-scope` already covers any `apps/<app>/`.
 reads at runtime is `CALECHIP_VERSION`, the label in the sidebar footer. Every `VITE_*` value is
 baked into the image at build, and nginx's port is fixed.
 
+The one other value is `CALECHIP_SYSTEM_PATH` (MIR-18-c, ADR-095): the path at which the system panel
+is served. It lives only in `/etc/calechip/system-panel.env` on the server, as
+`CALECHIP_SYSTEM_PATH=<value>`, readable by the runner's user and never committed. Generate one with
+`openssl rand -base64 24 | tr '+/' '-_'` (32 characters). The panel's URL is `https://<host>/<value>`;
+`/system.html` answers 404. Without the file the panel is not served and everything else runs.
+
 ## Staging
 
 A second CaleChip, `calechip-staging`, runs next to production at `calechip-staging.mmlabs.online`.
@@ -191,8 +197,8 @@ leaves it so that:
 - **it connects outbound only.** The runner polls GitHub; nothing reaches into the server, so it
   works behind the tunnel with no port opened.
 
-The host also needs Docker Compose v2 with `up --wait-timeout`, `git` and `gh`, on the runner user's
-`PATH`.
+The host also needs Docker Compose v2 with `up --wait-timeout` (Compose 2.24 or later, for the
+optional `env_file` of the system panel's path), `git` and `gh`, on the runner user's `PATH`.
 
 **The trade-off.** To run `docker compose`, the runner's user must be in the `docker` group, and
 **membership of the `docker` group is equivalent to root on the host**: any job on that runner can

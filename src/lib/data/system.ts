@@ -269,6 +269,8 @@ function moveRefusal(
 // `FailureCode` means that (01-plan.md § 4.4; `types.ts` is not edited).
 const WRONG_PASSWORD = "Email or password is incorrect.";
 const WRONG_CODE = "That code did not match. Try again.";
+// MIR-18-c, ADR-095 decision 4. The same words the database hook returns as its rejection message.
+const TOO_MANY_CODES = "Too many incorrect codes. Try again in 15 minutes.";
 
 // =============================================================================================
 // Supabase implementation
@@ -361,7 +363,14 @@ const supabaseSystemSeam: SystemSeam = {
       }
       if (!id) return refused;
       const { error } = await mfa.challengeAndVerify({ factorId: id, code });
-      if (error) return refused;
+      if (error) {
+        // The MFA verification hook rejected the attempt (ADR-095 decision 4). The control is the hook;
+        // this only says why.
+        if ((error as { code?: string }).code === "mfa_verification_rejected") {
+          return { ok: false as const, error: { code: "rate_limited" as const, message: TOO_MANY_CODES } };
+        }
+        return refused;
+      }
     } catch {
       return refused;
     }
@@ -732,6 +741,11 @@ const mockAccounts = new Map<string, MockAccount>([
   ["member@calechip.test", { isSystemAdmin: false, hasVerifiedFactor: false }],
 ]);
 
+// ADR-095 decision 4. The mock's copy of the hook's numbers; the hook is the control.
+const MOCK_CODE_FAILURE_LIMIT = 5;
+const MOCK_CODE_FAILURE_WINDOW_MS = 15 * 60 * 1000;
+const mockCodeFailures = new Map<string, number[]>(); // email -> Date.now() of each wrong code
+
 let mockSession: { email: string; aal2: boolean } | null = null;
 let mockPendingFactorId: string | null = null;
 let mockFactorCounter = 0;
@@ -918,7 +932,20 @@ const mockSystemSeam: SystemSeam = {
     if (factorId !== undefined ? factorId !== mockPendingFactorId : !account.hasVerifiedFactor) {
       return refused;
     }
-    if (code.trim() !== MOCK_SYSTEM_CODE) return refused;
+    const now = Date.now();
+    const kept = (mockCodeFailures.get(mockSession.email) ?? []).filter(
+      (t) => t > now - MOCK_CODE_FAILURE_WINDOW_MS,
+    );
+    const wrong = code.trim() !== MOCK_SYSTEM_CODE;
+    if (wrong) kept.push(now);
+    mockCodeFailures.set(mockSession.email, kept);
+    if (kept.length >= MOCK_CODE_FAILURE_LIMIT) {
+      // Mirrors Supabase Auth signing the identity out on a rejection.
+      mockSession = null;
+      mockPendingFactorId = null;
+      return { ok: false as const, error: { code: "rate_limited" as const, message: TOO_MANY_CODES } };
+    }
+    if (wrong) return refused;
     account.hasVerifiedFactor = true;
     mockPendingFactorId = null;
     mockSession = { ...mockSession, aal2: true };

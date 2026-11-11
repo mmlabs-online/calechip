@@ -8,7 +8,7 @@ id: MIR-18-c
 title: "The system panel is served unindexed at an unguessable path, with rate limiting and failed-login logging on its second factor"
 feature_ids: [MIR-18]   # split of MIR-18 (operating model § ID scheme: splits get -a, -b)
 group: MIR
-state: READY
+state: REVIEW
 owner: ""
 branch: ""
 size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR

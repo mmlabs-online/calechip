@@ -9,7 +9,8 @@
 # No ports, no secrets, no volumes: the container is static nginx on :3000, every VITE_* value is
 # baked into the image, and cloudflared reaches it by service name on the network. The one
 # environment value is CALECHIP_VERSION, the release tag the sidebar footer shows; it is not a secret,
-# and when it is missing the footer shows the image's build commit instead.
+# and when it is missing the footer shows the image's build commit instead. The second is
+# CALECHIP_SYSTEM_PATH, the system panel's path (MIR-18-c, ADR-095), read from a file on the server.
 
 name: calechip
 
@@ -19,6 +20,12 @@ services:
     restart: unless-stopped
     environment:
       CALECHIP_VERSION: ${CALECHIP_VERSION:-}
+    # MIR-18-c, ADR-095 decision 1: CALECHIP_SYSTEM_PATH, the system panel's path, from a file on the
+    # server OUTSIDE this repository's checkout (the runner cleans its workspace). Optional: without
+    # it the panel is not served and everything else runs.
+    env_file:
+      - path: /etc/calechip/system-panel.env
+        required: false
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/healthz"]
       interval: 5s

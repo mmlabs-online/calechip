@@ -1291,6 +1291,15 @@ function SystemPanel(): JSX.Element {
     const result = await systemSeam.verifyCode(code, enrolment?.factorId);
     setBusy(false);
     if (!result.ok) {
+      if (result.error.code === "rate_limited") {
+        // The hook's rejection may or may not have ended the session (ADR-095): read the gate and show
+        // the message where the visitor now is. `arrive` clears `codeError`, so set it afterwards.
+        const next = await systemSeam.gate();
+        await arrive(next);
+        if (next.state === "signed-out") setSignInError(result.error.message);
+        else setCodeError(result.error.message);
+        return;
+      }
       setCodeError(result.error.message);
       return;
     }
