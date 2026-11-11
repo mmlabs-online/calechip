@@ -6,23 +6,35 @@ id: MIR-19
 title: "Every authenticated page is served under `/{org_code}`"
 feature_ids: [MIR-19]   # ADR-063 row; written by the steward on the operator's decision of 2026-10-20
 group: MIR           # ADR-063: MIR is the eighth feature group
-state: BACKLOG
+state: READY
 owner: ""
 branch: ""
-size_estimate: ""     # S|M - set by tech-lead-design at PLAN; gates DoR
-size: ""              # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"             # S|M|L|XL - 12 allowed_paths at /plan MIR-19; Phase 5 whole counted ~70 (40 src files with absolute paths, ~25 e2e specs), so the flip and the rest split to MIR-19-b (ADR-097)
 depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-10, MIR-11, MIR-12, MIR-13, MIR-14, MIR-15, MIR-18, MIR-21, MIR-21-b, MIR-21-c, MIR-21-d, MIR-21-e, MIR-21-f]   # "Blocked by" — the MIR IDs that must be DONE first. MIR-21-b added 2026-11-05 at /plan MIR-21 (ADR-077 decision 6). MIR-21-c added 2026-11-05 at /plan MIR-21-b (ADR-078 decision 7). MIR-21-d, -e and -f added 2026-11-06 at /plan MIR-21-c (ADR-080 decision 6)
-invariants_touched: []
-allowed_paths: []
+invariants_touched: []   # confirmed at PLAN (01-plan.md § 2)
+allowed_paths:
+  - ".ai/registry/decisions/ADR-097-an-org-address-is-served-beside-the-root-one-first-and-the-flip-is-mir-19-b.md"
+  - ".ai/board/tickets/MIR-19-b/ticket.yaml"
+  - "supabase/migrations/20261111150000_mir19_own_org_code.sql"
+  - "supabase/tests/370-own-org-code.test.sql"
+  - "src/lib/org-path.ts"
+  - "src/lib/data/index.ts"
+  - "src/lib/data/supabase.ts"
+  - "src/lib/data/mock.ts"
+  - "src/hooks/useSession.ts"
+  - "src/App.tsx"
+  - "tests/org-path.test.ts"
+  - "tests/e2e/mir-19-org-routing.spec.ts"
 glossary_owed: []
-schema_delta: none
-requires_adr: false
+schema_delta: "20261111150000_mir19_own_org_code.sql — adds public.own_org_code() (security definer, execute to authenticated only); re-creates constraint org_code_not_reserved on public.org with 'tasks' added, after refusing to apply if any org holds that code. No table, column, policy, trigger or row change (ADR-097 decisions 2 and 3; 01-plan.md § 4.1, § 6)"
+requires_adr: true    # ADR-097, written at this PLAN under ADR-067
 rework_count: 0
 chat_budget:
   developer->tech-lead-design: { used: 0, max: 6 }
 tracker: { provider: "", external_id: "", sync_enabled: false }
 gates:
-  plan:   { passed: false, at: null }
+  plan:   { passed: true, at: "2026-11-11T13:05:13Z" }
   review: { passed: false, at: null }
 
 # --- MIR extra fields ---------------------------------------------------------------------------

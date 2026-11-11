@@ -22,6 +22,9 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
+| 1 | MIR-19 | Every authenticated page is served under `/{org_code}` | M | — |
+
+**`MIR-19` moved here at /advance on 2026-11-11**, from `01-plan.md` gate PASS with all six Definition of Ready items passing; `schema_delta` is non-none and cites ADR-097, `ACCEPTED by tech-lead-design` under ADR-067. PLAN split the flip and the rest of Phase 5 to a new slice, `MIR-19-b` (`BACKLOG`). Run by `/run-ticket MIR-19`.
 
 **`MIR-17-g` shipped on 2026-11-11, `state: DONE`.** This is the last of MIR-17's slices (MIR-17, -b … -g); `features.md` row `MIR-17` is set to `DONE`, Invariants unchanged (every slice `[]`). Moved to `## ARCHIVE`, whose oldest row (MIR-21-f) left the rolling twenty.
 
