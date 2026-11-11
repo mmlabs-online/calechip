@@ -29,7 +29,7 @@ chat_budget:
 tracker: { provider: "", external_id: "", sync_enabled: false }
 gates:
   plan:   { passed: true, at: "2026-11-11T09:20:00Z" }
-  review: { passed: false, at: null }
+  review: { passed: true, at: "2026-11-11T09:25:55Z" }
 
 # --- MIR extra fields ---------------------------------------------------------------------------
 mir_phase: 4
