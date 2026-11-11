@@ -331,6 +331,13 @@ export interface DataSeam {
   getCurrentMember(): Promise<Member | null>;
 
   /**
+   * MIR-19, ADR-097 decision 2. The caller's own org code: `rpc("own_org_code")`.
+   * `null` when nobody is signed in, or the caller is not an approved, non-removed member.
+   * Never another org's code. THROWS on a transport failure, the shape `getCurrentMember` uses.
+   */
+  getOwnOrgCode(): Promise<string | null>;
+
+  /**
    * SOLO, 2026-09-10. Everybody who has signed up and whom no admin has decided on yet, newest
    * first. Replaces `listAllowedEmails`.
    *

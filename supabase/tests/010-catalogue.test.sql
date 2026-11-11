@@ -77,6 +77,8 @@ select set_eq(
     -- MIR-16 RPCs, 270-issue-reports-system-scope.test.sql
     'public.list_issue_reports()',
     'public.set_issue_report_status(uuid,public.issue_status)',
+    -- MIR-19 helper, 370-own-org-code.test.sql
+    'public.own_org_code()',
     -- MIR-15-c RPCs, 350-move-team-to-org.test.sql
     'public.list_shared_teams()',
     'public.move_team_to_org(uuid,uuid)',
