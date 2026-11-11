@@ -22,7 +22,8 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
-| 1 | MIR-19 | Every authenticated page is served under `/{org_code}` | M | — |
+
+**`MIR-19` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-11 from `03-impl-log.md` second pass gate PASS. The first pass was BLOCKED on a plan defect (`010-catalogue.test.sql` outside `allowed_paths`); tech-lead-design answered in `99-questions.md`, amended the plan and set `size: L` (not split; reason in plan § 7). Its row left this table.
 
 **`MIR-19` moved here at /advance on 2026-11-11**, from `01-plan.md` gate PASS with all six Definition of Ready items passing; `schema_delta` is non-none and cites ADR-097, `ACCEPTED by tech-lead-design` under ADR-067. PLAN split the flip and the rest of Phase 5 to a new slice, `MIR-19-b` (`BACKLOG`). Run by `/run-ticket MIR-19`.
 

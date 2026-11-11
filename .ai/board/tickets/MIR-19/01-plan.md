@@ -385,6 +385,7 @@ existing seam function changes signature.
 - **re-creates the constraint** `org_code_not_reserved` with `tasks` added.
 
 No table, column, policy, trigger, enum or row changes. A constraint change is not `none` (ADR-014).
+The new definer function joins the AC-12 census in `supabase/tests/010-catalogue.test.sql` (§ 4.6).
 ADR-097 decisions 2 and 3, written at this PLAN under ADR-067. Applying it to the hosted project is
 human (RULE-09).
 
@@ -396,6 +397,7 @@ allowed_paths:
   - ".ai/board/tickets/MIR-19-b/ticket.yaml"
   - "supabase/migrations/20261111150000_mir19_own_org_code.sql"
   - "supabase/tests/370-own-org-code.test.sql"
+  - "supabase/tests/010-catalogue.test.sql"
   - "src/lib/org-path.ts"
   - "src/lib/data/index.ts"
   - "src/lib/data/supabase.ts"
@@ -406,7 +408,12 @@ allowed_paths:
   - "tests/e2e/mir-19-org-routing.spec.ts"
 ```
 
-12 paths, so `size: M`, which agrees with `size_estimate: M`. As Phase 5 described it, the count was
+13 paths, so `size: L` by the table, against `size_estimate: M`. It was 12 at PLAN. The 13th path,
+`010-catalogue.test.sql`, was missed at PLAN: it is the census every new `security definer` function
+must join (MIR-16-c and MIR-18-b both listed it). **It is not split.** The path is one census line,
+and the census fails the moment `own_org_code()` exists, so it cannot ship apart from the migration.
+A ticket holding only that line would leave MIR-19's pgTAP suite red. The disagreement is recorded
+here rather than resolved by dropping a test. As Phase 5 described it, the count was
 about 70: 40 `src/` files with an absolute path, about 25 e2e specs, nginx and the email template.
 That is `L`, and the split is ADR-097. The sizing table also reads *"changes the schema"* as `XL`.
 This follows the MIR precedent (MIR-16-c, MIR-21-f): a schema change carried by an ADR written under
@@ -430,6 +437,10 @@ ADR-067 is sized by its file count. The two ADR-097 paths are written at this PL
 ## Changelog
 
 - `2026-11-11T10:05:00Z` — all sections written. Raised by `tech-lead-design`. Amended by `tech-lead-design`.
+
+- `2026-11-11T13:25:00Z` — § 4.6, § 6 and § 7: `supabase/tests/010-catalogue.test.sql` added (one
+  census line), and `size` goes from M to L, not split. Raised by `developer` (99-questions.md Q1).
+  Amended by `tech-lead-design`.
 
 ## Delegated decisions
 

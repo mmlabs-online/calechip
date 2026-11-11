@@ -2,17 +2,17 @@
 ticket: MIR-19
 stage: IN_PROGRESS
 agent: developer
-produced_at: 2026-11-11T13:20:00Z
-inputs_read: [ .ai/board/tickets/MIR-19/01-plan.md, .ai/board/tickets/MIR-19/ticket.yaml, src/App.tsx, src/hooks/useSession.ts, src/lib/data/index.ts, src/lib/data/supabase.ts, src/lib/data/mock.ts, supabase/migrations/20261027120000_mir11_composite_foreign_keys.sql, supabase/migrations/20261103120000_mir13_write_path_org_bound.sql, supabase/tests/010-catalogue.test.sql, supabase/tests/_isolation.psql, tests/route-role-guards.test.ts ]
+produced_at: 2026-11-11T13:35:00Z
+inputs_read: [ .ai/board/tickets/MIR-19/01-plan.md, .ai/board/tickets/MIR-19/ticket.yaml, src/App.tsx, src/hooks/useSession.ts, src/lib/data/index.ts, src/lib/data/supabase.ts, src/lib/data/mock.ts, supabase/migrations/20261027120000_mir11_composite_foreign_keys.sql, supabase/migrations/20261103120000_mir13_write_path_org_bound.sql, supabase/tests/010-catalogue.test.sql, supabase/tests/_isolation.psql, .ai/board/tickets/MIR-19/99-questions.md, tests/route-role-guards.test.ts ]
 consulted:
   - with: tech-lead-design
     asked: "010-catalogue.test.sql's census of security definer functions fails on the new own_org_code(); the file is outside allowed_paths. Add the file and one census line? (written to 99-questions.md; no answer yet)"
-    answer: "pending"
-    resulted_in_amendment: false
+    answer: "Agreed, a plan defect. Add the one census line; 010-catalogue.test.sql added to allowed_paths; size M to L, not split."
+    resulted_in_amendment: true
 chat_before_verdict: none
-gate: BLOCKED
-blocking_reason: "Plan defect: supabase/tests/010-catalogue.test.sql (AC-12 census of public security definer functions) must list public.own_org_code(), and the file is not in allowed_paths (RULE-03). Without the one-line edit the pgTAP suite is red. Everything else in plan section 4 is implemented; typecheck, lint, unit tests and build exit 0."
-next_state: IN_PROGRESS
+gate: PASS
+blocking_reason: ""
+next_state: REVIEW
 ---
 
 ## Files touched
@@ -29,6 +29,7 @@ next_state: IN_PROGRESS
 | `src/App.tsx` | modified | basename state and crossings, `EnterOrg`, `LeaveOrg`, `OrgNotFound`, `shellRoutes` written once and placed in both tables | § 4.5 |
 | `tests/org-path.test.ts` | created | AC-13 client half, AC-14, helper examples, migration-array equality | § 4.6 |
 | `tests/e2e/mir-19-org-routing.spec.ts` | created | one test per AC-1 to AC-11 | § 4.6 |
+| `supabase/tests/010-catalogue.test.sql` | modified | one line in the AC-12 definer census for `public.own_org_code()` (added to allowed_paths by the answer) | § 4.6 |
 | `.ai/board/tickets/MIR-19/99-questions.md` | created | the question above | RULE-15 |
 
 ADR-097 and `.ai/board/tickets/MIR-19-b/ticket.yaml` were written at PLAN and are unchanged here.
@@ -46,6 +47,7 @@ ADR-097 and `.ai/board/tickets/MIR-19-b/ticket.yaml` were written at PLAN and ar
 
 ## Deviations from the design
 
+- **`010-catalogue.test.sql` edited** under the amended plan (§ 4.6, § 7), by the answer in `99-questions.md`.
 - **`LeaveOrg` takes a `kind` prop** (`through`, `sign-in`, `root`) rather than being a single
   `cross`-only component, so one component serves the three crossings § 4.5 names. Behaviour is as
   specified.
@@ -80,5 +82,5 @@ ADR-097 and `.ai/board/tickets/MIR-19-b/ticket.yaml` were written at PLAN and ar
 
 ## Open questions
 
-The `010-catalogue.test.sql` census line, above. Unrun suites (pgTAP, Playwright) are for CI or the
+None. Unrun suites (pgTAP, Playwright) are for CI or the
 reviewer's environment.
