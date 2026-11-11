@@ -14,7 +14,14 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { DateRange, Holiday, HolidayKind, IssueKind, IssueStatus, Result } from "@/lib/domain/types";
 import { HOLIDAY_LIMIT, ISSUE_REPORT_LIMIT } from "@/lib/domain/types";
-import { FIXTURE_HOLIDAYS, FIXTURE_ISSUE_REPORT, FIXTURE_MEMBER } from "@/lib/fixtures";
+import {
+  FIXTURE_HOLIDAYS,
+  FIXTURE_ISSUE_REPORT,
+  FIXTURE_MEMBER,
+  FIXTURE_OTHER_TEAM,
+  FIXTURE_OTHER_TEAM_MEMBER,
+  FIXTURE_TEAM,
+} from "@/lib/fixtures";
 
 /** Where a panel visitor stands. Each state is one screen (01-plan.md § 2b). */
 export type SystemGate =
@@ -63,6 +70,10 @@ export interface SystemSeam {
   /** `storage.from("issue-report").createSignedUrls(paths, 3600)`. Same order and length; `null`
    *  where a URL was not minted. Never throws. */
   issueImageUrls(paths: string[]): Promise<(string | null)[]>;
+  /** `rpc("list_shared_teams")`, mapped to camelCase. Never throws. MIR-15-c. */
+  listSharedTeams(): Promise<MoveResult<SharedTeam[]>>;
+  /** `rpc("move_team_to_org", { p_team_id, p_target_org_id })`, first row. Never throws. */
+  moveTeamToOrg(input: MoveTeamInput): Promise<MoveResult<TeamMoveSummary>>;
 }
 
 // =============================================================================================
@@ -195,6 +206,63 @@ export const ISSUE_FAILURE_MESSAGES: Record<IssueFailureCode, string> = {
 
 function issueRefusal(code: IssueFailureCode): { ok: false; error: { code: IssueFailureCode; message: string } } {
   return { ok: false, error: { code, message: ISSUE_FAILURE_MESSAGES[code] } };
+}
+
+// =============================================================================================
+// MIR-15-c — moving a team out of Org public. 01-plan.md § 4.4, ADR-093.
+// =============================================================================================
+
+/** One row of `public.list_shared_teams()`. ADR-093. */
+export interface SharedTeam {
+  id: string;
+  name: string;
+  activeMembers: number;
+  createdAt: string;
+}
+
+export interface MoveTeamInput {
+  teamId: string;
+  targetOrgId: string;
+}
+
+/** The row `public.move_team_to_org()` returns. */
+export interface TeamMoveSummary {
+  movedMembers: number;
+  deletedLinks: number;
+}
+
+export type MoveFailureCode =
+  | "not_permitted" // 42501
+  | "move_target_missing" // P0002
+  | "invalid_move" // 22023
+  | "member_on_other_team" // MT001
+  | "event_split" // MT002
+  | "decision_split" // MT003
+  | "no_team_to_keep" // MT004
+  | "network"; // anything else, or a throw
+
+export type MoveResult<T> =
+  | { ok: true; value: T }
+  | { ok: false; error: { code: MoveFailureCode; message: string; detail: string | null } };
+
+export const MOVE_FAILURE_MESSAGES: Record<MoveFailureCode, string> = {
+  not_permitted: "You do not have permission to do that.",
+  move_target_missing: "That team or org no longer exists. Reload to see the current list.",
+  invalid_move: "Only a team of Org public can be moved, and only into a dedicated org.",
+  member_on_other_team:
+    "Someone on this team is also on another team in Org public. They must leave one of the two teams first.",
+  event_split: "An event would end up in one org and its creator in the other. Delete that event first.",
+  decision_split: "An entry was approved or rejected by someone who would end up in the other org.",
+  no_team_to_keep:
+    "Someone staying in Org public has an entry tied to this team and no other team to keep it on.",
+  network: "Could not reach the server. Try again.",
+};
+
+function moveRefusal(
+  code: MoveFailureCode,
+  detail: string | null = null,
+): { ok: false; error: { code: MoveFailureCode; message: string; detail: string | null } } {
+  return { ok: false, error: { code, message: MOVE_FAILURE_MESSAGES[code], detail } };
 }
 
 // The two refusals share `invalid_credentials`: both are a refused credential, and no other existing
@@ -440,7 +508,79 @@ const supabaseSystemSeam: SystemSeam = {
       return paths.map(() => null);
     }
   },
+
+  async listSharedTeams() {
+    try {
+      const { data, error } = await client().rpc("list_shared_teams");
+      if (error) return moveRefusal(moveFailureCode(error), moveDetail(error));
+      const rows = (data ?? []) as SharedTeamRpcRow[];
+      return { ok: true, value: rows.map(toSharedTeam) };
+    } catch {
+      return moveRefusal("network");
+    }
+  },
+
+  async moveTeamToOrg(input) {
+    try {
+      const { data, error } = await client().rpc("move_team_to_org", {
+        p_team_id: input.teamId,
+        p_target_org_id: input.targetOrgId,
+      });
+      if (error) return moveRefusal(moveFailureCode(error), moveDetail(error));
+      const rows = (data ?? []) as TeamMoveRpcRow[];
+      const row = rows[0];
+      if (!row) return moveRefusal("network");
+      return { ok: true, value: { movedMembers: row.moved_members, deletedLinks: row.deleted_links } };
+    } catch {
+      return moveRefusal("network");
+    }
+  },
 };
+
+/** A row of `list_shared_teams()` as PostgREST returns it. */
+interface SharedTeamRpcRow {
+  id: string;
+  name: string;
+  active_members: number;
+  created_at: string;
+}
+
+/** The row of `move_team_to_org()` as PostgREST returns it. */
+interface TeamMoveRpcRow {
+  moved_members: number;
+  deleted_links: number;
+}
+
+function toSharedTeam(row: SharedTeamRpcRow): SharedTeam {
+  return { id: row.id, name: row.name, activeMembers: row.active_members, createdAt: row.created_at };
+}
+
+// The SQLSTATE is PostgREST's `code`. 01-plan.md § 4.4.
+function moveFailureCode(error: { code?: string }): MoveFailureCode {
+  switch (error.code) {
+    case "42501":
+      return "not_permitted";
+    case "P0002":
+      return "move_target_missing";
+    case "22023":
+      return "invalid_move";
+    case "MT001":
+      return "member_on_other_team";
+    case "MT002":
+      return "event_split";
+    case "MT003":
+      return "decision_split";
+    case "MT004":
+      return "no_team_to_keep";
+    default:
+      return "network";
+  }
+}
+
+/** PostgREST's `details`: the `detail` the database raised, a string or absent. */
+function moveDetail(error: { details?: unknown }): string | null {
+  return typeof error.details === "string" && error.details !== "" ? error.details : null;
+}
 
 /** A row of `list_national_holidays()` as PostgREST returns it. */
 interface HolidayRpcRow {
@@ -641,6 +781,18 @@ const mockOrgs: OrgSummary[] = [
   },
 ];
 let mockOrgCounter = 1;
+
+// MIR-15-c. Org public's teams. The mock models the two teams of the member app's fixtures, with the
+// counts the panel shows; moving one removes it. Nothing here reaches the member mock (ADR-093).
+const mockSharedTeams: SharedTeam[] = [
+  { id: FIXTURE_TEAM.id, name: FIXTURE_TEAM.name, activeMembers: 3, createdAt: FIXTURE_TEAM.createdAt },
+  {
+    id: FIXTURE_OTHER_TEAM.id,
+    name: FIXTURE_OTHER_TEAM.name,
+    activeMembers: 1,
+    createdAt: FIXTURE_OTHER_TEAM.createdAt,
+  },
+];
 
 /** The database's `is_system_admin()`: a system admin, at aal2. */
 function mockMaySeeOrgs(): boolean {
@@ -890,6 +1042,28 @@ const mockSystemSeam: SystemSeam = {
 
   async issueImageUrls(paths) {
     return paths.map(() => null);
+  },
+
+  async listSharedTeams() {
+    if (!mockMaySeeOrgs()) return moveRefusal("not_permitted");
+    const rows = [...mockSharedTeams]
+      .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+      .map((team) => ({ ...team }));
+    return { ok: true, value: rows };
+  },
+
+  async moveTeamToOrg(input) {
+    if (!mockMaySeeOrgs()) return moveRefusal("not_permitted");
+    const index = mockSharedTeams.findIndex((candidate) => candidate.id === input.teamId);
+    const target = mockOrgs.find((candidate) => candidate.id === input.targetOrgId);
+    if (index < 0 || !target) return moveRefusal("move_target_missing");
+    if (target.isSharedTenant) return moveRefusal("invalid_move");
+    const team = mockSharedTeams[index]!;
+    if (team.id === FIXTURE_OTHER_TEAM.id) {
+      return moveRefusal("member_on_other_team", FIXTURE_OTHER_TEAM_MEMBER.displayName);
+    }
+    mockSharedTeams.splice(index, 1);
+    return { ok: true, value: { movedMembers: team.activeMembers, deletedLinks: 0 } };
   },
 };
 

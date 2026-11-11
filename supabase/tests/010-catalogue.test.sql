@@ -77,6 +77,9 @@ select set_eq(
     -- MIR-16 RPCs, 270-issue-reports-system-scope.test.sql
     'public.list_issue_reports()',
     'public.set_issue_report_status(uuid,public.issue_status)',
+    -- MIR-15-c RPCs, 350-move-team-to-org.test.sql
+    'public.list_shared_teams()',
+    'public.move_team_to_org(uuid,uuid)',
     -- guest functions, 080-guest-tokens.test.sql
     'public.get_guest_event(text)',
     'public.list_guest_event_attendees(text)',

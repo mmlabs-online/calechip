@@ -8,7 +8,7 @@ id: MIR-15-c
 title: "A system admin moves a team from Org public to another org from the system panel"
 feature_ids: [MIR-15]   # split of MIR-15 (operating model § ID scheme: splits get -a, -b)
 group: MIR
-state: READY
+state: REVIEW
 owner: ""
 branch: ""
 size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR
