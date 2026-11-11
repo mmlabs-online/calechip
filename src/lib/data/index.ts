@@ -26,6 +26,8 @@ import type {
   PendingEntryPage,
   PendingEntryQuery,
   Result,
+  // MIR-17-f, 01-plan.md section 4.1.
+  RosterTeamRole,
   Session,
   Team,
   MemberRole,
@@ -807,6 +809,22 @@ export interface DataSeam {
    * THROWS on a transport failure and on a possibly-truncated answer.
    */
   listAllMembers(): Promise<Member[]>;
+
+  /**
+   * MIR-17-f, ADR-094 decision 1. Each roster row's rank on its roster team, for MemberList's
+   * manager toggle. `list_all_members` with the computed field `roster_team_role` selected over it:
+   * the admin's roster, including rows on the caller's non-primary teams. A non-admin gets [].
+   * THROWS on a transport failure or a truncated read, the shape `listAllMembers` uses.
+   */
+  listRosterTeamRoles(): Promise<RosterTeamRole[]>;
+
+  /**
+   * MIR-17-f, ADR-094 decision 1. The caller's active team ids: `public.member_team_ids` for the
+   * signed-in user. [] for no session, and for a caller not approved or removed (the function
+   * returns no row for either). An affordance for MemberList; the write functions are the control.
+   * THROWS on a transport failure.
+   */
+  listOwnTeamIds(): Promise<string[]>;
 
   // -------------------------------------------------------------------------
   // CAL-11 — the read half of a two-row split (ADR-039, ADR-040). 01-plan.md section 4.2. CAL-12

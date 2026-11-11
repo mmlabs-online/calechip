@@ -31,12 +31,15 @@ const FILES = [
   "src/routes/EventDetail.tsx",
   "src/components/EventAttendancePanel.tsx",
   "src/components/Sidebar.tsx",
+  // MIR-17-f, AC-8: the roster screen and the viewed-team picker.
+  "src/routes/MemberList.tsx",
+  "src/lib/viewed-team.ts",
 ] as const;
 
 // 01-plan.md § 4.1: no match for this, after comments are stripped.
 const LITERAL_ROLE_TEST = /\brole\s*(!==|===)\s*"(admin|manager)"/;
 
-describe("MIR-17-b AC-4, MIR-17-e AC-4: the twelve files ask the role helpers", () => {
+describe("MIR-17-b AC-4, MIR-17-e AC-4, MIR-17-f AC-8: the fourteen files ask the role helpers", () => {
   for (const file of FILES) {
     const source = readFileSync(repoRoot + file, "utf8");
     const code = stripComments(source);

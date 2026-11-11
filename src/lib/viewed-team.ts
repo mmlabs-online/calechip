@@ -24,6 +24,7 @@ import type {
   MemberRole,
   Team,
 } from "@/lib/domain/types";
+import { mayAdminister } from "@/lib/roles";
 
 /** The one query-parameter name. */
 export const TEAM_PARAM = "team";
@@ -43,7 +44,7 @@ export interface ViewedTeamResolution {
 
 /**
  * Rules, in order:
- *  1. role !== "admin"                       -> own, dropParam false   (AC-3: ignored, not stripped)
+ *  1. !mayAdminister(role)                   -> own, dropParam false   (AC-3: ignored, not stripped)
  *  2. requested null or ""                   -> own, dropParam false   (AC-1)
  *  3. requested === ownTeamId                -> own, dropParam true    (AC-11)
  *  4. teams === null                         -> resolving, false
@@ -58,7 +59,7 @@ export function resolveViewedTeam(input: {
   teams: readonly Team[] | null | "failed";
 }): ViewedTeamResolution {
   const { role, ownTeamId, requested, teams } = input;
-  if (role !== "admin") return { viewed: { kind: "own" }, dropParam: false };
+  if (!mayAdminister(role)) return { viewed: { kind: "own" }, dropParam: false };
   if (requested === null || requested === "") return { viewed: { kind: "own" }, dropParam: false };
   if (requested === ownTeamId) return { viewed: { kind: "own" }, dropParam: true };
   if (teams === null) return { viewed: { kind: "resolving" }, dropParam: false };
@@ -79,10 +80,10 @@ export function isCalendarPath(pathname: string): boolean {
   return CALENDAR_PATH.test(pathname);
 }
 
-/** The picker's options: [] unless role === "admin" AND teams.length > 1 (AC-2, AC-3); otherwise
+/** The picker's options: [] unless mayAdminister(role) AND teams.length > 1 (AC-2, AC-3); otherwise
  *  every team sorted by name with localeCompare, then id. */
 export function pickableTeams(role: MemberRole, teams: readonly Team[]): Team[] {
-  if (role !== "admin" || teams.length <= 1) return [];
+  if (!mayAdminister(role) || teams.length <= 1) return [];
   return [...teams].sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
 }
 

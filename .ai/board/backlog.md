@@ -22,7 +22,8 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
-| 1 | MIR-17-f | MemberList's controls are scoped per team, the team picker is re-keyed, and the router gains role guards | M | — |
+
+**`MIR-17-f` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-11 from `03-impl-log.md` gate PASS (`produced_at: 2026-11-11T08:20:00Z`); its row left this table.
 
 **`MIR-17-f` moved here at /advance on 2026-11-11**, from `01-plan.md` gate PASS (`produced_at: 2026-11-11T08:04:23Z`) with all six Definition of Ready items passing; `schema_delta: none` (ADR-094 decision 1). PLAN split the router guards to a new slice, `MIR-17-g` (`BACKLOG`), and added it to `MIR-20`'s `depends_on`. Run by `/run-ticket MIR-17-f`.
 

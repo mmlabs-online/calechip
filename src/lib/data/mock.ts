@@ -55,6 +55,8 @@ import type {
   PendingEntryPage,
   PendingEntryQuery,
   Result,
+  // MIR-17-f, 01-plan.md section 4.1.
+  RosterTeamRole,
   Session,
   Team,
   MemberRole,
@@ -1785,6 +1787,22 @@ export const seam: DataSeam = {
       .slice()
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .map((m) => ({ ...m }));
+  },
+
+  // MIR-17-f. `list_all_members` + `roster_team_role`: the mock holds one team per member, so the
+  // roster team role IS the manager rank, and an admin's team role is `member` (promotion writes it).
+  async listRosterTeamRoles(): Promise<RosterTeamRole[]> {
+    if (!currentAdmin()) return [];
+    return members
+      .filter((m) => m.teamId !== null)
+      .map((m) => ({ memberId: m.id, teamRole: m.role === "manager" ? "manager" : "member" }));
+  },
+
+  // MIR-17-f. `member_team_ids(auth.uid())`: one team per member here.
+  async listOwnTeamIds(): Promise<string[]> {
+    const me = members.find((m) => m.id === currentMemberId);
+    if (!me || me.status !== "approved" || me.removedAt !== null || me.teamId === null) return [];
+    return [me.teamId];
   },
 
   /**
