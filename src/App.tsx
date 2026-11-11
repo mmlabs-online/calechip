@@ -288,7 +288,15 @@ export default function App() {
                   safe with no session: it calls getCurrentMember(), gets null, and renders
                   `allow-list-refused`. A guard here would add no protection and would put this
                   ticket's routing decisions on top of another ticket's acceptance criteria. */}
-{/* **SOLO, 2026-09-09 — THE ADMIN TAB STRIP, AND WHY THERE ARE SEVERAL OF THESE BLOCKS
+{/* **MIR-17-g, ADR-096 — THE ROUTER GUARDS MEMBERSHIP, NOT RANK.** The role guards are the screens' own refusals.
+                  Six paths under these `AdminLayout` blocks refuse a caller in place, each through a
+                  helper from `@/lib/roles`, and each refusal says why. The router cannot answer
+                  `/entries/pending`, whose admission depends on a read the screen makes (ADR-090).
+                  Every guard here is an affordance either way (ADR-005).
+                  `tests/route-role-guards.test.ts` classifies every path under `AdminLayout`. A new
+                  one fails it until it is listed as refusing or open.
+
+                  **SOLO, 2026-09-09 — THE ADMIN TAB STRIP, AND WHY THERE ARE SEVERAL OF THESE BLOCKS
                   RATHER THAN ONE.** `AdminLayout` draws `AdminTabs` above whatever the child route
                   renders, so the ROUTER decides which screens carry the strip — the same shape
                   `BareLayout` and `AppShell` above already use, and not a `useLocation()` test
