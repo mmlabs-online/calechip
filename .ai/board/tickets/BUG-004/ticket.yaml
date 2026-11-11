@@ -5,7 +5,7 @@ id: BUG-004
 title: "EVT-09 AC-6, the failed-invitation handoff, fails in CI on both attempts and passes locally"
 feature_ids: [EVT-09]
 group: EVT
-state: READY
+state: REVIEW
 owner: ""
 branch: ""
 size_estimate: "S"    # S|M - set by tech-lead-design at PLAN; gates DoR. 01-plan.md section 1.

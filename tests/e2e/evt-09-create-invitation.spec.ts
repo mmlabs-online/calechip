@@ -188,8 +188,7 @@ test.describe("EVT-09 — invite by email while creating", () => {
     await expect(page.getByTestId("event-form-invite-input")).toHaveValue("friend@outside.example");
   });
 
-  // QUARANTINED BUG-004 under ADR-060 — row in docs/ops/e2e-quarantine.md; do not fix here.
-  test.fixme("AC-6: a failed handoff opens the panel with the sentence and the addresses ready to resend", async ({ page }) => {
+  test("AC-6: a failed handoff opens the panel with the sentence and the addresses ready to resend", async ({ page }) => {
     await signIn(page, MEMBER.email);
     await openNewForm(page, "Failed send");
     await page.getByTestId("event-scope-public").check();
@@ -199,7 +198,13 @@ test.describe("EVT-09 — invite by email while creating", () => {
 
     // The mock never refuses a creator on their own public event, so the failure is handed in as the
     // form would hand it: the router's state on a history entry, reached by a popstate.
+    // BUG-004. `toHaveURL` passes once `pushState` has run, but the router commits the new route
+    // inside `startTransition`. Handing the state in before the list has committed lets React fold
+    // both transitions into one render that never unmounts this event's page, and its handoff is
+    // read once, at mount (EventDetail.tsx). So wait for the list itself, and for the page to go.
     await openEvents(page);
+    await expect(page.getByTestId("event-detail")).toHaveCount(0);
+    await expect(page.getByTestId("event-row").filter({ hasText: "Failed send" })).toHaveCount(1);
     await page.evaluate((to) => {
       window.history.pushState(
         {

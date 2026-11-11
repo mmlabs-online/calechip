@@ -23,6 +23,5 @@ debt and the decision is reopened.
 
 | Test | Kind | Suspected cause | First failing PR | Ticket | Expiry |
 |---|---|---|---|---|---|
-| `tests/e2e/evt-09-create-invitation.spec.ts` › AC-6: a failed handoff opens the panel with the sentence and the addresses ready to resend | fixme | CI only: failed both attempts in run 281, passes locally (full suite, and 10/10 isolated). Suspected: the `pushState` + `popstate` handoff at `:193-205` under CI timing. CI log unreadable from the planning session (403). | Not established — first observed in run 281 (#129); the test arrived with #125 and the logs for #125..#128 could not be read. | BUG-004 | 2026-11-12 |
 | `tests/e2e/evt-02-attendance.spec.ts` › AC-28: the three fields sit after the dates and before the scope, empty and off by default | flaky | Flaky under full-suite load in CI: failed then passed on retry in run 281; 10/10 isolated locally. | Not bisected — flaky; first observed in run 281 (#129). | BUG-005 | 2026-11-12 |
 | `tests/e2e/evt-10-description.spec.ts` › AC-2, AC-3, AC-4: every format is shown on both surfaces, and re-saving changes nothing | flaky | Flaky under full-suite load locally: `event-description` `ul > li` text mismatch, then passed on retry (2026-10-13); 10/10 isolated. | Not bisected — flaky; first observed in a local CI=1 run on 460cf5e. | BUG-005 | 2026-11-12 |
