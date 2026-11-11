@@ -28,7 +28,7 @@ chat_budget:
 tracker: { provider: "", external_id: "", sync_enabled: false }
 gates:
   plan:   { passed: true, at: "2026-11-11T04:44:15Z" }   # ADR-019 merged the `spec` and `design` gates into one
-  review: { passed: false, at: null }
+  review: { passed: true, at: "2026-11-11T05:01:03Z" }
   # There is no `qa` gate. ADR-017 waived it on 2026-09-01, ADR-021 reverted that the same
   # afternoon, and ADR-022 removed the stage outright. Tickets planned before that date carry a
   # `qa` key; three of them carry `waived: true`. `/ship` requires `plan` and `review`.
