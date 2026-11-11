@@ -8,23 +8,34 @@ id: MIR-15-d
 title: "The mock seam reproduces Org public's team-bound public events, and the seam tests assert it"
 feature_ids: [MIR-15]   # split of MIR-15 (operating model § ID scheme: splits get -a, -b)
 group: MIR
-state: BACKLOG
+state: READY
 owner: ""
 branch: ""
-size_estimate: ""     # S|M - set by tech-lead-design at PLAN; gates DoR
-size: ""              # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting (11 paths)
 depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-05, MIR-06, MIR-07, MIR-08, MIR-09, MIR-10, MIR-18, MIR-15]   # MIR-15 ships the SQL this transcribes
-invariants_touched: []
-allowed_paths: []
+invariants_touched: [INV-04]   # reasoned at PLAN, 01-plan.md § 2: listMembers, the denominator, is untouched
+allowed_paths:
+  - "src/lib/data/mock.ts"
+  - "tests/events.test.ts"
+  - "tests/member-directory-scope.test.ts"
+  - "tests/event-attendance.test.ts"
+  - "tests/notifications.test.ts"
+  - "tests/event-email.test.ts"
+  - "tests/event-invitation.test.ts"
+  - "tests/guest-link.test.ts"
+  - "tests/guest-registration.test.ts"
+  - "tests/event-layer.test.ts"
+  - "tests/e2e/evt-02-attendance.spec.ts"
 glossary_owed: []
-schema_delta: "none — expected; the mock and its tests only. Confirm at PLAN"
+schema_delta: "none"   # confirmed at PLAN: the mock and its tests only (01-plan.md § 6)
 requires_adr: false
 rework_count: 0
 chat_budget:
   developer->tech-lead-design: { used: 0, max: 6 }
 tracker: { provider: "", external_id: "", sync_enabled: false }
 gates:
-  plan:   { passed: false, at: null }
+  plan:   { passed: true, at: "2026-11-11T07:45:51Z" }
   review: { passed: false, at: null }
 
 # --- MIR extra fields ---------------------------------------------------------------------------

@@ -22,6 +22,9 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
+| 1 | MIR-15-d | The mock seam reproduces Org public's team-bound public events, and the seam tests assert it | M | — |
+
+**`MIR-15-d` moved here at /advance on 2026-11-11**, from `01-plan.md` gate PASS (`produced_at: 2026-11-11T07:50:00Z`) with all six Definition of Ready items passing; `schema_delta: none`. It had no row in `## BACKLOG`, so there was nothing to remove. Run by `/run-ticket MIR-15-d`.
 
 **`MIR-15-c` shipped on 2026-11-11, `state: DONE`.** `features.md` row `MIR-15` left `PLANNED`: its slice `MIR-15-d` is still `BACKLOG`. The MIR status index (`.ai/board/plans/multi-tenancy-status.md`) is outside this ticket's `allowed_paths` and was not touched — the operator's to update. Moved to `## ARCHIVE`, whose oldest row (MIR-15-e) left the rolling twenty.
 
