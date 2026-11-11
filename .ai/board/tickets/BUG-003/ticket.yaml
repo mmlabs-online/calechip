@@ -5,7 +5,7 @@ id: BUG-003
 title: "The sidebar's week, year and holidays links are commented out, so twenty shipped end-to-end criteria fail"
 feature_ids: [UIE-10]
 group: UIE
-state: REVIEW
+state: DONE
 owner: ""
 branch: ""
 size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR. 01-plan.md section 1.
