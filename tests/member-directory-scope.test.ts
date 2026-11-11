@@ -124,25 +124,47 @@ describe("MIR-04 — the member directory's scope", () => {
     expect(directory.some((d) => d.teamName === FIXTURE_OTHER_TEAM.name)).toBe(false);
   });
 
-  it("the creator of a public event from another team is listed; of a Limited people event that does not name the caller, is not", async () => {
+  // MIR-15-d (ADR-076 decision 3, AC-5). Superseded: "the creator of a public event from another team
+  // is listed". In Org public a public event is a team event, so it no longer reaches through (c).
+  it("the creator of a public event from another team is not listed; nor of a Limited people event that does not name the caller", async () => {
     await createAs(X, { scope: "named", inviteeIds: [Z] });
     expect(await directoryOf(C)).not.toContain(X);
 
     await createAs(X, { scope: "public" });
-    as(C);
-    const row = (await mock.listMemberDirectory()).find((d) => d.id === X);
-    expect(row?.teamName).toBe(FIXTURE_OTHER_TEAM.name);
+    expect(await directoryOf(C)).not.toContain(X);
   });
 
+  // MIR-15-d (AC-6): on a public event another team's member cannot even join, so nobody is listed
+  // through it.
+  it("a public event reaches no other team's attendee or creator into the directory (AC-6)", async () => {
+    const open = await createAs(X, { scope: "public" });
+    as(Y);
+    expect((await mock.joinEvent(open)).ok).toBe(true);
+    expect(await directoryOf(C)).not.toContain(X);
+    expect(await directoryOf(C)).not.toContain(Y);
+
+    __resetEvents();
+    const own = await createAs(FIXTURE_APPROVED_MEMBER.id, { scope: "public" });
+    as(Y);
+    const refused = await mock.joinEvent(own);
+    expect(refused.ok ? null : refused.error.code).toBe("attendance_not_permitted");
+    expect(await directoryOf(C)).not.toContain(Y);
+  });
+
+  // The (d) point, kept on a mechanism that still crosses teams: a named invitation (AC-7).
   it("an attending member of another team is listed to a reader; a pending one only to the event's creator", async () => {
-    const open = await createAs(FIXTURE_APPROVED_MEMBER.id, { scope: "public" });
+    const open = await createAs(FIXTURE_APPROVED_MEMBER.id, { scope: "named", inviteeIds: [Y, C] });
     as(Y);
     expect((await mock.joinEvent(open)).ok).toBe(true);
     expect(await directoryOf(C)).toContain(Y);
     expect(await directoryOf(FIXTURE_APPROVED_MEMBER.id)).toContain(Y);
 
     __resetEvents();
-    const gated = await createAs(FIXTURE_APPROVED_MEMBER.id, { scope: "public", requiresApproval: true });
+    const gated = await createAs(FIXTURE_APPROVED_MEMBER.id, {
+      scope: "named",
+      inviteeIds: [Y, C],
+      requiresApproval: true,
+    });
     as(Y);
     const joined = await mock.joinEvent(gated);
     expect(joined.ok ? joined.value.status : null).toBe("pending");
@@ -168,7 +190,13 @@ describe("MIR-04 — the member directory's scope", () => {
   });
 
   it("the actor of a notification addressed to the caller is listed, after the event is deleted too", async () => {
-    const id = await createAs(X, { scope: "public" });
+    // A public event of X gives C no notification any more (MIR-15, AC-4): it is a team event.
+    await createAs(X, { scope: "public" });
+    as(C);
+    expect((await mock.listNotifications()).some((n) => n.actorId === X)).toBe(false);
+    __resetEvents();
+
+    const id = await createAs(X, { scope: "named", inviteeIds: [C] });
     as(C);
     expect((await mock.listNotifications()).some((n) => n.actorId === X)).toBe(true);
     as(X);
@@ -233,7 +261,7 @@ describe("MIR-04 — the member directory's scope", () => {
     expect(before.admin).toEqual(before.c);
 
     // A connection that widens the directory widens no roster.
-    await createAs(X, { scope: "public" });
+    await createAs(X, { scope: "named", inviteeIds: [C] });
     await createAs(C, { scope: "named", inviteeIds: [Z] });
     expect(await directoryOf(C)).toEqual(expect.arrayContaining([X, Z]));
     expect(await roster(C)).toEqual(before.c);

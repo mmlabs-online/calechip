@@ -390,10 +390,27 @@ describe("EVT-12 AC-9, AC-12 — repeats, and public events unchanged", () => {
     expect((await mock.getEvent(eventId))?.scope).toBe("team");
   });
 
-  it("a member of another team invited to a public event is mailed, never named", async () => {
+  // MIR-15-d, AC-10. Superseded: "a member of another team invited to a public event is mailed, never
+  // named". Since MIR-15 `email_invitation()` returns early when `may_read_event` is false, and in
+  // Org public another team cannot read a public event: the address is accepted (`sent`) and reaches
+  // nobody. This asserts what the database does; whether it should convert to `named`, as the `team`
+  // branch does, or refuse the address, is a product decision for /idea (01-plan.md § 1).
+  it("a member of another team invited to a public event is accepted and reaches nobody; an own-team member is mailed, never named", async () => {
     const eventId = await createAs(FIXTURE_MEMBER.id);
-    await inviteAs(FIXTURE_MEMBER.id, eventId, [FIXTURE_OTHER_TEAM_MEMBER.email ?? ""]);
-    expect(__sentInvitationEmails()).toEqual([expect.objectContaining({ kind: "invitation_member" })]);
+    const other = await inviteAs(FIXTURE_MEMBER.id, eventId, [FIXTURE_OTHER_TEAM_MEMBER.email ?? ""]);
+    expect(other).toEqual({
+      ok: true,
+      value: [{ email: FIXTURE_OTHER_TEAM_MEMBER.email ?? "", outcome: "sent" }],
+    });
+    expect(__sentInvitationEmails()).toEqual([]);
+    as(FIXTURE_MEMBER.id);
+    expect(await mock.listEventInvitees(eventId)).toEqual([]);
+    expect((await mock.getEvent(eventId))?.scope).toBe("public");
+
+    await inviteAs(FIXTURE_MEMBER.id, eventId, [FIXTURE_APPROVED_MEMBER.email ?? ""]);
+    expect(__sentInvitationEmails()).toEqual([
+      expect.objectContaining({ kind: "invitation_member", to: FIXTURE_APPROVED_MEMBER.email }),
+    ]);
     as(FIXTURE_MEMBER.id);
     expect((await mock.getEvent(eventId))?.scope).toBe("public");
     expect(await mock.listEventInvitees(eventId)).toEqual([]);

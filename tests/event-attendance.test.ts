@@ -191,7 +191,7 @@ describe("setting it up", () => {
 
   it("AC-4: capacity may not go below seats taken; exactly seats taken saves and the event is full", async () => {
     const id = await createAs(FIXTURE_MEMBER.id, { capacity: 5 });
-    for (const who of [FIXTURE_MEMBER.id, MEMBER_A2, MEMBER_B2]) expect((await joinAs(who, id)).ok).toBe(true);
+    for (const who of [FIXTURE_MEMBER.id, MEMBER_A2, MANAGER_A]) expect((await joinAs(who, id)).ok).toBe(true);
 
     as(FIXTURE_MEMBER.id);
     expect(code(await mock.updateEvent(id, input({ capacity: 2 })))).toBe("event_capacity_below_attendees");
@@ -254,11 +254,13 @@ describe("setting it up", () => {
 describe("joining", () => {
   it("AC-6: without approval, joining is immediate and seats taken goes up", async () => {
     const id = await createAs(FIXTURE_MEMBER.id, { capacity: 4 });
-    const joined = await joinAs(MEMBER_B2, id);
-    expect(joined.ok && joined.value).toMatchObject({ eventId: id, memberId: MEMBER_B2, status: "attending" });
+    const joined = await joinAs(MEMBER_A2, id);
+    expect(joined.ok && joined.value).toMatchObject({ eventId: id, memberId: MEMBER_A2, status: "attending" });
     expect(await seatsTaken(id)).toBe(1);
-    // A reader on another team sees them.
-    expect((await attendanceAs(FIXTURE_OTHER_TEAM_MEMBER.id, id)).map((a) => a.memberId)).toEqual([MEMBER_B2]);
+    // A reader on the event's team sees them (MIR-15: a public event has no reader on another team).
+    expect((await attendanceAs(MANAGER_A, id)).map((a) => a.memberId)).toEqual([MEMBER_A2]);
+    // And another team's member can neither join it nor see who has (MIR-15, AC-3).
+    expect(code(await joinAs(MEMBER_B2, id))).toBe("attendance_not_permitted");
   });
 
   it("AC-7: with approval, everyone waits — named people too — and a request is accepted when full", async () => {
@@ -448,7 +450,13 @@ describe("leaving", () => {
 
 describe("deciding", () => {
   it("AC-16: the creator and any admin approve and reject, on any event, any team", async () => {
-    const id = await createAs(FIXTURE_OTHER_TEAM_MEMBER.id, { requiresApproval: true });
+    // The event and one requester are on team B and the deciding admin on team A. The second
+    // requester is named, since a public event no longer reaches another team (MIR-15, ADR-076).
+    const id = await createAs(FIXTURE_OTHER_TEAM_MEMBER.id, {
+      scope: "named",
+      inviteeIds: [MEMBER_B2, MEMBER_A2],
+      requiresApproval: true,
+    });
     await joinAs(MEMBER_B2, id);
     await joinAs(MEMBER_A2, id);
     const ok = await decideAs(FIXTURE_ADMIN.id, id, MEMBER_B2, "attending");
