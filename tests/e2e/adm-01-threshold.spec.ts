@@ -237,8 +237,7 @@ test.describe("ADM-01 set the overload threshold", () => {
     await expect(page.getByTestId("shell-admin-link")).toHaveCount(0);
   });
 
-  // QUARANTINED BUG-003 under ADR-060 — row in docs/ops/e2e-quarantine.md; do not fix here.
-  test.fixme("AC-13: the new threshold reclassifies the days already on screen", async ({ page }) => {
+  test("AC-13: the new threshold reclassifies the days already on screen", async ({ page }) => {
     await openThreshold(page, ADMIN_EMAIL);
     await save(page, "60");
     await expect(page.getByTestId("threshold-saved")).toBeVisible();

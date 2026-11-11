@@ -394,8 +394,7 @@ test.describe("ADM-03 add, edit or delete a holiday or swap day", () => {
   // Permission, and the read that did not change.
   // -------------------------------------------------------------------------
 
-  // QUARANTINED BUG-003 under ADR-060 — row in docs/ops/e2e-quarantine.md; do not fix here.
-  test.fixme("AC-14: a member is offered no control and still sees the whole calendar", async ({
+  test("AC-14: a member is offered no control and still sees the whole calendar", async ({
     page,
   }) => {
     // The seeded year, so there is a calendar to see rather than an empty one — the criterion is
@@ -414,8 +413,7 @@ test.describe("ADM-03 add, edit or delete a holiday or swap day", () => {
     // that is asserted (AC-15).
   });
 
-  // QUARANTINED BUG-003 under ADR-060 — row in docs/ops/e2e-quarantine.md; do not fix here.
-  test.fixme("AC-18: an admin and a member read the same rows, in the same order", async ({ page }) => {
+  test("AC-18: an admin and a member read the same rows, in the same order", async ({ page }) => {
     await openCalendar(page, MEMBER_EMAIL, "2026");
     const asMember = await drawnDates(page);
     expect(asMember).toHaveLength(4);

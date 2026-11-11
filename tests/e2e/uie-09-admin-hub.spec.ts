@@ -280,8 +280,7 @@ test.describe("UIE-09 — the admin hub", () => {
     await expect(landmarkOf(page, ["member-list-table", "member-list-empty"])).toBeVisible();
   });
 
-  // QUARANTINED BUG-003 under ADR-060 — row in docs/ops/e2e-quarantine.md; do not fix here.
-  test.fixme("AC-6: a member who types the address is refused by the screen", async ({ page }) => {
+  test("AC-6: a member who types the address is refused by the screen", async ({ page }) => {
     await signInAtHub(page, MEMBER_EMAIL);
     // Typed rather than followed: AC-2 is that there IS no control for this caller, so the address
     // bar is the only way in and the refusal has to come from the screen itself.
@@ -341,8 +340,7 @@ test.describe("UIE-09 — the admin hub", () => {
     await expect(page.getByTestId("admin-hub-link")).toHaveCount(DESTINATIONS.length);
   });
 
-  // QUARANTINED BUG-003 under ADR-060 — row in docs/ops/e2e-quarantine.md; do not fix here.
-  test.fixme("AC-9: the hub's selectors are new, and collide with nothing", async ({ page }) => {
+  test("AC-9: the hub's selectors are new, and collide with nothing", async ({ page }) => {
     await openHubAsAdmin(page);
 
     // Every id this ticket introduces begins `admin-hub-` or is `shell-admin-link`. Read off the
@@ -394,8 +392,7 @@ test.describe("UIE-09 — the admin hub", () => {
     }
   });
 
-  // QUARANTINED BUG-003 under ADR-060 — row in docs/ops/e2e-quarantine.md; do not fix here.
-  test.fixme("AC-10: the sidebar keeps its general links, and the third is a member's alone", async ({ page }) => {
+  test("AC-10: the sidebar keeps its general links, and the third is a member's alone", async ({ page }) => {
     // **AMENDED BY UIE-10, AND THE TITLE CHANGED WITH IT.** As shipped this criterion read *"the
     // sidebar is unchanged … including all four `home-*-link` admin links for the admin"*, and it
     // described the DOUBLE EXPOSURE UIE-09 deliberately left behind: the four links in the sidebar

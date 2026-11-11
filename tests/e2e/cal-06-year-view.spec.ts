@@ -322,8 +322,7 @@ test.describe("CAL-06 — year view", () => {
     await expect(page.getByTestId("month-anchor")).toHaveAttribute("data-month", "2027-01");
   });
 
-  // QUARANTINED BUG-003 under ADR-060 — row in docs/ops/e2e-quarantine.md; do not fix here.
-  test.fixme("AC-12: the year is reachable from the month and from the week, and returns to the month", async ({ page }) => {
+  test("AC-12: the year is reachable from the month and from the week, and returns to the month", async ({ page }) => {
     await openMonthAs(page, MEMBER_EMAIL, "/month/2026-09");
 
     // Reached from the MONTH, on the year containing the month being looked at.

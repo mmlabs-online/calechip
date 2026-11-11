@@ -178,8 +178,7 @@ test.describe("UIE-10 — the sidebar after the migration", () => {
     }
   });
 
-  // QUARANTINED BUG-003 under ADR-060 — row in docs/ops/e2e-quarantine.md; do not fix here.
-  test.fixme("AC-2: the general links stay, and the holidays link is a member's alone", async ({
+  test("AC-2: the general links stay, and the holidays link is a member's alone", async ({
     page,
   }) => {
     for (const email of [ADMIN_EMAIL, MEMBER_EMAIL]) {
@@ -367,8 +366,7 @@ test.describe("UIE-10 — the sidebar after the migration", () => {
     );
   });
 
-  // QUARANTINED BUG-003 under ADR-060 — row in docs/ops/e2e-quarantine.md; do not fix here.
-  test.fixme("AC-8: the roster's role word is a new selector and collides with nothing", async ({
+  test("AC-8: the roster's role word is a new selector and collides with nothing", async ({
     page,
   }) => {
     await signInAt(page, "/week", ADMIN_EMAIL);
@@ -470,8 +468,7 @@ test.describe("UIE-10 — the sidebar after the migration", () => {
     }
   });
 
-  // QUARANTINED BUG-003 under ADR-060 — row in docs/ops/e2e-quarantine.md; do not fix here.
-  test.fixme("AC-11: the interface is in English", async ({ page }) => {
+  test("AC-11: the interface is in English", async ({ page }) => {
     await signInAt(page, "/week", ADMIN_EMAIL);
 
     // **WHAT IS READ HERE IS INTERFACE COPY, AND THE TWO EXCLUSIONS ARE BOTH NAMED BY AC-11 OR BY
