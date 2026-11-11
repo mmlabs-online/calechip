@@ -22,6 +22,9 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
+| 1 | BUG-003 | The sidebar's week, year and holidays links are commented out, so twenty shipped end-to-end criteria fail | M | — |
+
+**`BUG-003` moved here at /advance on 2026-11-11**, from `01-plan.md` gate PASS (`produced_at: 2026-11-11T03:23:57+00:00`) with all six Definition of Ready items passing; `schema_delta: none`. It had no row in `## BACKLOG` (see the 2026-10-14 note there), so there was nothing to remove. Run by `/run-ticket BUG-003`.
 
 **`MIR-17-e` shipped on 2026-11-09, `state: DONE`.** `features.md` row `MIR-17` left `PLANNED`: its own PLAN split the rest of plan item P4-2 to a new slice, `MIR-17-f` (still `BACKLOG`), which now owns the shared row's note. Moved to `## ARCHIVE`.
 
