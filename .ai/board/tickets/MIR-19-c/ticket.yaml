@@ -5,26 +5,38 @@
 # ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
 # state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
 id: MIR-19-c
-title: "The history-walk specs learn the org prefix, then the root addresses send a member to their org"
+title: "The e2e specs that walk history to an exact pathname read it through the org-prefix helper"   # narrowed at /plan MIR-19-c, 2026-11-12 (01-plan.md § 1, Changelog). Was: "The history-walk specs learn the org prefix, then the root addresses send a member to their org" — the rest is MIR-19-d
 feature_ids: [MIR-19]   # split of MIR-19 (operating model § ID scheme: splits get -a, -b)
 group: MIR
-state: BACKLOG
+state: READY
 owner: ""
 branch: ""
-size_estimate: ""     # S|M - set by tech-lead-design at PLAN; gates DoR
-size: ""              # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. Predicted at /plan MIR-19-b: L whole; the walk specs alone about 12-13 paths, so it splits again at its own PLAN (ADR-097 decision 5)
+size_estimate: "M"   # set by tech-lead-design at /plan MIR-19-c, 2026-11-12 (01-plan.md § 1)
+size: "M"            # 12 allowed_paths (01-plan.md § 7). Predicted L at /plan MIR-19-b for the whole of items 1-6; split again here, items 2-6 are MIR-19-d
 depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-10, MIR-11, MIR-12, MIR-13, MIR-14, MIR-15, MIR-18, MIR-21, MIR-21-b, MIR-21-c, MIR-21-d, MIR-21-e, MIR-21-f, MIR-19, MIR-19-b]   # MIR-19-b ships tests/e2e/support/org-prefix.ts, which the walk specs use
-invariants_touched: []
-allowed_paths: []
+invariants_touched: []   # set at /plan MIR-19-c: test code only (01-plan.md § 2)
+allowed_paths:
+  - ".ai/board/tickets/MIR-19-d/ticket.yaml"
+  - "tests/e2e-org-prefix.test.ts"
+  - "tests/e2e/adm-05-approve-reject.spec.ts"
+  - "tests/e2e/cal-03-admin-edit-entry.spec.ts"
+  - "tests/e2e/cal-04-month-view.spec.ts"
+  - "tests/e2e/cal-05-week-view.spec.ts"
+  - "tests/e2e/cal-06-year-view.spec.ts"
+  - "tests/e2e/cal-07-overload-warning.spec.ts"
+  - "tests/e2e/cal-08-holiday-shading.spec.ts"
+  - "tests/e2e/cal-10-year-overview.spec.ts"
+  - "tests/e2e/solo-pending-approval-ui.spec.ts"
+  - "tests/e2e/uie-07-week-absence-count.spec.ts"
 glossary_owed: []
-schema_delta: none    # PLAN decides; item 6 below (sign-up into an org) needs one and its own ADR
+schema_delta: none    # /plan MIR-19-c: none in this slice; item 6 (sign-up into an org) moved to MIR-19-d with its schema change
 requires_adr: false
 rework_count: 0
 chat_budget:
   developer->tech-lead-design: { used: 0, max: 6 }
 tracker: { provider: "", external_id: "", sync_enabled: false }
 gates:
-  plan:   { passed: false, at: null }
+  plan:   { passed: true, at: "2026-11-12T00:45:23Z" }
   review: { passed: false, at: null }
 
 # --- MIR extra fields ---------------------------------------------------------------------------

@@ -22,6 +22,9 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
+| 1 | MIR-19-c | The e2e specs that walk history to an exact pathname read it through the org-prefix helper | M | — |
+
+**`MIR-19-c` moved here at /advance on 2026-11-12**, from `01-plan.md` gate PASS (`produced_at: 2026-11-12T00:36:35Z`) with all six Definition of Ready items passing; `schema_delta: none`. PLAN split again (ADR-097 decision 5): the flip and the rest are `MIR-19-d` (`BACKLOG`). Run by `/run-ticket MIR-19-c`.
 
 **`MIR-19-b` shipped on 2026-11-11, `state: DONE`.** `features.md` row `MIR-19` left `PLANNED`: the rest of Phase 5 is `MIR-19-c` (`BACKLOG`). Moved to `## ARCHIVE`, whose oldest row (MIR-16-b) left the rolling twenty.
 
