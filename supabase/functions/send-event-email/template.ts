@@ -20,6 +20,12 @@
 // `${appUrl}/logo.png?v=2` (`public/logo.png`), with alt text and the name beside it in text, so the mail
 // still reads with images blocked. There is no time of day in the request, so the date chip carries
 // the weekday instead.
+//
+// **MIR-19-e, ADR-098 — A MEMBER'S LINKS CARRY THEIR ORG.** The request may carry `orgCode`, the
+// recipient's own org code (put there by the two trigger functions, `20261112090000_mir19e_email_org_code.sql`).
+// The event button and the Profile link are then `${appUrl}/${orgCode}/…`; absent or null they are the
+// root links as before. The logo and the footer's product link stay `appUrl`-rooted, and a guest
+// request never carries an org (ADR-097 decision 6).
 
 /** EVT-05. The five notification kinds that may produce an email (ADR-051 decision 4). */
 export type EventEmailKind =
@@ -29,6 +35,11 @@ export type EventEmailKind =
   | "attendance_rejected"
   | "attendance_removed";
 
+/** MIR-19-e, ADR-098. `org_code_shape` (20261027120000_mir11_composite_foreign_keys.sql:44-47),
+ *  restated: this file imports nothing. The constraint is the control; this only refuses a malformed
+ *  request. */
+const ORG_CODE_SHAPE = /^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$/;
+
 /** EVT-05 § 4.3. The body `email_notification()` posts. */
 export interface EventEmailRequest {
   notificationId: string;
@@ -36,6 +47,9 @@ export interface EventEmailRequest {
   to: string;
   recipientName: string;
   actorName: string;
+  /** MIR-19-e, ADR-098. The recipient's own org code, or null. Absent from a request the database
+   *  posted before 20261112090000_mir19e_email_org_code.sql; absent and null render root links. */
+  orgCode?: string | null;
   event: {
     id: string;
     name: string;
@@ -87,6 +101,21 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const nonEmpty = (value: unknown): value is string =>
   typeof value === "string" && value.trim() !== "";
 
+/** MIR-19-e. The input's `orgCode`: `undefined` when the key is absent, `null` when null, the string
+ *  when it matches ORG_CODE_SHAPE; `false` for anything else, which refuses the request. */
+function readOrgCode(input: Record<string, unknown>): string | null | undefined | false {
+  if (!("orgCode" in input) || input.orgCode === undefined) return undefined;
+  const value = input.orgCode;
+  if (value === null) return null;
+  if (typeof value === "string" && ORG_CODE_SHAPE.test(value)) return value;
+  return false;
+}
+
+/** MIR-19-e. `${appUrl}/${orgCode}` for a string, `appUrl` for null or undefined. */
+function memberBase(appUrl: string, orgCode: string | null | undefined): string {
+  return typeof orgCode === "string" ? `${appUrl}/${orgCode}` : appUrl;
+}
+
 /** AC-13. The request, or null when `input` is not exactly that shape — every string non-empty
  *  except `location`, which is a string or null; `kind` one of the five; both dates YYYY-MM-DD with
  *  `endDate >= startDate`. */
@@ -106,6 +135,8 @@ export function parseEventEmailRequest(input: unknown): EventEmailRequest | null
   // Lexical order is date order for a zero-padded YYYY-MM-DD.
   if (endDate < startDate) return null;
   if (location !== null && typeof location !== "string") return null;
+  const orgCode = readOrgCode(input);
+  if (orgCode === false) return null;
 
   return {
     notificationId,
@@ -113,6 +144,7 @@ export function parseEventEmailRequest(input: unknown): EventEmailRequest | null
     to,
     recipientName,
     actorName,
+    ...(orgCode !== undefined ? { orgCode } : {}),
     event: { id, name, startDate, endDate, location },
   };
 }
@@ -259,14 +291,15 @@ const FOOTER_LINK = "Profile";
  *  HTML-escaped in `html` (`& < > " '`) and left as written in `subject` and `text`. */
 export function renderEventEmail(request: EventEmailRequest, appUrl: string): RenderedEmail {
   const { kind, recipientName, actorName, event } = request;
-  const profileUrl = `${appUrl}/profile`;
+  const base = memberBase(appUrl, request.orgCode);
+  const profileUrl = `${base}/profile`;
   return renderLayout(
     {
       ...wordsFor(kind, actorName, event.name),
       badgeTone: BADGE_TONE[kind],
       greeting: GREETING(recipientName),
       event,
-      buttonUrl: `${appUrl}/events/${encodeURIComponent(event.id)}`,
+      buttonUrl: `${base}/events/${encodeURIComponent(event.id)}`,
       footerHtml:
         `${escapeHtml(FOOTER_LEAD)}<a href="${escapeHtml(profileUrl)}" style="color:${PRIMARY};text-decoration:underline;">` +
         `${FOOTER_LINK}</a>.`,
@@ -461,6 +494,9 @@ export interface InvitationEmailRequest {
   event: EventEmailRequest["event"];
   /** 64 lowercase hex for `invitation_guest`, null for `invitation_member`. */
   guestToken: string | null;
+  /** MIR-19-e, ADR-098. As EventEmailRequest.orgCode for `invitation_member`; absent or null for
+   *  `invitation_guest` (ADR-097 decision 6). */
+  orgCode?: string | null;
 }
 
 const GUEST_TOKEN = /^[0-9a-f]{64}$/;
@@ -488,6 +524,9 @@ export function parseInvitationEmailRequest(input: unknown): InvitationEmailRequ
   if (!parseIsoDate(startDate) || !parseIsoDate(endDate)) return null;
   if (endDate < startDate) return null;
   if (location !== null && typeof location !== "string") return null;
+  const orgCode = readOrgCode(input);
+  if (orgCode === false) return null;
+  if (kind === "invitation_guest" && typeof orgCode === "string") return null;
 
   return {
     invitationId,
@@ -497,6 +536,7 @@ export function parseInvitationEmailRequest(input: unknown): InvitationEmailRequ
     recipientName: kind === "invitation_member" ? (recipientName as string) : null,
     event: { id, name, startDate, endDate, location },
     guestToken: kind === "invitation_guest" ? (guestToken as string) : null,
+    ...(orgCode !== undefined ? { orgCode } : {}),
   };
 }
 
@@ -521,6 +561,7 @@ export function renderInvitationEmail(request: InvitationEmailRequest, appUrl: s
         to: request.to,
         recipientName: request.recipientName ?? "",
         actorName: inviterName,
+        orgCode: request.orgCode,
         event,
       },
       appUrl,
