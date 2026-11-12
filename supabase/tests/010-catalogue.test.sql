@@ -82,6 +82,12 @@ select set_eq(
     -- MIR-15-c RPCs, 350-move-team-to-org.test.sql
     'public.list_shared_teams()',
     'public.move_team_to_org(uuid,uuid)',
+    -- MIR-20, 390-impersonation.test.sql
+    'public.impersonated_org_id()',
+    'public.start_impersonation(uuid,uuid,text,integer)',
+    'public.end_impersonation()',
+    'public.current_impersonation()',
+    'public.impersonated_roster()',
     -- guest functions, 080-guest-tokens.test.sql
     'public.get_guest_event(text)',
     'public.list_guest_event_attendees(text)',
