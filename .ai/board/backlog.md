@@ -23,6 +23,8 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
 
+**`MIR-19-d` was at `REVIEW` in `ticket.yaml`, `gates.review` passed** — recorded at /advance on 2026-11-12 from `04-review.md`: `gate: PASS`, `verdict: PASS`, `invariant_violation: false`, `route_to: none`. `state` stays `REVIEW` until /ship.
+
 **`MIR-19-d` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-12 from `03-impl-log.md` third pass gate PASS. The first two passes were BLOCKED on plan defects (AC-7 examples; cal-08 outside `allowed_paths`), each answered by tech-lead-design in `99-questions.md` with the plan amended. Its row left this table.
 
 **`MIR-19-d` moved here at /advance on 2026-11-12**, from `01-plan.md` gate PASS (`produced_at: 2026-11-12T01:18:05Z`) with all six Definition of Ready items passing; `schema_delta: none`. PLAN split again: items 3–5 are `MIR-19-e`, item 6 (sign-up into an org, `requires_adr: true`) is `MIR-19-f`, both `BACKLOG`. Run by `/run-ticket MIR-19-d`.
