@@ -78,8 +78,9 @@ export const ROOT_ONLY_SEGMENTS: readonly string[] = ["signin", "signup", "guest
  * ownOrgAddress("shared", "/", "") === "/shared"
  * ownOrgAddress("shared", "/month/2026-10", "?team=x") === "/shared/month/2026-10?team=x"
  * ownOrgAddress("shared", "/events", "?probe=1#top") === "/shared/events?probe=1#top"
- * ownOrgAddress("shared", "/no/such/page", "") === "/shared/no/such/page"
- * ownOrgAddress("shared", "/signins", "") === "/shared/signins"
+ * ownOrgAddress("shared", "/x/such/page", "") === "/shared/x/such/page"
+ * ownOrgAddress("shared", "/signin.html", "") === "/shared/signin.html"
+ * ownOrgAddress("shared", "/no/such/page", "") === null   (org-shaped first segment: MIR-19 AC-4)
  * ownOrgAddress("shared", "/signin", "?next=%2Fevents") === null
  * ownOrgAddress("shared", "/signup", "") === null
  * ownOrgAddress("shared", "/guest", "") === null

@@ -116,7 +116,7 @@ test.describe("MIR-19-d the root addresses send a member to their org", () => {
     page,
   }) => {
     await signedInMember(page);
-    for (const address of ["/no/such/page", "/guest"]) {
+    for (const address of ["/x/such/page", "/guest"]) {
       await page.goto(address);
       await expect(page.getByTestId("week-anchor")).toBeVisible();
       await expect.poll(pathnameOf(page)).toBe("/shared");

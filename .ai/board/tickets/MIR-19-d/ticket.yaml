@@ -29,7 +29,7 @@ schema_delta: none    # /plan MIR-19-d: none in this slice; item 6 (sign-up into
 requires_adr: false
 rework_count: 0
 chat_budget:
-  developer->tech-lead-design: { used: 0, max: 6 }
+  developer->tech-lead-design: { used: 1, max: 6 }
 tracker: { provider: "", external_id: "", sync_enabled: false }
 gates:
   plan:   { passed: true, at: "2026-11-12T01:24:33Z" }

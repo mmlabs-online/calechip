@@ -160,8 +160,11 @@ named screen is visible.
 
 **AC-7: an address the app does not route still ends on the org landing, without a loop**
 - Given the member, signed in
-- When they open `/no/such/page`, and then `/guest` (a root-only first segment with no token)
+- When they open `/x/such/page` (a first segment that cannot be an org code: one character), and then
+  `/guest` (a root-only first segment with no token)
 - Then each time they are at `/shared` with the week shown.
+- An unrouted address whose first segment *is* org-shaped (`/no/such/page`) is not flipped: it is
+  another org's address and shows `org-not-found`, as MIR-19 AC-4 requires for `/no-such-org`.
 
 **AC-8: the account and guest addresses stay at the root for a member**
 - Given the member, signed in
@@ -251,8 +254,9 @@ export const ROOT_ONLY_SEGMENTS: readonly string[] = ["signin", "signup", "guest
  * ownOrgAddress("shared", "/", "") === "/shared"
  * ownOrgAddress("shared", "/month/2026-10", "?team=x") === "/shared/month/2026-10?team=x"
  * ownOrgAddress("shared", "/events", "?probe=1#top") === "/shared/events?probe=1#top"
- * ownOrgAddress("shared", "/no/such/page", "") === "/shared/no/such/page"
- * ownOrgAddress("shared", "/signins", "") === "/shared/signins"
+ * ownOrgAddress("shared", "/x/such/page", "") === "/shared/x/such/page"
+ * ownOrgAddress("shared", "/signin.html", "") === "/shared/signin.html"
+ * ownOrgAddress("shared", "/no/such/page", "") === null   (org-shaped first segment: MIR-19 AC-4)
  * ownOrgAddress("shared", "/signin", "?next=%2Fevents") === null
  * ownOrgAddress("shared", "/signup", "") === null
  * ownOrgAddress("shared", "/guest", "") === null
@@ -461,3 +465,10 @@ edit (§ 1), is what brings it to `M`.
   are MIR-19-e, item 6 is MIR-19-f. The pushState specs `mir_detail` asked to be counted are counted in
   § 1: none is edited, because § 4.3 rewrites the entry before the router reads it. Raised by
   `tech-lead-design`. Amended by `tech-lead-design`.
+- `2026-11-12T01:27:00Z`: § 2 AC-7 and § 4.1 docblock amended. Two examples (`/no/such/page` →
+  `/shared/no/such/page`, `/signins` → `/shared/signins`) contradicted § 4.1's own rule, because `no`
+  and `signins` are valid org codes under `isOrgCode`, and flipping them would break MIR-19 AC-4. The
+  rule stands; the examples become `/x/such/page` and `/signin.html` (neither first segment matches
+  `ORG_CODE_SHAPE`), and `/no/such/page` → `null` is added as the counter-example. § 4.4 needs no text
+  change: it already says one `it` per docblock example. Raised by `developer`
+  (99-questions.md). Amended by `tech-lead-design`.
