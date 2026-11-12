@@ -8,24 +8,34 @@ id: MIR-20-b
 title: "Every impersonation is visible to the org it touched: the touched org's org_admin, and for an Org public team its manager, read the log"
 feature_ids: [MIR-20]   # split of MIR-20 (operating model § ID scheme: splits get -a, -b)
 group: MIR
-state: BACKLOG
+state: DONE
 owner: ""
 branch: ""
-size_estimate: ""     # S|M - set by tech-lead-design at PLAN; gates DoR
-size: ""              # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting
+size_estimate: "M"   # set by tech-lead-design at /plan MIR-20-b, 2026-11-12 (01-plan.md § 1)
+size: "M"            # 10 allowed_paths (01-plan.md § 7); a dedicated admin tab would have been 13
 depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-10, MIR-11, MIR-12, MIR-13, MIR-14, MIR-15, MIR-18, MIR-21, MIR-16, MIR-17, MIR-20]
-invariants_touched: []
-allowed_paths: []
+invariants_touched: []   # set at /plan MIR-20-b: no entry, count or approval is read or written (01-plan.md § 2)
+allowed_paths:
+  - "supabase/migrations/20261112210000_mir20b_impersonation_log_read.sql"
+  - "supabase/tests/400-impersonation-log.test.sql"
+  - "supabase/tests/010-catalogue.test.sql"
+  - "src/lib/data/index.ts"
+  - "src/lib/data/supabase.ts"
+  - "src/lib/data/mock.ts"
+  - "src/components/ImpersonationLog.tsx"
+  - "src/routes/MemberList.tsx"
+  - "tests/impersonation-log.test.ts"
+  - "tests/e2e/mir-20-b-impersonation-log.spec.ts"
 glossary_owed: []
-schema_delta: "TODO(plan): set at PLAN"
-requires_adr: false
+schema_delta: "non-none — one security definer function added, public.list_impersonation_log(), with execute granted to authenticated and revoked from public and anon. No table, column, index, policy, trigger, constraint or existing grant changes; both log tables stay closed. ADR-100 decision 8 and § Consequences (ADR-014: not none)"
+requires_adr: true    # ADR-100, ACCEPTED under ADR-067 at /plan MIR-20; no new ADR (01-plan.md § 6)
 rework_count: 0
 chat_budget:
   developer->tech-lead-design: { used: 0, max: 6 }
 tracker: { provider: "", external_id: "", sync_enabled: false }
 gates:
-  plan:   { passed: false, at: null }
-  review: { passed: false, at: null }
+  plan:   { passed: true, at: "2026-11-12T08:30:33Z" }
+  review: { passed: true, at: "2026-11-12T08:38:11Z" }
 
 # --- MIR extra fields ---------------------------------------------------------------------------
 # Not in .ai/templates/ticket.yaml. Added for the multi-tenancy plan; nothing in scripts/ reads them.
@@ -33,6 +43,6 @@ gates:
 mir_phase: 6
 mir_plan_item: "Phase 6"             # .ai/board/plans/calechip-multi-tenancy-plan.md:287-305
 verification_required: false
-expected_impact: []   # set at PLAN
+expected_impact: []   # set at PLAN: none — no existing feature behaves differently; /members gains a read-only section for org_admin and managers (01-plan.md § 1)
 mir_detail: |
   ADR-100 decision 8, second bullet. The log is public.impersonation and public.impersonation_action (MIR-20, ADR-100 decisions 1, 6, 7). Neither is readable by authenticated until this ticket adds the read. Exit criterion of plan Phase 6: every impersonation is visible to the org it touched (plan:304).

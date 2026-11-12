@@ -26,10 +26,12 @@ import type {
   // TSK-01, 01-plan.md section 4.2.
   CreateTaskInput,
   UpdateTaskInput,
+  // MIR-20-b, 01-plan.md section 4.2.
+  ImpersonationLogEntry,
 } from "./index";
 // MIR-09, ADR-069. A RUNTIME import: both implementations share this one guard rather than holding a
 // second copy of it, 01-plan.md section 4.
-import { isValidThreshold, INVALID_THRESHOLD_MESSAGE } from "./index";
+import { isValidThreshold, INVALID_THRESHOLD_MESSAGE, IMPERSONATION_LOG_LIMIT } from "./index";
 // SOLO 2026-09-12, ADR-035. The role predicates, above the seam and shared with the screens so
 // the mock and the interface cannot disagree about who may decide.
 import { mayAdminister, mayDecide, mayDecideEntriesOf } from "@/lib/roles";
@@ -1675,6 +1677,64 @@ function updateOwnTask(
   Object.assign(row, values);
   return { ok: true, value: { ...row } };
 }
+
+// MIR-20-b. The mock's support log (01-plan.md § 4.3). `endedAt` is the stored column; the effective
+// end is computed at read time, as `list_impersonation_log()` does. Module state, reset on a load.
+interface MockImpersonation {
+  id: string;
+  org: MockOrg;
+  actorEmail: string;
+  teamId: string | null;
+  teamName: string | null;
+  reason: string;
+  startedAt: string;
+  expiresAt: string;
+  endedAt: string | null;
+  reads: number;
+}
+
+const seedImpersonationLog = (): MockImpersonation[] => {
+  const now = Date.now();
+  return [
+    {
+      id: "ab000000-0000-4000-8000-000000000001",
+      org: "org_public",
+      actorEmail: "ops@calechip.test",
+      teamId: FIXTURE_TEAM.id,
+      teamName: FIXTURE_TEAM.name,
+      reason: "Customer ticket 4411",
+      startedAt: new Date(now - 10 * 60_000).toISOString(),
+      expiresAt: new Date(now + 20 * 60_000).toISOString(),
+      endedAt: null,
+      reads: 1,
+    },
+    {
+      id: "ab000000-0000-4000-8000-000000000002",
+      org: "org_public",
+      actorEmail: "ops@calechip.test",
+      teamId: FIXTURE_OTHER_TEAM.id,
+      teamName: FIXTURE_OTHER_TEAM.name,
+      reason: "Sign-up stuck for a new member",
+      startedAt: "2026-11-10T09:00:00.000Z",
+      expiresAt: "2026-11-10T09:45:00.000Z",
+      endedAt: "2026-11-10T09:20:00.000Z",
+      reads: 2,
+    },
+    {
+      id: "ab000000-0000-4000-8000-000000000003",
+      org: "org_public",
+      actorEmail: "support@calechip.test",
+      teamId: FIXTURE_TEAM.id,
+      teamName: FIXTURE_TEAM.name,
+      reason: "Calendar shows a wrong holiday",
+      startedAt: "2026-11-08T14:00:00.000Z",
+      expiresAt: "2026-11-08T14:30:00.000Z",
+      endedAt: null,
+      reads: 0,
+    },
+  ];
+};
+const mockImpersonationLog: MockImpersonation[] = seedImpersonationLog();
 
 export const seam: DataSeam = {
   async ready() {
@@ -4418,5 +4478,34 @@ export const seam: DataSeam = {
     if (index === -1) return taskNotPermitted();
     tasks.splice(index, 1);
     return { ok: true, value: undefined };
+  },
+
+  // MIR-20-b. `public.list_impersonation_log()` reproduced: an approved, not-removed caller; an
+  // org_admin reads the sessions on their org, a manager those on their team, anybody else none.
+  async listImpersonationLog(): Promise<ImpersonationLogEntry[]> {
+    const me = members.find((m) => m.id === currentMemberId);
+    const org = me ? mockOrgOf(me.id) : null;
+    if (!me || org === null) return [];
+
+    const now = Date.now();
+    return mockImpersonationLog
+      .filter((s) =>
+        me.role === "admin"
+          ? s.org === org
+          : me.role === "manager" && s.teamId !== null && s.teamId === me.teamId,
+      )
+      .map((s) => ({
+        id: s.id,
+        actorEmail: s.actorEmail,
+        teamId: s.teamId,
+        teamName: s.teamName,
+        reason: s.reason,
+        startedAt: s.startedAt,
+        expiresAt: s.expiresAt,
+        endedAt: s.endedAt ?? (Date.parse(s.expiresAt) <= now ? s.expiresAt : null),
+        reads: s.reads,
+      }))
+      .sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt))
+      .slice(0, IMPERSONATION_LOG_LIMIT);
   },
 };

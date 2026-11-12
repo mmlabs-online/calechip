@@ -300,6 +300,23 @@ export interface SignUpOutcome {
   session: Session | null;
 }
 
+// MIR-20-b — the support log. 01-plan.md § 4.2, ADR-100 decision 8.
+/** The most sessions `list_impersonation_log()` returns; the SQL's `limit 200`. */
+export const IMPERSONATION_LOG_LIMIT = 200;
+
+/** One row of `public.list_impersonation_log()`. */
+export interface ImpersonationLogEntry {
+  id: string;
+  actorEmail: string;
+  teamId: string | null; // null: the whole org
+  teamName: string | null; // the name stored at the start
+  reason: string;
+  startedAt: string; // ISO 8601
+  expiresAt: string; // ISO 8601
+  endedAt: string | null; // null only while live; a session that ran out reads its expiresAt
+  reads: number;
+}
+
 /** Every implementation of the seam satisfies this. It grows one entry per designed contract item. */
 export interface DataSeam {
   /** Liveness probe. Present so the seam and its parity test are exercisable before any feature. */
@@ -1690,6 +1707,12 @@ export interface DataSeam {
   /** TSK-01 AC-12. Deletes and reads back what it removed; zero rows is `task_not_permitted`, not
    *  success — `deleteEvent`'s shape. */
   deleteTask(taskId: string): Promise<Result<void>>;
+
+  /**
+   * MIR-20-b. `rpc("list_impersonation_log")`, mapped to camelCase, in the function's order. `[]` for a
+   * caller who may read none — never an error. THROWS on a transport failure or a body that is not a list.
+   */
+  listImpersonationLog(): Promise<ImpersonationLogEntry[]>;
 }
 
 export type { DataSeam as Seam };
