@@ -61,6 +61,12 @@ export interface SignUpInput {
   password: string;
   displayName: string;
   avatar: string;
+  /**
+   * MIR-19-f, ADR-099. The org code of the address the sign-up was made at (`/{orgCode}/signup`);
+   * absent or null at `/signup`. Sent as `raw_user_meta_data.org_code`; the database resolves it and
+   * refuses a code that names no org.
+   */
+  orgCode?: string | null;
 }
 
 // SOLO, 2026-09-10. `AddAllowedEmailInput` stood here until the allow-list was removed whole.
@@ -303,6 +309,8 @@ export interface DataSeam {
    * AC-1, AC-5, AC-8, AC-13. Creates the auth user and nothing else — the `member` row is the
    * trigger's work, never this function's. It returns the same shape whether or not the address is
    * allow-listed, and it cannot tell the difference; that is what makes AC-5 hold.
+   * MIR-19-f: `input.orgCode` names the org the pending row lands in; a code that names no org is
+   * refused with `unknown`.
    */
   signUp(input: SignUpInput): Promise<Result<SignUpOutcome>>;
 

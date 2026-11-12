@@ -1663,7 +1663,14 @@ export const seam: DataSeam = {
     const { data, error } = await client().auth.signUp({
       email: input.email,
       password: input.password,
-      options: { data: { display_name: input.displayName, avatar: input.avatar } },
+      options: {
+        data: {
+          display_name: input.displayName,
+          avatar: input.avatar,
+          // MIR-19-f, ADR-099: the org of the address; absent at the root, which is Org public.
+          ...(input.orgCode ? { org_code: input.orgCode } : {}),
+        },
+      },
     });
 
     if (error) return { ok: false, error: toFailure(error) };
