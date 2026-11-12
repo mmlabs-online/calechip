@@ -1,0 +1,63 @@
+# Created by `tech-lead-design` at /plan MIR-19 on 2026-11-11: the rest of plan Phase 5, split off
+# because MIR-19 whole counted L (ADR-097 decision 5; .ai/board/tickets/MIR-19/01-plan.md § 1, § 7).
+# Not produced by /triage: no idea file promotes it. It shares MIR-19's feature row, which stays
+# PLANNED until MIR-19 and MIR-19-b (and any split of it) have shipped.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-19-b
+title: "The e2e specs that assert an in-app link read it through an org-prefix helper"   # narrowed at /plan MIR-19-b, 2026-11-11 (01-plan.md § 1, Changelog). Was: "Every authenticated page moves to `/{org_code}`: the specs learn the prefix, then the root addresses send a member to their org" — the rest is MIR-19-c
+feature_ids: [MIR-19]   # split of MIR-19 (operating model § ID scheme: splits get -a, -b)
+group: MIR
+state: DONE
+owner: ""
+branch: ""
+size_estimate: "M"   # set by tech-lead-design at /plan MIR-19-b, 2026-11-11 (01-plan.md § 1)
+size: "M"            # 12 allowed_paths (01-plan.md § 7). Predicted L at /plan MIR-19 for the whole of ADR-097 decision 5; split again here, the rest is MIR-19-c
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-10, MIR-11, MIR-12, MIR-13, MIR-14, MIR-15, MIR-18, MIR-21, MIR-21-b, MIR-21-c, MIR-21-d, MIR-21-e, MIR-21-f, MIR-19]
+invariants_touched: []   # set at /plan MIR-19-b: test code only (01-plan.md § 2)
+allowed_paths:
+  - ".ai/board/tickets/MIR-19-c/ticket.yaml"
+  - "tests/e2e/support/org-prefix.ts"
+  - "tests/e2e-org-prefix.test.ts"
+  - "tests/e2e/solo-admin-back-to-calendar.spec.ts"
+  - "tests/e2e/solo-admin-tabs.spec.ts"
+  - "tests/e2e/solo-approval-settings.spec.ts"
+  - "tests/e2e/solo-profile.spec.ts"
+  - "tests/e2e/solo-team-settings.spec.ts"
+  - "tests/e2e/solo-teams.spec.ts"
+  - "tests/e2e/tsk-01-tasks.spec.ts"
+  - "tests/e2e/tsk-04-week-task-badge.spec.ts"
+  - "tests/e2e/uie-09-admin-hub.spec.ts"
+glossary_owed: []
+schema_delta: none    # /plan MIR-19-b: none in this slice; item 6 (sign-up into an org) moved to MIR-19-c with its schema change
+requires_adr: false
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-11-11T13:56:15Z" }
+  review: { passed: true, at: "2026-11-11T14:13:26Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+# Not in .ai/templates/ticket.yaml. Added for the multi-tenancy plan; nothing in scripts/ reads them.
+mir_phase: 5
+mir_plan_item: "Phase 5"             # .ai/board/plans/calechip-multi-tenancy-plan.md:261-283
+verification_required: false
+mir_detail: |
+  ADR-097 decision 5, in this order. MIR-19 already serves `/{own_org}/…` beside every root address,
+  shows a not-found screen at any other org's address, and reads the caller's org through
+  `getOwnOrgCode()` (`useSession().orgCode`). `src/lib/org-path.ts` holds `splitOrgPath` / `orgPath`.
+  1. The e2e specs learn the org prefix through one helper under `tests/e2e/support/`, while the root
+     addresses still serve, so each passes before and after the flip. Sites, counted at /plan MIR-19:
+     `toHaveURL` with an exact string or `/\/$/` (evt-14, adm-04, uie-09); `toHaveAttribute("href", "/…")`
+     (solo-admin-back-to-calendar, solo-approval-settings, solo-profile, solo-team-settings,
+     solo-teams, tsk-01, tsk-04, uie-09); history walks on `new URL(page.url()).pathname`
+     (adm-05, cal-03, cal-04, cal-05, cal-06, cal-07, cal-08, cal-10, evt-09, solo-pending-approval-ui).
+  2. The flip: `/`, signing in, signing up and every org-less app address send a member to
+     `/{org_code}` + the same path and query. `undecided` and `member-less` stay at the root.
+  3. Email links carry the org (`supabase/functions/send-event-email/template.ts:269`). Guest links
+     stay token-only (ADR-097 decision 6).
+  4. nginx drops `$uri/` from `location /` (`docker/nginx.conf`).
+  5. The system panel's mock reserved list gains `tasks` (`src/lib/data/system.ts:758`).
+  6. A sign-up at `/{org_code}/signup` lands in that org (ADR-071 decision 1) — schema change, own ADR.

@@ -1,0 +1,54 @@
+# Created by `tech-lead-design` at /plan MIR-19-d on 2026-11-12: ADR-097 decision 5, item 6, split
+# off because MIR-19-d whole counted L and item 6 is a schema change (.ai/board/tickets/MIR-19-d/01-plan.md
+# § 1 and § 7). Not produced by /triage: no idea file promotes it. It shares MIR-19's feature row, which
+# stays PLANNED until MIR-19 to MIR-19-f have shipped; this is the last planned slice.
+# ticket.yaml is authoritative; backlog.md is a view (see .ai/01-operating-model.md).
+# state enum: TRIAGE BACKLOG PLAN READY IN_PROGRESS REVIEW REWORK ESCALATED DONE
+id: MIR-19-f
+title: "A sign-up at /{org_code}/signup lands in that org"
+feature_ids: [MIR-19]   # split of MIR-19 (operating model § ID scheme: splits get -a, -b)
+group: MIR
+state: DONE
+owner: ""
+branch: ""
+size_estimate: M      # S|M - set by tech-lead-design at PLAN; gates DoR
+size: M               # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. Counted at /plan MIR-19-f: 11 paths (01-plan.md § 7); a schema change under an ADR-067 ADR is sized by file count (MIR precedent)
+depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-10, MIR-11, MIR-12, MIR-13, MIR-14, MIR-15, MIR-18, MIR-21, MIR-21-b, MIR-21-c, MIR-21-d, MIR-21-e, MIR-21-f, MIR-19, MIR-19-b, MIR-19-c, MIR-19-d, MIR-19-e]   # decision 5 orders item 6 last
+invariants_touched: []
+allowed_paths:
+  - ".ai/registry/decisions/ADR-099-a-sign-up-at-an-org-address-lands-in-that-org-and-an-unknown-code-is-refused.md"
+  - "supabase/migrations/20261112150000_mir19f_sign_up_lands_in_org.sql"
+  - "supabase/tests/380-sign-up-lands-in-org.test.sql"
+  - "src/lib/data/index.ts"
+  - "src/lib/data/supabase.ts"
+  - "src/lib/data/mock.ts"
+  - "src/routes/SignUp.tsx"
+  - "src/App.tsx"
+  - "tests/signup-org.test.ts"
+  - "tests/e2e/mir-19-f-org-signup.spec.ts"
+  - "tests/e2e/mir-19-org-routing.spec.ts"
+glossary_owed: []
+schema_delta: "20261112150000_mir19f_sign_up_lands_in_org.sql — re-creates the trigger function public.admit_allow_listed_member() so it writes member.org_id from raw_user_meta_data.org_code (Org public when absent) and raises sign_up_org_unknown (P0002) on the auth.users insert when the code names no org. No table, column, constraint, policy, trigger or grant change (ADR-099; 01-plan.md § 4.1, § 6)"
+requires_adr: true    # ADR-099, written at this PLAN under ADR-008 and ADR-067 (ADR-097 decision 5.6)
+rework_count: 0
+chat_budget:
+  developer->tech-lead-design: { used: 0, max: 6 }
+tracker: { provider: "", external_id: "", sync_enabled: false }
+gates:
+  plan:   { passed: true, at: "2026-11-12T03:47:41Z" }
+  review: { passed: true, at: "2026-11-12T04:01:42Z" }
+
+# --- MIR extra fields ---------------------------------------------------------------------------
+# Not in .ai/templates/ticket.yaml. Added for the multi-tenancy plan; nothing in scripts/ reads them.
+mir_phase: 5
+mir_plan_item: "Phase 5"             # .ai/board/plans/calechip-multi-tenancy-plan.md:261-283
+verification_required: false
+mir_detail: |
+  ADR-097 decision 5, item 6: a sign-up at /{org_code}/signup lands in that org (ADR-071 decision 1).
+  Today /{org}/signup crosses out to /signup (MIR-19 AC-9, App.tsx LeaveOrg kind "through"), and every
+  sign-up creates a pending member row with no team (admit_allow_listed_member, SOLO
+  2026-09-10). This needs a sign-up write path that takes an org: a schema change and its own ADR,
+  written at this ticket's PLAN (ADR-008, ADR-067). Applying the migration to the hosted project is
+  human (RULE-09). Open at PLAN: which orgs accept sign-ups at their address, and what a sign-up at an
+  unknown or reserved code does; both come from ADR-071 and the operator's recorded decisions, never
+  invented.

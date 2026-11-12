@@ -23,6 +23,90 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
 
+**`MIR-20` shipped on 2026-11-12, `state: DONE`.** `features.md` row `MIR-20` left `PLANNED`: `MIR-20-b` and `MIR-20-c` are still `BACKLOG`. Moved to `## ARCHIVE`, whose oldest row (MIR-16-g) left the rolling twenty.
+
+**`MIR-20` was at `REVIEW` in `ticket.yaml`, `gates.review` passed** — recorded at /advance on 2026-11-12 from `04-review.md`: `gate: PASS`, `verdict: PASS`, `invariant_violation: false`, `route_to: none`. `state` stays `REVIEW` until /ship.
+
+**`MIR-20` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-12 from `03-impl-log.md` gate PASS; its row left this table.
+
+**`MIR-20` moved here at /advance on 2026-11-12**, from `01-plan.md` gate PASS (`produced_at: 2026-11-12T07:10:00Z`) with all six Definition of Ready items passing; `schema_delta` is non-none and cites ADR-100, `ACCEPTED by tech-lead-design` under ADR-067. PLAN split Phase 6 three ways: `MIR-20-b` (the touched org reads the log) and `MIR-20-c` (acting-as calendar reads), both `BACKLOG`. Applying the migration stays human (RULE-09). Run by `/run-ticket MIR-20`.
+
+**`MIR-19-f` shipped on 2026-11-12, `state: DONE`.** This is the last of MIR-19's slices (MIR-19, -b … -f); `features.md` row `MIR-19` is set to `DONE`, Invariants unchanged (every slice `[]`). Moved to `## ARCHIVE`, whose oldest row (MIR-16-f) left the rolling twenty.
+
+**`MIR-19-f` was at `REVIEW` in `ticket.yaml`, `gates.review` passed** — recorded at /advance on 2026-11-12 from `04-review.md`: `gate: PASS`, `verdict: PASS`, `invariant_violation: false`, `route_to: none`. `state` stays `REVIEW` until /ship.
+
+**`MIR-19-f` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-12 from `03-impl-log.md` gate PASS; its row left this table.
+
+**`MIR-19-f` moved here at /advance on 2026-11-12**, from `01-plan.md` gate PASS (`produced_at: 2026-11-12T03:38:19Z`) with all six Definition of Ready items passing; `schema_delta` is non-none and cites ADR-099, `ACCEPTED by tech-lead-design` under ADR-067 (it narrows ADR-097 decision 1 and ADR-071's revert condition). Applying the migration stays human (RULE-09). Run by `/run-ticket MIR-19-f`.
+
+**`MIR-19-e` shipped on 2026-11-12, `state: DONE`.** `features.md` row `MIR-19` left `PLANNED`: `MIR-19-f` is still `BACKLOG`. Moved to `## ARCHIVE`, whose oldest row (MIR-16-c) left the rolling twenty.
+
+**`MIR-19-e` was at `REVIEW` in `ticket.yaml`, `gates.review` passed** — recorded at /advance on 2026-11-12 from `04-review.md`: `gate: PASS`, `verdict: PASS`, `invariant_violation: false`, `route_to: none`. `state` stays `REVIEW` until /ship.
+
+**`MIR-19-e` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-12 from `03-impl-log.md` gate PASS; its row left this table.
+
+**`MIR-19-e` moved here at /advance on 2026-11-12**, from `01-plan.md` gate PASS (`produced_at: 2026-11-12T02:39:03Z`) with all six Definition of Ready items passing; `schema_delta` is non-none and cites ADR-098, `ACCEPTED by tech-lead-design` under ADR-067. Applying the migration and redeploying `send-event-email` stay human (RULE-09). Run by `/run-ticket MIR-19-e`.
+
+**`MIR-19-d` shipped on 2026-11-12, `state: DONE`.** `features.md` row `MIR-19` left `PLANNED`: `MIR-19-e` and `MIR-19-f` are still `BACKLOG`. Moved to `## ARCHIVE`, whose oldest row (MIR-16-e) left the rolling twenty.
+
+**`MIR-19-d` was at `REVIEW` in `ticket.yaml`, `gates.review` passed** — recorded at /advance on 2026-11-12 from `04-review.md`: `gate: PASS`, `verdict: PASS`, `invariant_violation: false`, `route_to: none`. `state` stays `REVIEW` until /ship.
+
+**`MIR-19-d` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-12 from `03-impl-log.md` third pass gate PASS. The first two passes were BLOCKED on plan defects (AC-7 examples; cal-08 outside `allowed_paths`), each answered by tech-lead-design in `99-questions.md` with the plan amended. Its row left this table.
+
+**`MIR-19-d` moved here at /advance on 2026-11-12**, from `01-plan.md` gate PASS (`produced_at: 2026-11-12T01:18:05Z`) with all six Definition of Ready items passing; `schema_delta: none`. PLAN split again: items 3–5 are `MIR-19-e`, item 6 (sign-up into an org, `requires_adr: true`) is `MIR-19-f`, both `BACKLOG`. Run by `/run-ticket MIR-19-d`.
+
+**`MIR-19-c` shipped on 2026-11-12, `state: DONE`.** `features.md` row `MIR-19` left `PLANNED`: the rest of Phase 5 is `MIR-19-d` (`BACKLOG`). Moved to `## ARCHIVE`, whose oldest row (MIR-16-d) left the rolling twenty.
+
+**`MIR-19-c` was at `REVIEW` in `ticket.yaml`, `gates.review` passed** — recorded at /advance on 2026-11-12 from `04-review.md`: `gate: PASS`, `verdict: PASS`, `invariant_violation: false`, `route_to: none`. `state` stays `REVIEW` until /ship.
+
+**`MIR-19-c` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-12 from `03-impl-log.md` gate PASS; its row left this table.
+
+**`MIR-19-c` moved here at /advance on 2026-11-12**, from `01-plan.md` gate PASS (`produced_at: 2026-11-12T00:36:35Z`) with all six Definition of Ready items passing; `schema_delta: none`. PLAN split again (ADR-097 decision 5): the flip and the rest are `MIR-19-d` (`BACKLOG`). Run by `/run-ticket MIR-19-c`.
+
+**`MIR-19-b` shipped on 2026-11-11, `state: DONE`.** `features.md` row `MIR-19` left `PLANNED`: the rest of Phase 5 is `MIR-19-c` (`BACKLOG`). Moved to `## ARCHIVE`, whose oldest row (MIR-16-b) left the rolling twenty.
+
+**`MIR-19-b` was at `REVIEW` in `ticket.yaml`, `gates.review` passed** — recorded at /advance on 2026-11-11 from `04-review.md` (`produced_at: 2026-11-11T14:12:15Z`): `gate: PASS`, `verdict: PASS`, `invariant_violation: false`, `route_to: none`. `state` stays `REVIEW` until /ship.
+
+**`MIR-19-b` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-11 from `03-impl-log.md` gate PASS (`/implement` had already set `state: REVIEW`, so `already recorded`); its row left this table.
+
+**`MIR-19-b` moved here at /advance on 2026-11-11**, from `01-plan.md` gate PASS (`produced_at: 2026-11-11T13:50:31Z`) with all six Definition of Ready items passing; `schema_delta: none`. PLAN split again (ADR-097 decision 5): the rest of Phase 5 is `MIR-19-c` (`BACKLOG`). Run by `/run-ticket MIR-19-b`.
+
+**`MIR-19` shipped on 2026-11-11, `state: DONE`.** `features.md` row `MIR-19` left `PLANNED`: its own PLAN split the flip and the rest of Phase 5 to `MIR-19-b` (still `BACKLOG`). One rework cycle (R5). Moved to `## ARCHIVE`, whose oldest row (MIR-16) left the rolling twenty.
+
+**`MIR-19` was at `REVIEW` in `ticket.yaml`, `gates.review` passed** — recorded at /advance on 2026-11-11 from `04-review.md` second pass (`produced_at: 2026-11-11T13:27:16Z`): `gate: PASS`, `verdict: PASS`, `invariant_violation: false`, `route_to: none`. `state` stays `REVIEW` until /ship.
+
+**`MIR-19` was at `REWORK` (routed to `developer`), moved back to `REVIEW`** — recorded at /advance on 2026-11-11 from `03-impl-log.md` rework 1 gate PASS (`BrowserRouter` given `key`/`basename`; `mir-19-org-routing.spec.ts` 12/12, full e2e 523 passed).
+
+**`MIR-19` was at `REVIEW` in `ticket.yaml`, routed to `REWORK`** — recorded at /advance on 2026-11-11 from `04-review.md` (`produced_at: 2026-11-11T13:14:29Z`): `gate: FAIL`, `verdict: FAIL`, `failed_checks: [R5]`, `invariant_violation: false`, `route_to: developer`, `increments_rework: true`. `rework_count` 0 → 1 (RULE-06 escalates at 2).
+
+**`MIR-19` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-11 from `03-impl-log.md` second pass gate PASS. The first pass was BLOCKED on a plan defect (`010-catalogue.test.sql` outside `allowed_paths`); tech-lead-design answered in `99-questions.md`, amended the plan and set `size: L` (not split; reason in plan § 7). Its row left this table.
+
+**`MIR-19` moved here at /advance on 2026-11-11**, from `01-plan.md` gate PASS with all six Definition of Ready items passing; `schema_delta` is non-none and cites ADR-097, `ACCEPTED by tech-lead-design` under ADR-067. PLAN split the flip and the rest of Phase 5 to a new slice, `MIR-19-b` (`BACKLOG`). Run by `/run-ticket MIR-19`.
+
+**`MIR-17-g` shipped on 2026-11-11, `state: DONE`.** This is the last of MIR-17's slices (MIR-17, -b … -g); `features.md` row `MIR-17` is set to `DONE`, Invariants unchanged (every slice `[]`). Moved to `## ARCHIVE`, whose oldest row (MIR-21-f) left the rolling twenty.
+
+**`MIR-17-g` was at `REVIEW` in `ticket.yaml`, `gates.review` passed** — recorded at /advance on 2026-11-11 from `04-review.md` (`produced_at: 2026-11-11T09:25:30Z`): `gate: PASS`, `verdict: PASS`, `invariant_violation: false`, `route_to: none`. `state` stays `REVIEW` until /ship.
+
+**`MIR-17-g` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-11 from `03-impl-log.md` gate PASS; its row left this table.
+
+**`MIR-17-g` moved here at /advance on 2026-11-11**, from `01-plan.md` gate PASS (`produced_at: 2026-11-11T09:13:54Z`) with all six Definition of Ready items passing; `schema_delta: none`. PLAN wrote ADR-096 (`ACCEPTED by tech-lead-design` under ADR-067). Run by `/run-ticket MIR-17-g`.
+
+**`MIR-18-c` shipped on 2026-11-11, `state: DONE`.** This is the last of MIR-18's slices (MIR-18, -b, -c); `features.md` row `MIR-18` is set to `DONE`, Invariants unchanged (every slice `[]`). `verification_required: true`: AC-1–AC-5 and AC-17 were not run (no Docker daemon, no Postgres) and `verification.md` does not exist — a person runs them before merge. Moved to `## ARCHIVE`, whose oldest row (MIR-21-e) left the rolling twenty.
+
+**`MIR-18-c` was at `REVIEW` in `ticket.yaml`, `gates.review` passed** — recorded at /advance on 2026-11-11 from `04-review.md` (`produced_at: 2026-11-11T08:37:10Z`): `gate: PASS`, `verdict: PASS`, `invariant_violation: false`, `route_to: none`. `state` stays `REVIEW` until /ship.
+
+**`MIR-18-c` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-11 from `03-impl-log.md` gate PASS (`produced_at: 2026-11-11T08:35:00Z`); its row left this table.
+
+**`MIR-18-c` moved here at /advance on 2026-11-11**, from `01-plan.md` gate PASS (`produced_at: 2026-11-11T08:40:00Z`) with all six Definition of Ready items passing; `schema_delta` is non-none and cites ADR-095, `ACCEPTED by tech-lead-design` under ADR-067. Applying its migration and enabling the MFA hook on a hosted project stay human (RULE-09). Run by `/run-ticket MIR-18-c`.
+
+**`MIR-17-f` shipped on 2026-11-11, `state: DONE`.** `features.md` row `MIR-17` left `PLANNED`: its own PLAN split the router guards to a new slice, `MIR-17-g` (still `BACKLOG`). Moved to `## ARCHIVE`, whose oldest row (MIR-21-d) left the rolling twenty.
+
+**`MIR-17-f` was at `REVIEW` in `ticket.yaml`, `gates.review` passed** — recorded at /advance on 2026-11-11 from `04-review.md` (`produced_at: 2026-11-11T08:15:30Z`): `gate: PASS`, `verdict: PASS`, `invariant_violation: false`, `route_to: none`. `state` stays `REVIEW` until /ship.
+
+**`MIR-17-f` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-11 from `03-impl-log.md` gate PASS (`produced_at: 2026-11-11T08:20:00Z`); its row left this table.
+
+**`MIR-17-f` moved here at /advance on 2026-11-11**, from `01-plan.md` gate PASS (`produced_at: 2026-11-11T08:04:23Z`) with all six Definition of Ready items passing; `schema_delta: none` (ADR-094 decision 1). PLAN split the router guards to a new slice, `MIR-17-g` (`BACKLOG`), and added it to `MIR-20`'s `depends_on`. Run by `/run-ticket MIR-17-f`.
+
 **`MIR-15-d` shipped on 2026-11-11, `state: DONE`.** This is the last of MIR-15's slices (MIR-15, -b, -c, -d, -e); `features.md` row `MIR-15` is set to `DONE`, Invariants `INV-02, INV-04, INV-07` (the union of the slices' `invariants_touched`). The MIR status index is outside `allowed_paths` and was not touched. Moved to `## ARCHIVE`, whose oldest row (MIR-21-d) left the rolling twenty.
 
 **`MIR-15-d` was at `REVIEW` in `ticket.yaml`, `gates.review` passed** — recorded at /advance on 2026-11-11 from `04-review.md` (`produced_at: 2026-11-11T07:57:00Z`): `gate: PASS`, `verdict: PASS`, `invariant_violation: false`, `route_to: none`. `state` stays `REVIEW` until /ship.
@@ -1847,26 +1931,26 @@ các tính năng mới và đưa vào backlog"*. The four solo rows registered e
 
 | # | Ticket | Title | Shipped | PR |
 |---|--------|-------|---------|-----|
-| 1 | MIR-21-e | No fixture names `member.team_id`: every fixture writes `membership` itself — fixture slice (ADR-081; the fixtures of 100, 160 and 240 move to MIR-21-f) | 2026-11-07 | PENDING_PR |
-| 2 | MIR-21-f | `member.team_id`, `member_team_id()` and the mirror's insert branch are dropped — drop slice (ADR-080 decision 4, ADR-081) | 2026-11-07 | PENDING_PR |
-| 3 | MIR-16 | The database splits admin into system_admin, org_admin and a per-team manager — first slice: issue reports go to the system panel (ADR-082; `org_admin` is MIR-16-b, `manager` is MIR-16-c) | 2026-11-07 | PENDING_PR |
-| 4 | MIR-16-b | `is_org_admin(uid, org_id)` replaces `is_admin(uid)` at every call site — second slice of the role split (ADR-083; the `org_admin` rename is MIR-16-d) | 2026-11-07 | PENDING_PR |
-| 5 | MIR-16-d | The pgTAP fixtures name the admin role through one helper, `tests.member_role`: the harness and seven files — fixture slice of the role split (ADR-084; the in-place rename is MIR-16-e) | 2026-11-07 | PENDING_PR |
-| 6 | MIR-16-e | The value `admin` is renamed `org_admin` in place: the type, the five bodies, bootstrap, seed, the seam's mapping, and the last five fixtures — rename slice (ADR-084 decision 2) | 2026-11-07 | PENDING_PR |
-| 7 | MIR-16-c | `manager` leaves `member.role`: every manager check reads `membership.team_role` — read slice of the manager rank (ADR-085; the write side and the enum removal move to MIR-16-f) | 2026-11-08 | PENDING_PR |
-| 8 | MIR-16-f | `set_member_role` writes the team role, not `member.role` — write slice of the manager rank (ADR-086; the column retype and enum removal move to MIR-16-g) | 2026-11-08 | PENDING_PR |
-| 9 | MIR-16-g | The pgTAP fixtures say which team role they mean, and stop spelling `'manager'` as a member role — fixture slice of the manager rank (ADR-087; the column retype moves to MIR-16-h) | 2026-11-08 | PENDING_PR |
-| 10 | MIR-16-h | `'manager'` leaves `public.member_role`: the column is re-typed, the audit history keeps its words as text, and `set_member_role` takes text — last slice of the role split (ADR-086 decision 2, ADR-087 decision 2) | 2026-11-08 | PENDING_PR |
-| 11 | MIR-17 | Issue reports leave the member app — first slice of the client role-guard work (ADR-088; the rest of P4-2 is MIR-17-b) | 2026-11-08 | PENDING_PR |
-| 12 | MIR-17-b | Every `me.role !== "admin"` guard goes through `mayAdminister`, and a manager is labelled a manager on Teams — second slice of the client role-guard work (ADR-089; the rest of P4-2 is MIR-17-c) | 2026-11-08 | PENDING_PR |
-| 13 | MIR-17-c | The approval worklist decides per row, per team, from `listEntryOwners` — third slice of the client role-guard work (ADR-090; the rest of P4-2 is MIR-17-d) | 2026-11-09 | PENDING_PR |
-| 14 | MIR-17-d | The seam's `appRole` reads the manager rank from `manages_a_team`, not a single team's role — fourth slice of the client role-guard work (ADR-091; the rest of P4-2 is MIR-17-e) | 2026-11-09 | PENDING_PR |
-| 15 | MIR-17-e | The entry and event affordances ask `mayAdminister` — fifth slice of the client role-guard work (ADR-092; the rest of P4-2 is MIR-17-f) | 2026-11-09 | PENDING_PR |
-| 16 | BUG-003 | The sidebar's week, year and holidays links are commented out, so twenty shipped end-to-end criteria fail | 2026-11-11 | PENDING_PR |
-| 17 | BUG-004 | EVT-09 AC-6, the failed-invitation handoff, fails in CI on both attempts and passes locally | 2026-11-11 | PENDING_PR |
-| 18 | BUG-005 | EVT-02 AC-28 and EVT-10 AC-2/3/4 fail on first attempt under full-suite load and pass on retry | 2026-11-11 | PENDING_PR |
-| 19 | MIR-15-c | A system admin moves a team from Org public to another org from the system panel | 2026-11-11 | PENDING_PR |
-| 20 | MIR-15-d | The mock seam reproduces Org public's team-bound public events, and the seam tests assert it | 2026-11-11 | PENDING_PR |
+| 1 | MIR-17 | Issue reports leave the member app — first slice of the client role-guard work (ADR-088; the rest of P4-2 is MIR-17-b) | 2026-11-08 | PENDING_PR |
+| 2 | MIR-17-b | Every `me.role !== "admin"` guard goes through `mayAdminister`, and a manager is labelled a manager on Teams — second slice of the client role-guard work (ADR-089; the rest of P4-2 is MIR-17-c) | 2026-11-08 | PENDING_PR |
+| 3 | MIR-17-c | The approval worklist decides per row, per team, from `listEntryOwners` — third slice of the client role-guard work (ADR-090; the rest of P4-2 is MIR-17-d) | 2026-11-09 | PENDING_PR |
+| 4 | MIR-17-d | The seam's `appRole` reads the manager rank from `manages_a_team`, not a single team's role — fourth slice of the client role-guard work (ADR-091; the rest of P4-2 is MIR-17-e) | 2026-11-09 | PENDING_PR |
+| 5 | MIR-17-e | The entry and event affordances ask `mayAdminister` — fifth slice of the client role-guard work (ADR-092; the rest of P4-2 is MIR-17-f) | 2026-11-09 | PENDING_PR |
+| 6 | BUG-003 | The sidebar's week, year and holidays links are commented out, so twenty shipped end-to-end criteria fail | 2026-11-11 | PENDING_PR |
+| 7 | BUG-004 | EVT-09 AC-6, the failed-invitation handoff, fails in CI on both attempts and passes locally | 2026-11-11 | PENDING_PR |
+| 8 | BUG-005 | EVT-02 AC-28 and EVT-10 AC-2/3/4 fail on first attempt under full-suite load and pass on retry | 2026-11-11 | PENDING_PR |
+| 9 | MIR-15-c | A system admin moves a team from Org public to another org from the system panel | 2026-11-11 | PENDING_PR |
+| 10 | MIR-15-d | The mock seam reproduces Org public's team-bound public events, and the seam tests assert it | 2026-11-11 | PENDING_PR |
+| 11 | MIR-17-f | MemberList's controls are scoped per team, the team picker is re-keyed, and the router gains role guards | 2026-11-11 | PENDING_PR |
+| 12 | MIR-18-c | The system panel is served unindexed at an unguessable path, with rate limiting and failed-login logging on its second factor | 2026-11-11 | PENDING_PR |
+| 13 | MIR-17-g | The router gains role guards, or records why the screens' in-place refusals are the guards | 2026-11-11 | PENDING_PR |
+| 14 | MIR-19 | Every authenticated page is served under `/{org_code}` | 2026-11-11 | PENDING_PR |
+| 15 | MIR-19-b | The e2e specs that assert an in-app link read it through an org-prefix helper | 2026-11-11 | PENDING_PR |
+| 16 | MIR-19-c | The e2e specs that walk history to an exact pathname read it through the org-prefix helper | 2026-11-12 | PENDING_PR |
+| 17 | MIR-19-d | The root addresses send a member to their org | 2026-11-12 | PENDING_PR |
+| 18 | MIR-19-e | Email links carry the org, nginx drops $uri/, and the panel's mock reserved list gains tasks | 2026-11-12 | PENDING_PR |
+| 19 | MIR-19-f | A sign-up at /{org_code}/signup lands in that org | 2026-11-12 | PENDING_PR |
+| 20 | MIR-20 | system_admin impersonation is read-only, time-boxed, reasoned and logged, and visible to the org it touched | 2026-11-12 | PENDING_PR |
 
 **The window displaced `MIR-21` at MIR-17-e's ship** — *MIR-21, `member.team_id` is dropped once every reader has moved to `membership` — read slice (ADR-077, roster team), shipped 2026-11-05,* PENDING_PR.
 

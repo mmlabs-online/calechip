@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { E2E_ORG_CODE } from "./support/org-prefix";
 
 // EVT-14 — a signed-out reader of a guest link is offered sign-in and sign-up, and signing in returns
 // them to the event. 01-plan.md § 2 AC-1..AC-12; § 2b; § 4.4.
@@ -292,7 +293,7 @@ test.describe("EVT-14 — signing in from it", () => {
     await expect(page.locator('meta[name="referrer"], meta[name="robots"]')).toHaveCount(0);
 
     await submitSignIn(page, TEAMMATE.email);
-    await expect(page).toHaveURL(`/events/${id}`);
+    await expect(page).toHaveURL(`/${E2E_ORG_CODE}/events/${id}`);
     await expect(page.getByTestId("event-detail")).toBeVisible();
 
     await page.goBack();
@@ -332,21 +333,21 @@ test.describe("EVT-14 — signing in from it", () => {
       await expect(page.getByTestId("home-sign-out")).toBeVisible();
       // The browser never left the application's origin.
       expect(new URL(page.url()).origin).toBe("http://localhost:4173");
-      await expect(page).toHaveURL("/");
+      await expect(page).toHaveURL(`/${E2E_ORG_CODE}`);
     });
   }
 
   test("AC-10: /signin without next is unchanged — a caller already signed in is sent to /", async ({ page }) => {
     await signIn(page, TEAMMATE.email);
     await navigate(page, "/signin");
-    await expect(page).toHaveURL("/");
+    await expect(page).toHaveURL(`/${E2E_ORG_CODE}`);
     await expect(page.getByTestId("home-sign-out")).toBeVisible();
   });
 
   test("AC-9: a caller already signed in at /signin?next=<in-app path> is sent to it", async ({ page }) => {
     await signIn(page, TEAMMATE.email);
     await navigate(page, `/signin?next=${encodeURIComponent("/events")}`);
-    await expect(page).toHaveURL("/events");
+    await expect(page).toHaveURL(`/${E2E_ORG_CODE}/events`);
   });
 });
 

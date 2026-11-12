@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { appHref, stripOrg } from "./support/org-prefix";
 
 // UIE-09 — the admin hub at `/admin`, and the one top-bar control that reaches it.
 //
@@ -228,7 +229,7 @@ test.describe("UIE-09 — the admin hub", () => {
     // Each is also individually named, so AC-4 can follow one rather than a row.
     for (const destination of DESTINATIONS) {
       await expect(page.getByTestId(destination.testId)).toHaveCount(1);
-      await expect(page.getByTestId(destination.testId)).toHaveAttribute("href", destination.path);
+      await expect.poll(() => appHref(page.getByTestId(destination.testId))).toBe(destination.path);
     }
 
     // NO SIXTH LINK. Everything anchored inside the list is one of the five — `/holidays` in
@@ -237,7 +238,7 @@ test.describe("UIE-09 — the admin hub", () => {
     const hrefs = await page
       .locator('[data-testid="admin-hub-link"] a')
       .evaluateAll((nodes) => nodes.map((node) => node.getAttribute("href")));
-    expect(hrefs).toEqual(DESTINATIONS.map((d) => d.path));
+    expect(hrefs.map((h) => (h === null ? null : stripOrg(h)))).toEqual(DESTINATIONS.map((d) => d.path));
 
     // A successful read renders neither the refusal nor the failure state. See the header.
     await expect(page.getByTestId("admin-hub-refused")).toHaveCount(0);

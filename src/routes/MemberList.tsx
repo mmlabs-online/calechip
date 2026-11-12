@@ -20,8 +20,18 @@ import { seam } from "@/lib/data";
 // the type was never imported, so `pnpm typecheck` failed with `Cannot find name 'Team'`. The same
 // shape of miss as `TYPE_CODES` in WeekView.tsx and `Link` here in Threshold.tsx — Vite compiles a
 // module with an unresolved name and says nothing, so only `pnpm typecheck` sees it.
-import type { Failure, Member, MemberRole, Team } from "@/lib/domain/types";
-import { ROLE_BADGE_COLORS, ROLE_LABELS } from "@/lib/roles";
+import type { Failure, Member, MemberRole, Team, TeamRole } from "@/lib/domain/types";
+import {
+  managerToggleFor,
+  mayAdminister,
+  mayPromoteMember,
+  mayRemoveMember,
+  maySetManager,
+  NO_ROSTER_SCOPE,
+  ROLE_BADGE_COLORS,
+  ROLE_LABELS,
+  type RosterScope,
+} from "@/lib/roles";
 // SOLO, 2026-09-11 — the loading mark that replaced this screen's sentence. The sentence itself is
 // still announced: `Loader.tsx` keeps it as `sr-only` text, because the element below carries
 // `role="status"` and an emptied one announces nothing.
@@ -83,7 +93,7 @@ type View =
   // SOLO, 2026-09-12. `teams` REPLACES `team`. The operator asked for every member in the system on
   // this screen, and rows from more than one team need more than one team's name to render the TEAM
   // column — one team was enough only while the roster was scoped to the caller's own.
-  | { phase: "ready"; me: Member; roster: Member[]; teams: Team[] }; // AC-1, AC-3, AC-4
+  | { phase: "ready"; me: Member; roster: Member[]; teams: Team[]; scope: RosterScope }; // AC-1, AC-3, AC-4
 
 export default function MemberList() {
   const [view, setView] = useState<View>({ phase: "loading" });
@@ -148,14 +158,22 @@ export default function MemberList() {
       // that a member sees the same cells an admin sees, and `tests/e2e/solo-member-admin.spec.ts`
       // test 6 drives a member through it. Pointing everyone at the admin reads showed a member an
       // empty roster — caught by that test, which is why it exists.
-      const isAdmin = me.role === "admin";
-      const [roster, teams] = await Promise.all([
+      const isAdmin = mayAdminister(me.role);
+      // MIR-17-f, ADR-094: an admin also reads the caller's active teams and each row's roster team
+      // role, inside this try, so a failed read renders `member-list-unavailable`.
+      const [roster, teams, ownTeamIds, teamRoles] = await Promise.all([
         isAdmin ? seam.listAllMembers() : seam.listMembers(),
         // A member keeps `getTeam()`, which is `team_select_own` and is the only team they may read.
         // Wrapped into a one-element list so the lookup below has one shape rather than two.
         isAdmin ? seam.listTeams() : seam.getTeam().then((t) => (t ? [t] : [])),
+        isAdmin ? seam.listOwnTeamIds() : Promise.resolve(null),
+        isAdmin ? seam.listRosterTeamRoles() : Promise.resolve(null),
       ]);
-      setView({ phase: "ready", me, roster, teams });
+      const scope: RosterScope =
+        ownTeamIds === null || teamRoles === null
+          ? NO_ROSTER_SCOPE
+          : { ownTeamIds, teamRoles: new Map(teamRoles.map((r) => [r.memberId, r.teamRole])) };
+      setView({ phase: "ready", me, roster, teams, scope });
     } catch {
       // AC-8, and a transport failure with it. Design section 1.3.1: folding this into
       // `notOnATeam` the way AllowList.tsx folds a throw into `refused` would be wrong twice — a
@@ -204,7 +222,7 @@ export default function MemberList() {
   // SOLO 2026-09-12, ADR-035. `onPromote`'s shape, kept rather than generalised: the two
   // refusals and the reload are identical, and folding them would put a direction parameter
   // through a function sixty-odd assertions already address by name.
-  async function onSetManager(member: Member) {
+  async function onSetManager(member: Member, teamRole: TeamRole) {
     if (busy) return;
 
     setBusy(true);
@@ -212,7 +230,7 @@ export default function MemberList() {
     try {
       const result = await seam.setMemberRole(
         member.id,
-        member.role === "manager" ? "member" : "manager",
+        managerToggleFor(teamRole).next,
       );
       if (result.ok) {
         await load();
@@ -322,7 +340,7 @@ export default function MemberList() {
     );
   }
 
-  const { me, roster, teams } = view;
+  const { me, roster, teams, scope } = view;
 
   /**
    * SOLO, 2026-09-12. A team id to its name. This REPLACES a single `teamName` string, which was
@@ -343,22 +361,19 @@ export default function MemberList() {
   // members — `current` below runs first — and re-testing it here would imply the list might
   // contain one.
   //
-  // MIR-03 AC-11 — ADR-065. **ALL THREE COMPARE TEAMS NOW, BECAUSE ALL THREE CONTROLS ARE OWN-TEAM.**
-  // Removal is `member_update_admin`, whose `using` is the caller's own team (ADR-044 Decision 3);
-  // the rank write is `public.set_member_role` and promotion is `public.promote_member_to_admin`, and
-  // both carry `team_id = member_team_id(auth.uid())` since ADR-065 decision 1. These are AFFORDANCES
-  // (ADR-005): each function refuses another team's row whoever issues the call.
-  const canRemove = (m: Member): boolean =>
-    me.role === "admin" && m.id !== me.id && m.teamId === me.teamId;
-  const canPromote = (m: Member): boolean =>
-    me.role === "admin" && m.id !== me.id && m.role === "member" && m.teamId === me.teamId;
+  // MIR-17-f, ADR-094 decision 2 (was MIR-03 AC-11, ADR-065). **ALL THREE ARE SCOPED TO THE CALLER'S
+  // ACTIVE TEAMS**, which is the bound `member_update_admin`, `promote_member_to_admin` and
+  // `set_member_role` share: the row's roster team is in `member_team_ids(auth.uid())`. The predicates
+  // live in `src/lib/roles.ts`. These are AFFORDANCES (ADR-005): each function refuses another
+  // team's row whoever issues the call.
+  const canRemove = (m: Member): boolean => mayRemoveMember(me, m, scope);
+  const canPromote = (m: Member): boolean => mayPromoteMember(me, m, scope);
 
   // SOLO 2026-09-12, ADR-035. **THE MANAGER RANK TOGGLES; THE ADMIN RANK DOES NOT.** `member` and
   // `manager` move both ways because ADR-035 § Decision item 6 settled that pair; an admin's row
   // draws neither control, because *Demote an admin to member* is NOT DECIDED in
   // `.ai/standards/rbac-and-security.md` and the member trigger refuses the write either way.
-  const canSetManager = (m: Member): boolean =>
-    me.role === "admin" && m.id !== me.id && m.role !== "admin" && m.teamId === me.teamId;
+  const canSetManager = (m: Member): boolean => maySetManager(me, m, scope);
 
   // MIR-03, 01-plan.md section 4.5. Only one confirmation is open at a time: while either dialog is
   // open, the row write controls are disabled.
@@ -416,7 +431,7 @@ export default function MemberList() {
             only — an admin has two controls on it. A standing sentence that stopped being true for
             half the readers is worse than no sentence. */}
         <p className="mt-2 text-sm opacity-70">
-          {me.role === "admin"
+          {mayAdminister(me.role)
             ? "Who is on the team, and what each person may do. You can remove somebody, make them a manager so they can approve entries, or promote them to admin."
             : "Who is on the team, and who is an admin. This page is view-only."}
         </p>
@@ -503,7 +518,10 @@ export default function MemberList() {
                 </td>
               </tr>
             ) : null}
-            {shown.map((member) => (
+            {shown.map((member) => {
+              // MIR-17-f: the row's roster team role, undefined when it could not be read.
+              const teamRole = scope.teamRoles.get(member.id);
+              return (
               // `data-member-id` is how AC-1's "the caller included" is asserted — the caller's own
               // id appears as a row — and how AC-2's "no row belonging to team U" is asserted, by
               // the absence of that team's member id. No "this is you" marker is drawn: the story
@@ -628,19 +646,21 @@ export default function MemberList() {
                     {/* SOLO 2026-09-12, ADR-035. ONE CONTROL AND TWO DIRECTIONS, because the rank it
                         toggles has exactly two states from here: a `member` becomes a `manager`, a
                         `manager` goes back. `data-role` carries the CURRENT rank so a spec can say
-                        which direction it expects rather than reading the label. */}
-                    {canSetManager(member) ? (
+                        which direction it expects rather than reading the label. MIR-17-f, ADR-094:
+                        the rank is the ROW'S ROSTER TEAM ROLE (`scope.teamRoles`), the rank the write
+                        changes, and not `member.role`, the any-team rank. */}
+                    {teamRole !== undefined && canSetManager(member) ? (
                       <button
                         data-testid="member-list-row-manager"
-                        data-role={member.role}
+                        data-role={teamRole}
                         type="button"
                         disabled={rowLocked}
                         onClick={() => {
-                          void onSetManager(member);
+                          void onSetManager(member, teamRole);
                         }}
                         className={ROW_ACTION}
                       >
-                        {member.role === "manager" ? "Remove manager" : "Make manager"}
+                        {managerToggleFor(teamRole).label}
                       </button>
                     ) : null}
 
@@ -667,7 +687,8 @@ export default function MemberList() {
                   </span>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       )}

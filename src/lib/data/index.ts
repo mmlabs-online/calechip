@@ -26,6 +26,8 @@ import type {
   PendingEntryPage,
   PendingEntryQuery,
   Result,
+  // MIR-17-f, 01-plan.md section 4.1.
+  RosterTeamRole,
   Session,
   Team,
   MemberRole,
@@ -59,6 +61,12 @@ export interface SignUpInput {
   password: string;
   displayName: string;
   avatar: string;
+  /**
+   * MIR-19-f, ADR-099. The org code of the address the sign-up was made at (`/{orgCode}/signup`);
+   * absent or null at `/signup`. Sent as `raw_user_meta_data.org_code`; the database resolves it and
+   * refuses a code that names no org.
+   */
+  orgCode?: string | null;
 }
 
 // SOLO, 2026-09-10. `AddAllowedEmailInput` stood here until the allow-list was removed whole.
@@ -301,6 +309,8 @@ export interface DataSeam {
    * AC-1, AC-5, AC-8, AC-13. Creates the auth user and nothing else — the `member` row is the
    * trigger's work, never this function's. It returns the same shape whether or not the address is
    * allow-listed, and it cannot tell the difference; that is what makes AC-5 hold.
+   * MIR-19-f: `input.orgCode` names the org the pending row lands in; a code that names no org is
+   * refused with `unknown`.
    */
   signUp(input: SignUpInput): Promise<Result<SignUpOutcome>>;
 
@@ -327,6 +337,13 @@ export interface DataSeam {
    * see "Prerequisites this ticket does not own" in 02-design.md section 5.
    */
   getCurrentMember(): Promise<Member | null>;
+
+  /**
+   * MIR-19, ADR-097 decision 2. The caller's own org code: `rpc("own_org_code")`.
+   * `null` when nobody is signed in, or the caller is not an approved, non-removed member.
+   * Never another org's code. THROWS on a transport failure, the shape `getCurrentMember` uses.
+   */
+  getOwnOrgCode(): Promise<string | null>;
 
   /**
    * SOLO, 2026-09-10. Everybody who has signed up and whom no admin has decided on yet, newest
@@ -807,6 +824,22 @@ export interface DataSeam {
    * THROWS on a transport failure and on a possibly-truncated answer.
    */
   listAllMembers(): Promise<Member[]>;
+
+  /**
+   * MIR-17-f, ADR-094 decision 1. Each roster row's rank on its roster team, for MemberList's
+   * manager toggle. `list_all_members` with the computed field `roster_team_role` selected over it:
+   * the admin's roster, including rows on the caller's non-primary teams. A non-admin gets [].
+   * THROWS on a transport failure or a truncated read, the shape `listAllMembers` uses.
+   */
+  listRosterTeamRoles(): Promise<RosterTeamRole[]>;
+
+  /**
+   * MIR-17-f, ADR-094 decision 1. The caller's active team ids: `public.member_team_ids` for the
+   * signed-in user. [] for no session, and for a caller not approved or removed (the function
+   * returns no row for either). An affordance for MemberList; the write functions are the control.
+   * THROWS on a transport failure.
+   */
+  listOwnTeamIds(): Promise<string[]>;
 
   // -------------------------------------------------------------------------
   // CAL-11 — the read half of a two-row split (ADR-039, ADR-040). 01-plan.md section 4.2. CAL-12

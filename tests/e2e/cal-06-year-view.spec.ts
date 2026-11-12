@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { choosePortion, chooseType, pickRange } from "./support/entry-form";
+import { appPathname } from "./support/org-prefix";
 
 // CAL-06 — the year view: one row per member across every day of the year.
 //
@@ -105,7 +106,7 @@ async function signIn(page: Page, email: string): Promise<void> {
  *  the session and every entry the test had created. */
 async function backToYear(page: Page, path: string): Promise<void> {
   for (let step = 0; step < 8; step += 1) {
-    if (new URL(page.url()).pathname === path) break;
+    if (appPathname(page) === path) break;
     await page.goBack();
   }
 }
@@ -138,7 +139,7 @@ async function declare(
   fields: { start: string; end: string; portion?: string; type?: string; tentative?: boolean },
   owned = 1,
 ): Promise<void> {
-  const path = new URL(page.url()).pathname;
+  const path = appPathname(page);
 
   // UIE-03 AC-12. The trip to the landing screen is deleted, not replaced: the create link is in
   // the TOP BAR and renders on the year itself.

@@ -8,24 +8,36 @@ id: MIR-18-c
 title: "The system panel is served unindexed at an unguessable path, with rate limiting and failed-login logging on its second factor"
 feature_ids: [MIR-18]   # split of MIR-18 (operating model § ID scheme: splits get -a, -b)
 group: MIR
-state: BACKLOG
+state: DONE
 owner: ""
 branch: ""
-size_estimate: ""     # S|M - set by tech-lead-design at PLAN; gates DoR
-size: ""              # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "M"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. 12 paths
 depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-05, MIR-06, MIR-07, MIR-08, MIR-09, MIR-10, MIR-12, MIR-18, MIR-18-b]   # MIR-18-b rewrites src/system/main.tsx, which the path change serves
 invariants_touched: []
-allowed_paths: []
+allowed_paths:
+  - ".ai/registry/decisions/ADR-095-the-system-panel-is-served-only-at-a-path-set-at-container-start-and-an-mfa-hook-logs-and-rate-limits-its-second-factor.md"
+  - ".ai/standards/rbac-and-security.md"
+  - "Dockerfile"
+  - "docker/nginx.conf"
+  - "docs/ops/deployment-repo/README.md"
+  - "docs/ops/deployment-repo/apps/calechip/compose.yml"
+  - "supabase/config.toml"
+  - "supabase/migrations/20261111180000_mir18c_mfa_verification_hook.sql"
+  - "supabase/tests/360-mfa-verification-hook.test.sql"
+  - "src/lib/data/system.ts"
+  - "src/system/main.tsx"
+  - "tests/e2e/mir-18-c-code-lockout.spec.ts"
 glossary_owed: []
-schema_delta: "TODO(plan): set at PLAN — likely a failed-login log table for the panel's second factor"
-requires_adr: false
+schema_delta: "non-none — new table public.mfa_failed_verification (RLS on, supabase_auth_admin only) and function public.hook_mfa_verification_attempt(jsonb), security invoker, executable by supabase_auth_admin only; wired as the Supabase Auth MFA verification attempt hook. ADR-095"
+requires_adr: true    # ADR-095, ACCEPTED under ADR-067 at /plan MIR-18-c
 rework_count: 0
 chat_budget:
   developer->tech-lead-design: { used: 0, max: 6 }
 tracker: { provider: "", external_id: "", sync_enabled: false }
 gates:
-  plan:   { passed: false, at: null }
-  review: { passed: false, at: null }
+  plan:   { passed: true, at: "2026-11-11T08:31:39Z" }
+  review: { passed: true, at: "2026-11-11T08:38:23Z" }
 
 # --- MIR extra fields ---------------------------------------------------------------------------
 # Not in .ai/templates/ticket.yaml. Added for the multi-tenancy plan; nothing in scripts/ reads them.

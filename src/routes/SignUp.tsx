@@ -35,7 +35,12 @@ type SignUpFormState =
   // session and this screen is finished. It hands over to `/` — see the branch below.
   | { phase: "signed-in" };
 
-export default function SignUp() {
+export interface SignUpProps {
+  /** MIR-19-f, ADR-099. The org of the address (`/{orgCode}/signup`); null at `/signup`. */
+  orgCode?: string | null;
+}
+
+export default function SignUp({ orgCode = null }: SignUpProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -68,7 +73,7 @@ export default function SignUp() {
     // configuration before any request leaves. Without this, that throw escaped as an uncaught page
     // error, the phase stayed `submitting`, and the person was left on a disabled button forever.
     try {
-      const result = await seam.signUp({ email, password, displayName, avatar: chosenAvatar });
+      const result = await seam.signUp({ email, password, displayName, avatar: chosenAvatar, orgCode });
 
       // AC-5: the success branch is identical whether or not the address was allow-listed. The seam
       // cannot tell the difference and neither can this component — nothing here branches on it.

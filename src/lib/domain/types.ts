@@ -20,6 +20,16 @@ import avatarImages from "virtual:avatar-images";
  */
 export type MemberRole = "member" | "manager" | "admin";
 
+/** MIR-17-f, ADR-094. A person's rank on one team — `public.team_role`. */
+export type TeamRole = "member" | "manager";
+
+/** MIR-17-f, ADR-094. One roster row's rank on its roster team — the computed field
+ *  `public.roster_team_role(member)`. A row whose roster team role reads null is not returned. */
+export interface RosterTeamRole {
+  memberId: string;
+  teamRole: TeamRole;
+}
+
 /** A row of `public.member`, in application casing. */
 /**
  * SOLO, 2026-09-10. Where a signed-up person stands with the admins.

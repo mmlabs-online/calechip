@@ -231,7 +231,8 @@ authentication API is written — ADR-005.
 
 System admins sign in to the panel with a password and a TOTP second factor (Supabase Auth MFA); the
 second factor is checked in the database by `is_system_admin()`, not in the panel (ADR-074 decision
-4, MIR-18).
+4, MIR-18). Wrong second-factor codes are logged in `public.mfa_failed_verification`, and five in
+fifteen minutes refuse the factor, by the MFA verification hook (ADR-095 decision 4).
 
 **Which surfaces may construct a client:** only `src/lib/data/`, the data-access seam declared in
 [architecture.md](architecture.md). A Supabase client constructed anywhere else is a second door into
@@ -248,6 +249,7 @@ TODO(project): name where the session is read on the client, and what happens on
 | Supabase project URL | Build-time environment, prefixed for Vite | Everyone. It ships in the bundle. |
 | Anon / publishable key | Build-time environment, prefixed for Vite | Everyone. **It ships in the bundle by design.** |
 | Service role key | Nowhere in this repository and nowhere in the browser | Nobody, in normal operation |
+| System panel path | `CALECHIP_SYSTEM_PATH`, set at container start from a file on the server; never in a repository, an image or a build argument | The operator and the system admins. |
 
 **The anon key being public is not a leak, it is the design.** It identifies the project, not the
 user; what it may do is decided entirely by the policies. This is worth stating because it looks

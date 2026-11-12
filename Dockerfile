@@ -92,4 +92,10 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 # /tmp/nginx/version.json, which nginx serves as /version.json and the sidebar footer reads. Anything
 # but [0-9A-Za-z.+-] is dropped, so the value can never break the JSON. Unset or dropped: the footer
 # shows the build-time VITE_APP_VERSION instead.
-CMD ["sh", "-c", "v=\"${CALECHIP_VERSION:-}\"; case \"$v\" in *[!0-9A-Za-z.+-]*) v='' ;; esac; printf '{\"version\":\"%s\"}\\n' \"$v\" > /tmp/nginx/version.json && exec nginx -g 'daemon off;'"]
+#
+# THE SYSTEM PANEL'S PATH IS SET AT START TOO (MIR-18-c, ADR-095 decision 1). CALECHIP_SYSTEM_PATH, 32
+# to 128 characters of [A-Za-z0-9_-], becomes the one exact-match location that serves system.html,
+# written to /tmp/nginx/system-panel.conf, which docker/nginx.conf includes; /system.html itself is
+# 404. Unset or invalid: the file is a comment, the panel is not served, one line goes to standard
+# error, and the container still starts. The value is never echoed and never written to the access log.
+CMD ["sh", "-c", "v=\"${CALECHIP_VERSION:-}\"; case \"$v\" in *[!0-9A-Za-z.+-]*) v='' ;; esac; printf '{\"version\":\"%s\"}\\n' \"$v\" > /tmp/nginx/version.json; p=\"${CALECHIP_SYSTEM_PATH:-}\"; n=${#p}; if [ \"$n\" -ge 32 ] && [ \"$n\" -le 128 ]; then case \"$p\" in *[!A-Za-z0-9_-]*) p='' ;; esac; else p=''; fi; if [ -n \"$p\" ]; then printf 'location = /%s {\\n  access_log off;\\n  default_type text/html;\\n  add_header X-Robots-Tag \"noindex, nofollow\" always;\\n  add_header X-Content-Type-Options nosniff always;\\n  add_header Referrer-Policy no-referrer always;\\n  add_header Cache-Control \"no-store\" always;\\n  try_files /system.html =404;\\n}\\n' \"$p\" > /tmp/nginx/system-panel.conf; else printf '# CALECHIP_SYSTEM_PATH is unset or invalid: the system panel is not served (ADR-095 decision 1).\\n' > /tmp/nginx/system-panel.conf; echo 'calechip: CALECHIP_SYSTEM_PATH is unset or invalid; the system panel is not served.' >&2; fi; exec nginx -g 'daemon off;'"]

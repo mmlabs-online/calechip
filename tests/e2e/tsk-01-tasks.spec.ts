@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { appHref } from "./support/org-prefix";
 
 // TSK-01 — a member keeps a private list of tasks for each day. 01-plan.md § 2 and § 4.7.
 //
@@ -95,7 +96,7 @@ test.describe("TSK-01 — my tasks", () => {
       const pill = page.getByTestId("shell-tasks-link");
       await expect(pill).toHaveCount(1);
       await expect(pill).toHaveText("Tasks");
-      await expect(pill).toHaveAttribute("href", "/tasks");
+      await expect.poll(() => appHref(pill)).toBe("/tasks");
       await expect(pill).not.toHaveAttribute("aria-current", "page");
 
       await pill.click();
@@ -107,7 +108,7 @@ test.describe("TSK-01 — my tasks", () => {
       await expect(pill).toHaveAttribute("aria-current", "page");
 
       // The period group is drawn here too, off a period screen, named `shell-<kind>`.
-      await expect(page.getByTestId("shell-week")).toHaveAttribute("href", "/week");
+      await expect.poll(() => appHref(page.getByTestId("shell-week"))).toBe("/week");
       await expect(page.getByTestId("shell-week")).not.toHaveAttribute("aria-current", "page");
 
       // And on a screen with no period at all.

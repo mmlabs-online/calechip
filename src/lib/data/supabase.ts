@@ -77,8 +77,11 @@ import type {
   PendingEntryPage,
   PendingEntryQuery,
   Result,
+  // MIR-17-f, 01-plan.md section 4.1.
+  RosterTeamRole,
   Session,
   Team,
+  TeamRole,
   // EVT-07, 01-plan.md section 4.1.
   EventGuest,
   GuestRegistrationReceipt,
@@ -1012,6 +1015,28 @@ function toMember(row: MemberRow): Member {
   };
 }
 
+/** MIR-17-f. The two columns `listRosterTeamRoles` reads over `list_all_members`. */
+const ROSTER_TEAM_ROLE_COLUMNS = "id, team_role:roster_team_role";
+
+interface RosterTeamRoleRow {
+  id: string;
+  team_role: TeamRole | null;
+}
+
+/** MIR-17-f. One element of `member_team_ids`' body. TODO(verify): PostgREST's shape for a
+ *  `setof uuid` function — a bare string per element, or `{ member_team_ids: string }`. Both are
+ *  accepted; anything else THROWS, so a third shape fails closed rather than offering a control. */
+function toTeamId(element: unknown): string {
+  if (typeof element === "string") return element;
+  if (
+    typeof element === "object" && element !== null &&
+    typeof (element as { member_team_ids?: unknown }).member_team_ids === "string"
+  ) {
+    return (element as { member_team_ids: string }).member_team_ids;
+  }
+  throw new Error("listOwnTeamIds received an element that is not a team id");
+}
+
 // SOLO, 2026-09-10. The `allowed_email` row shape, its column list and its mapper stood here until
 // the table was dropped. Nothing in this file models it any more.
 
@@ -1638,7 +1663,14 @@ export const seam: DataSeam = {
     const { data, error } = await client().auth.signUp({
       email: input.email,
       password: input.password,
-      options: { data: { display_name: input.displayName, avatar: input.avatar } },
+      options: {
+        data: {
+          display_name: input.displayName,
+          avatar: input.avatar,
+          // MIR-19-f, ADR-099: the org of the address; absent at the root, which is Org public.
+          ...(input.orgCode ? { org_code: input.orgCode } : {}),
+        },
+      },
     });
 
     if (error) return { ok: false, error: toFailure(error) };
@@ -1677,6 +1709,14 @@ export const seam: DataSeam = {
   // included. 02-design.md section 5, "Prerequisites this ticket does not own".
   async getCurrentMember(): Promise<Member | null> {
     return readCurrentMember();
+  },
+
+  // MIR-19, ADR-097 decision 2. The database answers the caller's own org code and nobody else's;
+  // the function takes no argument.
+  async getOwnOrgCode(): Promise<string | null> {
+    const { data, error } = await client().rpc("own_org_code");
+    if (error) throw new Error(`getOwnOrgCode failed: ${error.message}`);
+    return (data as string | null) ?? null;
   },
 
   /**
@@ -2483,6 +2523,37 @@ export const seam: DataSeam = {
       );
     }
     return (data as MemberRow[]).map(toMember);
+  },
+
+  // MIR-17-f, ADR-094 decision 1. `list_all_members` with the computed field `roster_team_role`.
+  async listRosterTeamRoles(): Promise<RosterTeamRole[]> {
+    const { data, error } = await client()
+      .rpc("list_all_members")
+      .select(ROSTER_TEAM_ROLE_COLUMNS)
+      .limit(ROSTER_LIMIT);
+    if (error) throw new Error(`listRosterTeamRoles failed: ${error.message}`);
+    if (!Array.isArray(data)) throw new Error("listRosterTeamRoles received a body that is not a list");
+    if (data.length >= ROSTER_LIMIT) {
+      throw new Error(
+        `listRosterTeamRoles returned ${data.length} rows at the ${ROSTER_LIMIT} limit: the roster ` +
+          `may be truncated and must not be consumed`,
+      );
+    }
+    return (data as RosterTeamRoleRow[]).flatMap((row) =>
+      row.team_role === null ? [] : [{ memberId: row.id, teamRole: row.team_role }],
+    );
+  },
+
+  // MIR-17-f, ADR-094 decision 1. `member_team_ids(auth.uid())`.
+  async listOwnTeamIds(): Promise<string[]> {
+    const { data: auth } = await client().auth.getUser();
+    const uid = auth.user?.id;
+    if (!uid) return [];
+
+    const { data, error } = await client().rpc("member_team_ids", { p_uid: uid });
+    if (error) throw new Error(`listOwnTeamIds failed: ${error.message}`);
+    if (!Array.isArray(data)) throw new Error("listOwnTeamIds received a body that is not a list");
+    return data.map(toTeamId);
   },
 
   // -------------------------------------------------------------------------

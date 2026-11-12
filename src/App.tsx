@@ -4,8 +4,17 @@
 // scaffold smoke test in tests/e2e/smoke.spec.ts keeps passing without being edited — which is why
 // that file is deliberately absent from allowed_paths. `seam-banner` keeps its name and position for
 // the same reason.
-import type { JSX } from "react";
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useSearchParams } from "react-router-dom";
+import { useCallback, useEffect, useState, type JSX } from "react";
+import {
+  BrowserRouter,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import { seamName } from "./lib/data";
 import { useSession } from "./hooks/useSession";
 import AppShell from "./components/AppShell";
@@ -49,7 +58,9 @@ import SignUp from "./routes/SignUp";
 // below carries `role="status"` and an emptied one announces nothing.
 import Loader from "@/components/Loader";
 // EVT-14. The return-to `/signin` honours, and the rule that keeps it on this origin (AC-9).
-import { RETURN_TO_PARAM, safeReturnTo } from "@/lib/return-to";
+import { RETURN_TO_PARAM, safeReturnTo, signInReturningTo } from "@/lib/return-to";
+// MIR-19, ADR-097. The org address.
+import { isOrgCode, orgPath, ownOrgAddress, routerBase, splitOrgPath } from "@/lib/org-path";
 
 /**
  * UIE-02 § 4.6 and § 4.7 — the non-member arm of the shell layout route, and the home of the `p-8`
@@ -92,135 +103,176 @@ function AfterSignIn(): JSX.Element {
   return <Navigate to={safeReturnTo(params.get(RETURN_TO_PARAM))} replace />;
 }
 
+/**
+ * MIR-19, ADR-097. Pushes the member's own org address and re-reads the base. A PUSH and not a
+ * replace: AC-6 needs the wrong address to stay in history, so Back returns to it.
+ */
+function enterOwnOrg(orgCode: string, syncBase: () => void): void {
+  window.history.pushState(null, "", orgPath(orgCode, "/"));
+  syncBase();
+}
+
+/**
+ * MIR-19. The root router's `/:orgCode/*`. A first segment that could be an org code moves the base
+ * (the router then remounts under it); anything else gets the old catch-all's answer.
+ */
+function EnterOrg({ onEnter }: { onEnter: () => void }): JSX.Element | null {
+  const { orgCode } = useParams();
+  const entering = orgCode !== undefined && isOrgCode(orgCode);
+  useEffect(() => {
+    if (entering) onEnter();
+  }, [entering, onEnter]);
+  return entering ? null : <Navigate to="/" replace />;
+}
+
+/** MIR-19-d, ADR-097 decision 5.2. The root router's catch-all for a member with an org code. */
+function EnterOwnOrg({
+  orgCode,
+  cross,
+  syncBase,
+}: {
+  orgCode: string;
+  cross: (path: string) => void;
+  syncBase: () => void;
+}): JSX.Element | null {
+  const { pathname, search, hash } = useLocation();
+  const alreadyInOrg = splitOrgPath(pathname).orgCode !== null;
+  const target = alreadyInOrg ? null : ownOrgAddress(orgCode, pathname, search + hash);
+  useEffect(() => {
+    if (alreadyInOrg) syncBase();
+    else if (target !== null) cross(target);
+  }, [alreadyInOrg, target, cross, syncBase]);
+  if (alreadyInOrg) return null;
+  // A root-only first segment no root route matched (e.g. `/guest`): `/` takes the next pass.
+  return target === null ? <Navigate to="/" replace /> : null;
+}
+
+/**
+ * MIR-19. An org-prefixed address that leaves the org. `through` sends the same path (without the
+ * prefix) to the root router; `sign-in` sends a signed-out caller to `/signin` returning here; `root`
+ * sends a caller with no org to `/`. Renders nothing: the crossing replaces the history entry.
+ */
+function LeaveOrg({
+  kind,
+  base,
+  cross,
+}: {
+  kind: "through" | "sign-in" | "root";
+  base: string;
+  cross: (path: string) => void;
+}): null {
+  const { pathname, search } = useLocation();
+  useEffect(() => {
+    if (kind === "through") cross(pathname + search);
+    else if (kind === "sign-in") cross(signInReturningTo(orgPath(base.slice(1), pathname) + search));
+    else cross("/");
+  }, [kind, base, cross, pathname, search]);
+  return null;
+}
+
+/**
+ * MIR-19. The address names an org that is not the caller's. One centred card, no mascot, and it does
+ * not echo the code that was typed or say whether that org exists (01-plan.md § 2b).
+ */
+function OrgNotFound({ onHome }: { onHome: () => void }): JSX.Element {
+  return (
+    <div
+      data-testid="org-not-found"
+      className="mx-auto max-w-md rounded-card bg-card p-8 text-center shadow-soft"
+    >
+      <h1 className="text-xl font-semibold text-ink">Page not found</h1>
+      <p className="mt-2 text-sm text-ink-2">This address is not part of your organisation.</p>
+      <button
+        type="button"
+        data-testid="org-not-found-home"
+        onClick={onHome}
+        className="mt-6 rounded-pill bg-primary px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+      >
+        Go to your calendar
+      </button>
+    </div>
+  );
+}
+
 export default function App() {
   // TEA-05 01-plan.md section 4.3: `useSession()` is called EXACTLY ONCE, here, and the result is
   // passed to the screens that need it as props. Section 9 records why this is a hook and not the
   // context provider TEA-02's design predicted — there is one consumer, and a provider would add a
   // file, a wrapper and an indirection to serve a single call site. The first component that needs
   // the session without a prop path should add the provider, backed by this same hook.
-  const { membership, resolving, signIn, signOut, refresh } = useSession();
+  const { membership, orgCode, resolving, signIn, signOut, refresh } = useSession();
 
-  return (
-    <BrowserRouter>
-      {/* UIE-02 § 4.7 — THE `TODO(project)` IN THE FEATURE ROW, ANSWERED RATHER THAN DISCOVERED.
-          `app-root` KEEPS its name and its position on the element wrapping <Routes>, and
-          `seam-banner` KEEPS its name and its position as that element's FIRST child — one spec
-          file depends on the first and two on the second, and none is in scope here (AC-17).
+  // MIR-19, ADR-097 — the router's basename is the URL's org segment ("/" when there is none), and
+  // it moves only at a CROSSING: into an org, out of one, and on `popstate`. `<BrowserRouter key=…>`
+  // remounts on each, so every `<Link>`, `navigate()` and `<Navigate>` below keeps the org by default.
+  const [base, setBase] = useState<string>(() => routerBase(window.location.pathname));
+  const syncBase = useCallback(() => setBase(routerBase(window.location.pathname)), []);
+  // MIR-19-d, ADR-097 decision 5.2. The org a root address sends this caller to; null turns the flip off.
+  const ownOrg: string | null = membership.state === "member" ? orgCode : null;
+  useEffect(() => {
+    const onPopState = (): void => {
+      if (ownOrg !== null) {
+        const { pathname, search, hash } = window.location;
+        const target = ownOrgAddress(ownOrg, pathname, search + hash);
+        if (target !== null) window.history.replaceState(window.history.state, "", target);
+      }
+      syncBase();
+    };
+    // Capture: runs before react-router's own popstate listener on window, so the router reads the
+    // rewritten org address and the shell is not remounted (01-plan.md § 4.3).
+    window.addEventListener("popstate", onPopState, true);
+    return () => window.removeEventListener("popstate", onPopState, true);
+  }, [ownOrg, syncBase]);
 
-          What changes is one class list. It gives up `p-8` and becomes a full-height flex COLUMN,
-          so the banner is a full-width strip across the top of the viewport, above BOTH panes on
-          every route including those inside the shell, and the shell takes the remaining height.
-          It is a warning that the whole application is running on a fake datastore: inside the
-          content pane it would be a property of the screen rather than of the build, and it would
-          scroll away.
+  /** Replaces the current history entry with `path`, keeping history.state, then re-reads the base. */
+  const cross = useCallback(
+    (path: string): void => {
+      window.history.replaceState(window.history.state, "", path);
+      syncBase();
+    },
+    [syncBase],
+  );
 
-          THE `p-8` IT GAVE UP MOVES TO `BareLayout`, and that is not tidying. AuthCard.tsx:54
-          names this element's `p-8` as the gutter that satisfies UIE-01's AC-16, so a shell that
-          quietly removed it would break a criterion shipped one ticket ago. The `resolving`
-          spinner below sits outside <Routes> and carries its own margin for the same reason. */}
-      <main data-testid="app-root" className="flex min-h-screen flex-col bg-bg font-sans">
-        {/* Design section 6.2 rule 2. A build with no VITE_SUPABASE_URL resolves to the in-memory
-            seam rather than to a screen that throws — but a SILENT fallback to a fake datastore is
-            worse than the crash it replaces: a deployment that forgets one environment variable
-            would accept sign-ups into memory and look entirely normal. This banner is permanent and
-            not dismissible, and it is also how a test asserts which implementation it drove. */}
-        {seamName === "mock" ? (
-          <p
-            data-testid="seam-banner"
-            data-seam="mock"
-            role="status"
-            className="mx-auto mb-6 max-w-md rounded-xl bg-amber-100 px-4 py-2 text-center text-sm text-amber-900"
-          >
-            Demo build — data lives only in this browser and is lost when you reload the page.
-          </p>
-        ) : null}
+  // What an org address shows when it is not simply the shell: nothing (null) for the member whose
+  // own code it is, the crossing for anybody who has no org to be served, and not-found for a member
+  // of another org. None of the three mounts a screen, so none issues a read.
+  const orgGate: JSX.Element | null =
+    base === "/"
+      ? null
+      : membership.state === "signed-out"
+        ? <LeaveOrg kind="sign-in" base={base} cross={cross} />
+        : membership.state !== "member"
+          ? <LeaveOrg kind="root" base={base} cross={cross} />
+          : orgCode !== base.slice(1)
+            ? <OrgNotFound onHome={() => (orgCode === null ? cross("/") : enterOwnOrg(orgCode, syncBase))} />
+            : null;
 
-        {/* AC-9, and the reason it is a state rather than a fallthrough: `signed-out` and `not yet
-            known` are indistinguishable without it, so routing on the membership alone would flash
-            the sign-in screen at somebody who IS signed in, on every reload. Shown on every path. */}
-        {resolving ? (
-          <p
-            data-testid="app-session-loading"
-            role="status"
-            className="mx-auto my-8 max-w-md rounded-2xl bg-white p-8 text-center text-sm opacity-70 shadow-sm"
-          >
-            <Loader label="Loading…" />
-          </p>
-        ) : (
-          <Routes>
-            {/* THE TWO AUTH ROUTES, OUTSIDE THE SHELL LAYOUT ROUTE AND INSIDE A `BareLayout` OF
-                THEIR OWN — UIE-02 § 4.6 and § 4.7 together, and REVIEW REWORK 1 is the second half.
+  // MIR-19, ADR-097: WRITTEN ONCE, PLACED IN BOTH ROUTE TABLES BELOW. `tests/route-role-guards.test.ts`
+  // reads this text, so every `path="…"` and `element={…}` in it stays as it was.
+          /* UIE-02 AC-1, AC-2, AC-3, AC-4 — THE SHELL, AS A LAYOUT ROUTE WITH ONE CONDITIONAL
+              ELEMENT AND AN <Outlet />. Every route below is a child of it, and none of their
+              own elements or guards changed.
 
-                § 4.6 requires these two to stay outside the layout route below, and they do: they
-                are not its children, no membership condition is evaluated for them, and neither
-                gets a sidebar or a top bar. § 4.7 requires the `p-8` that `app-root` gave up to
-                land where the auth screens' gutter is, and until this parent existed it did not —
-                `BareLayout` was reachable only as the shell layout's non-member arm, which /signin
-                and /signup never render inside. UIE-01 AC-16 is the criterion that turns on it, and
-                it is one ticket old. See the comment on `BareLayout` for the measurement. */}
-            <Route element={<BareLayout />}>
-              {/* TEA-01. Reachable in EVERY membership state: it is the only route a person who has
-                  not signed up can use, and it ends on its own notice (AC-13) rather than routing. */}
-              <Route path="/signup" element={<SignUp />} />
+              NOT A WRAPPER AROUND <Routes>. 01-plan.md § 8, rejected alternative 1: a wrapper
+              paints the sidebar on /signin and /signup too, and the only escape is a
+              useLocation() conditional inside the shell — this route table re-expressed as an
+              if-statement, in a file that already uses the router for exactly this distinction
+              six times over. The condition would then have to be extended by hand every time a
+              route is added, and the failure is SILENT: a new auth-adjacent route simply appears
+              with a sidebar. The layout route puts the decision where the router enforces it.
 
-              {/* EVT-06, AC-9. Reachable in EVERY membership state and signed out, with no guard: the
-                  token is the whole address. EVT-13, AC-1 to AC-5 (ADR-061 decision 8): an approved
-                  member is asked about, and a reader of the event is sent on to `/events/<id>` by
-                  the page itself; everyone else sees exactly what a guest sees. EVT-14, AC-1, AC-2:
-                  a signed-out caller is also offered sign-in and sign-up, which no session is. */}
-              <Route
-                path="/guest/:token"
-                element={
-                  <GuestEvent
-                    signedInMember={membership.state === "member"}
-                    signedOut={membership.state === "signed-out"}
-                  />
-                }
-              />
+              THE NON-MEMBER ARM IS A BARE LAYOUT AND NOT A REDIRECT, AND THAT IS THE TRAP THIS
+              TICKET EXISTS AROUND (AC-3). Six of the routes below are deliberately unguarded and
+              each renders its OWN refusal — `allow-list-refused`, `member-list-not-on-a-team`,
+              `month-not-on-a-team`, `week-not-on-a-team`, `year-not-on-a-team`, and for
+              /holidays the calendar itself. A shell that rendered only for a member and
+              redirected otherwise would convert six documented refusals into redirects and
+              delete the reason each one records. `BareLayout` is the container those screens
+              render in today, so a member-less caller reaches exactly the screen they reach now.
 
-              {/* EVT-07, AC-11, AC-13. The manage page: the same bare card, no guard, any state —
-                  the manage token is the whole address. */}
-              <Route path="/guest/registration/:token" element={<GuestRegistration />} />
-
-              {/* AC-1, AC-2, AC-3, AC-5, AC-9. A caller with a session is sent to the landing
-                  address instead — a sign-in screen offered to somebody already signed in is a
-                  second way to reach a state they are already in. EVT-14, AC-8..AC-10: to `?next=`
-                  when it is a path on this origin, and to `/` otherwise. */}
-              <Route
-                path="/signin"
-                element={
-                  membership.state === "signed-out" ? (
-                    <SignIn signIn={signIn} />
-                  ) : (
-                    <AfterSignIn />
-                  )
-                }
-              />
-            </Route>
-
-            {/* UIE-02 AC-1, AC-2, AC-3, AC-4 — THE SHELL, AS A LAYOUT ROUTE WITH ONE CONDITIONAL
-                ELEMENT AND AN <Outlet />. Every route below is a child of it, and none of their
-                own elements or guards changed.
-
-                NOT A WRAPPER AROUND <Routes>. 01-plan.md § 8, rejected alternative 1: a wrapper
-                paints the sidebar on /signin and /signup too, and the only escape is a
-                useLocation() conditional inside the shell — this route table re-expressed as an
-                if-statement, in a file that already uses the router for exactly this distinction
-                six times over. The condition would then have to be extended by hand every time a
-                route is added, and the failure is SILENT: a new auth-adjacent route simply appears
-                with a sidebar. The layout route puts the decision where the router enforces it.
-
-                THE NON-MEMBER ARM IS A BARE LAYOUT AND NOT A REDIRECT, AND THAT IS THE TRAP THIS
-                TICKET EXISTS AROUND (AC-3). Six of the routes below are deliberately unguarded and
-                each renders its OWN refusal — `allow-list-refused`, `member-list-not-on-a-team`,
-                `month-not-on-a-team`, `week-not-on-a-team`, `year-not-on-a-team`, and for
-                /holidays the calendar itself. A shell that rendered only for a member and
-                redirected otherwise would convert six documented refusals into redirects and
-                delete the reason each one records. `BareLayout` is the container those screens
-                render in today, so a member-less caller reaches exactly the screen they reach now.
-
-                THE FIVE MEMBERSHIP GUARDS BELOW ARE UNTOUCHED (AC-4). They are on the children,
-                where they were, and the layout adds none of its own. */}
+              THE FIVE MEMBERSHIP GUARDS BELOW ARE UNTOUCHED (AC-4). They are on the children,
+              where they were, and the layout adds none of its own. */
+  const shellRoutes = (
             <Route
               element={
                 membership.state === "member" ? (
@@ -288,7 +340,15 @@ export default function App() {
                   safe with no session: it calls getCurrentMember(), gets null, and renders
                   `allow-list-refused`. A guard here would add no protection and would put this
                   ticket's routing decisions on top of another ticket's acceptance criteria. */}
-{/* **SOLO, 2026-09-09 — THE ADMIN TAB STRIP, AND WHY THERE ARE SEVERAL OF THESE BLOCKS
+{/* **MIR-17-g, ADR-096 — THE ROUTER GUARDS MEMBERSHIP, NOT RANK.** The role guards are the screens' own refusals.
+                  Six paths under these `AdminLayout` blocks refuse a caller in place, each through a
+                  helper from `@/lib/roles`, and each refusal says why. The router cannot answer
+                  `/entries/pending`, whose admission depends on a read the screen makes (ADR-090).
+                  Every guard here is an affordance either way (ADR-005).
+                  `tests/route-role-guards.test.ts` classifies every path under `AdminLayout`. A new
+                  one fails it until it is listed as refusing or open.
+
+                  **SOLO, 2026-09-09 — THE ADMIN TAB STRIP, AND WHY THERE ARE SEVERAL OF THESE BLOCKS
                   RATHER THAN ONE.** `AdminLayout` draws `AdminTabs` above whatever the child route
                   renders, so the ROUTER decides which screens carry the strip — the same shape
                   `BareLayout` and `AppShell` above already use, and not a `useLocation()` test
@@ -647,6 +707,141 @@ export default function App() {
                   to avoid. */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
+  );
+
+
+  return (
+    <BrowserRouter key={base} basename={base}>
+      {/* UIE-02 § 4.7 — THE `TODO(project)` IN THE FEATURE ROW, ANSWERED RATHER THAN DISCOVERED.
+          `app-root` KEEPS its name and its position on the element wrapping <Routes>, and
+          `seam-banner` KEEPS its name and its position as that element's FIRST child — one spec
+          file depends on the first and two on the second, and none is in scope here (AC-17).
+
+          What changes is one class list. It gives up `p-8` and becomes a full-height flex COLUMN,
+          so the banner is a full-width strip across the top of the viewport, above BOTH panes on
+          every route including those inside the shell, and the shell takes the remaining height.
+          It is a warning that the whole application is running on a fake datastore: inside the
+          content pane it would be a property of the screen rather than of the build, and it would
+          scroll away.
+
+          THE `p-8` IT GAVE UP MOVES TO `BareLayout`, and that is not tidying. AuthCard.tsx:54
+          names this element's `p-8` as the gutter that satisfies UIE-01's AC-16, so a shell that
+          quietly removed it would break a criterion shipped one ticket ago. The `resolving`
+          spinner below sits outside <Routes> and carries its own margin for the same reason. */}
+      <main data-testid="app-root" className="flex min-h-screen flex-col bg-bg font-sans">
+        {/* Design section 6.2 rule 2. A build with no VITE_SUPABASE_URL resolves to the in-memory
+            seam rather than to a screen that throws — but a SILENT fallback to a fake datastore is
+            worse than the crash it replaces: a deployment that forgets one environment variable
+            would accept sign-ups into memory and look entirely normal. This banner is permanent and
+            not dismissible, and it is also how a test asserts which implementation it drove. */}
+        {seamName === "mock" ? (
+          <p
+            data-testid="seam-banner"
+            data-seam="mock"
+            role="status"
+            className="mx-auto mb-6 max-w-md rounded-xl bg-amber-100 px-4 py-2 text-center text-sm text-amber-900"
+          >
+            Demo build — data lives only in this browser and is lost when you reload the page.
+          </p>
+        ) : null}
+
+        {/* AC-9, and the reason it is a state rather than a fallthrough: `signed-out` and `not yet
+            known` are indistinguishable without it, so routing on the membership alone would flash
+            the sign-in screen at somebody who IS signed in, on every reload. Shown on every path. */}
+        {resolving ? (
+          <p
+            data-testid="app-session-loading"
+            role="status"
+            className="mx-auto my-8 max-w-md rounded-2xl bg-white p-8 text-center text-sm opacity-70 shadow-sm"
+          >
+            <Loader label="Loading…" />
+          </p>
+        ) : (
+          <Routes>
+            {base === "/" ? (
+              <>
+            {/* THE TWO AUTH ROUTES, OUTSIDE THE SHELL LAYOUT ROUTE AND INSIDE A `BareLayout` OF
+                THEIR OWN — UIE-02 § 4.6 and § 4.7 together, and REVIEW REWORK 1 is the second half.
+
+                § 4.6 requires these two to stay outside the layout route below, and they do: they
+                are not its children, no membership condition is evaluated for them, and neither
+                gets a sidebar or a top bar. § 4.7 requires the `p-8` that `app-root` gave up to
+                land where the auth screens' gutter is, and until this parent existed it did not —
+                `BareLayout` was reachable only as the shell layout's non-member arm, which /signin
+                and /signup never render inside. UIE-01 AC-16 is the criterion that turns on it, and
+                it is one ticket old. See the comment on `BareLayout` for the measurement. */}
+            <Route element={<BareLayout />}>
+              {/* TEA-01. Reachable in EVERY membership state: it is the only route a person who has
+                  not signed up can use, and it ends on its own notice (AC-13) rather than routing. */}
+              <Route path="/signup" element={<SignUp />} />
+
+              {/* EVT-06, AC-9. Reachable in EVERY membership state and signed out, with no guard: the
+                  token is the whole address. EVT-13, AC-1 to AC-5 (ADR-061 decision 8): an approved
+                  member is asked about, and a reader of the event is sent on to `/events/<id>` by
+                  the page itself; everyone else sees exactly what a guest sees. EVT-14, AC-1, AC-2:
+                  a signed-out caller is also offered sign-in and sign-up, which no session is. */}
+              <Route
+                path="/guest/:token"
+                element={
+                  <GuestEvent
+                    signedInMember={membership.state === "member"}
+                    signedOut={membership.state === "signed-out"}
+                  />
+                }
+              />
+
+              {/* EVT-07, AC-11, AC-13. The manage page: the same bare card, no guard, any state —
+                  the manage token is the whole address. */}
+              <Route path="/guest/registration/:token" element={<GuestRegistration />} />
+
+              {/* AC-1, AC-2, AC-3, AC-5, AC-9. A caller with a session is sent to the landing
+                  address instead — a sign-in screen offered to somebody already signed in is a
+                  second way to reach a state they are already in. EVT-14, AC-8..AC-10: to `?next=`
+                  when it is a path on this origin, and to `/` otherwise. */}
+              <Route
+                path="/signin"
+                element={
+                  membership.state === "signed-out" ? (
+                    <SignIn signIn={signIn} />
+                  ) : (
+                    <AfterSignIn />
+                  )
+                }
+              />
+            </Route>
+
+                {/* MIR-19. A first segment that could be an org code: enter it (the router remounts
+                    with that base) or, for anything else, the old catch-all's answer. Static
+                    first segments above outrank this. */}
+                {ownOrg === null ? (
+                  <>
+                    <Route path="/:orgCode/*" element={<EnterOrg onEnter={syncBase} />} />
+                    {shellRoutes}
+                  </>
+                ) : (
+                  <Route path="*" element={<EnterOwnOrg orgCode={ownOrg} cross={cross} syncBase={syncBase} />} />
+                )}
+              </>
+            ) : (
+              <>
+                {/* MIR-19. The account and guest addresses leave the org; they are the same screens
+                    at the root. */}
+                <Route path="/signin" element={<LeaveOrg kind="through" base={base} cross={cross} />} />
+                {/* MIR-19-f, ADR-099 decision 3. The sign-up screen is served under the org it signs up to;
+                    /signin and /guest/… still leave the org. Same BareLayout gutter as the root route. */}
+                <Route element={<BareLayout />}>
+                  <Route path="/signup" element={<SignUp orgCode={base.slice(1)} />} />
+                </Route>
+                <Route path="/guest/*" element={<LeaveOrg kind="through" base={base} cross={cross} />} />
+                {orgGate === null ? (
+                  shellRoutes
+                ) : (
+                  <Route element={<BareLayout />}>
+                    <Route path="*" element={orgGate} />
+                  </Route>
+                )}
+              </>
+            )}
           </Routes>
         )}
       </main>

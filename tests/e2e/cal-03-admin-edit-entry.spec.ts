@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { choosePortion, chooseType, pickRange, setPartialRange } from "./support/entry-form";
+import { appPathname } from "./support/org-prefix";
 
 // CAL-03 — edit or delete another member's entry, as an admin.
 //
@@ -83,7 +84,7 @@ async function signOutFromHome(page: Page): Promise<void> {
  *  therefore depends on how many edits a test made on the way. */
 async function backToHome(page: Page): Promise<void> {
   for (let step = 0; step < 8; step += 1) {
-    if (new URL(page.url()).pathname === "/") break;
+    if (appPathname(page) === "/") break;
     await page.goBack();
   }
   await expect(page.getByTestId("home-sign-out")).toBeVisible();

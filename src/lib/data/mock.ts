@@ -55,6 +55,8 @@ import type {
   PendingEntryPage,
   PendingEntryQuery,
   Result,
+  // MIR-17-f, 01-plan.md section 4.1.
+  RosterTeamRole,
   Session,
   Team,
   MemberRole,
@@ -535,6 +537,10 @@ const newBusyDayId = (): string =>
 // reaches the dedicated org through `__setDedicatedOrgMembersForTest`, never through this type.
 type MockOrg = "org_public" | "dedicated";
 
+// MIR-19. The two orgs' codes, matching the system panel's mock (`system.ts`, `mockOrgs`).
+const MOCK_ORG_PUBLIC_CODE = "shared";
+const MOCK_DEDICATED_ORG_CODE = "acme";
+
 // MIR-15-e. localStorage key: a JSON array of member ids placed in the dedicated org. Read once at
 // module load, the way SESSION_STORAGE_KEY is above, so an e2e spec sets it with
 // `page.addInitScript` before the application's first load.
@@ -576,6 +582,11 @@ const mockOrgOf = (memberId: string | null): MockOrg | null => {
   if (!m || m.status !== "approved" || m.removedAt !== null) return null;
   return dedicatedOrgMemberIds.has(m.id) ? "dedicated" : "org_public";
 };
+
+// MIR-19-f. `member.org_id` reproduced for ANY row, whatever its status: the dedicated org when the
+// id is in `dedicatedOrgMemberIds`, else Org public. Unlike `mockOrgOf`, which is `member_org_id`.
+const mockRowOrgOf = (memberId: string): MockOrg =>
+  dedicatedOrgMemberIds.has(memberId) ? "dedicated" : "org_public";
 
 // The mock's `holiday` table, one row per (org, date) — ADR-079 decision 3's `holiday_org_id_date_key`
 // reproduced. Seeded with FIXTURE_HOLIDAYS for Org public, under their own fixture ids, and a COPY of
@@ -1686,6 +1697,13 @@ export const seam: DataSeam = {
       };
     }
 
+    // MIR-19-f, ADR-099 decision 3. `admit_allow_listed_member` raises on an unknown or reserved code,
+    // GoTrue reports a generic failure, and no account is created. The mock knows two orgs.
+    const orgCode = input.orgCode ?? null;
+    if (orgCode !== null && orgCode !== MOCK_ORG_PUBLIC_CODE && orgCode !== MOCK_DEDICATED_ORG_CODE) {
+      return { ok: false, error: { code: "unknown", message: "Something went wrong. Please try again." } };
+    }
+
     const userId = newUserId();
     const now = new Date().toISOString();
 
@@ -1716,6 +1734,8 @@ export const seam: DataSeam = {
       removedAt: null,
       createdAt: now,
     });
+    // MIR-19-f, ADR-099 decision 2: the row's org is the org of the address it was made at.
+    if (orgCode === MOCK_DEDICATED_ORG_CODE) dedicatedOrgMemberIds.add(userId);
 
     // TEA-01 AC-7 requires Confirm email ON, and under that setting signUp returns no session. That
     // was unconditional until SOLO, 2026-09-10; the mock now models WHICHEVER setting the project is
@@ -1773,6 +1793,13 @@ export const seam: DataSeam = {
     return members.find((m) => m.id === currentMemberId) ?? null;
   },
 
+  // MIR-19, ADR-097 decision 2. `public.own_org_code()` reproduced: null for nobody signed in, a
+  // pending, removed or member-less caller (`mockOrgOf` answers null for each).
+  async getOwnOrgCode(): Promise<string | null> {
+    const org = mockOrgOf(currentMemberId);
+    return org === null ? null : org === "dedicated" ? MOCK_DEDICATED_ORG_CODE : MOCK_ORG_PUBLIC_CODE;
+  },
+
   /**
    * SOLO, 2026-09-10. Everybody waiting on a decision, newest first. Replaces `listAllowedEmails`.
    *
@@ -1786,11 +1813,29 @@ export const seam: DataSeam = {
    */
   async listPendingMembers(): Promise<Member[]> {
     if (!currentAdmin()) return [];
+    // MIR-19-f: `member_select_pending_admin`'s `org_id` clause — an org admin sees their org's queue.
+    const myOrg = mockOrgOf(currentMemberId);
     return members
-      .filter((m) => m.teamId === null && m.status === "pending")
+      .filter((m) => m.teamId === null && m.status === "pending" && mockRowOrgOf(m.id) === myOrg)
       .slice()
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .map((m) => ({ ...m }));
+  },
+
+  // MIR-17-f. `list_all_members` + `roster_team_role`: the mock holds one team per member, so the
+  // roster team role IS the manager rank, and an admin's team role is `member` (promotion writes it).
+  async listRosterTeamRoles(): Promise<RosterTeamRole[]> {
+    if (!currentAdmin()) return [];
+    return members
+      .filter((m) => m.teamId !== null)
+      .map((m) => ({ memberId: m.id, teamRole: m.role === "manager" ? "manager" : "member" }));
+  },
+
+  // MIR-17-f. `member_team_ids(auth.uid())`: one team per member here.
+  async listOwnTeamIds(): Promise<string[]> {
+    const me = members.find((m) => m.id === currentMemberId);
+    if (!me || me.status !== "approved" || me.removedAt !== null || me.teamId === null) return [];
+    return [me.teamId];
   },
 
   /**
@@ -1814,7 +1859,12 @@ export const seam: DataSeam = {
     if (!me) return refused("not_permitted", SIGNUP_DECISION_REFUSED);
 
     const target = members.find(
-      (m) => m.id === memberId && m.teamId === null && m.status === "pending",
+      (m) =>
+        m.id === memberId &&
+        m.teamId === null &&
+        m.status === "pending" &&
+        // MIR-19-f: `admit_member` / `reject_member` act only on the caller's own org's rows.
+        mockRowOrgOf(m.id) === mockOrgOf(me.id),
     );
     if (!target) return refused("not_permitted", SIGNUP_DECISION_REFUSED);
 
@@ -3474,7 +3524,11 @@ export const seam: DataSeam = {
   // does it.
   async countPendingMembers(): Promise<number> {
     if (!currentAdmin()) return 0;
-    return members.filter((m) => m.teamId === null && m.status === "pending").length;
+    // MIR-19-f: the same `org_id` clause as `listPendingMembers`, so the badge and the list agree.
+    const myOrg = mockOrgOf(currentMemberId);
+    return members.filter(
+      (m) => m.teamId === null && m.status === "pending" && mockRowOrgOf(m.id) === myOrg,
+    ).length;
   },
 
   // MIR-17, ADR-088. `issue_image_select_admin` is gone with MIR-16
