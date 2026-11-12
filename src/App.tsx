@@ -827,7 +827,11 @@ export default function App() {
                 {/* MIR-19. The account and guest addresses leave the org; they are the same screens
                     at the root. */}
                 <Route path="/signin" element={<LeaveOrg kind="through" base={base} cross={cross} />} />
-                <Route path="/signup" element={<LeaveOrg kind="through" base={base} cross={cross} />} />
+                {/* MIR-19-f, ADR-099 decision 3. The sign-up screen is served under the org it signs up to;
+                    /signin and /guest/… still leave the org. Same BareLayout gutter as the root route. */}
+                <Route element={<BareLayout />}>
+                  <Route path="/signup" element={<SignUp orgCode={base.slice(1)} />} />
+                </Route>
                 <Route path="/guest/*" element={<LeaveOrg kind="through" base={base} cross={cross} />} />
                 {orgGate === null ? (
                   shellRoutes
