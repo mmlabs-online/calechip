@@ -754,7 +754,8 @@ let mockFactorCounter = 0;
 // the panel can be driven offline. Of holidays it models Org public's only (MIR-15-b), and not the
 // copy `create_org` makes into a new org (MIR-18-b AC-4 is the database's).
 const MOCK_ORG_CODE_SHAPE = /^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$/;
-// Copied from `20261027120000_mir11_composite_foreign_keys.sql:46-58` (`org_code_not_reserved`).
+// Copied from `org_code_not_reserved` as of `20261111150000_mir19_own_org_code.sql` (51 tokens,
+// `tasks` last). `tests/system-reserved-org-codes.test.ts` holds it equal to src/lib/org-path.ts.
 const MOCK_RESERVED_ORG_CODES: readonly string[] = [
   "system", "api", "admin", "login", "signin", "signup", "app",
   "static", "public", "assets", "healthz", "fonts", "images",
@@ -766,6 +767,7 @@ const MOCK_RESERVED_ORG_CODES: readonly string[] = [
   "dev", "docs", "help", "invite", "join", "logout", "manage",
   "new", "onboarding", "org", "orgs", "settings", "support",
   "team", "www",
+  "tasks",
 ];
 
 const mockOrgs: OrgSummary[] = [
