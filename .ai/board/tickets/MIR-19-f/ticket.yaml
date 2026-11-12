@@ -8,7 +8,7 @@ id: MIR-19-f
 title: "A sign-up at /{org_code}/signup lands in that org"
 feature_ids: [MIR-19]   # split of MIR-19 (operating model § ID scheme: splits get -a, -b)
 group: MIR
-state: REVIEW
+state: DONE
 owner: ""
 branch: ""
 size_estimate: M      # S|M - set by tech-lead-design at PLAN; gates DoR
