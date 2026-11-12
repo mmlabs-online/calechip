@@ -22,7 +22,8 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
-| 1 | MIR-20-b | Every impersonation is visible to the org it touched: the touched org's org_admin, and for an Org public team its manager, read the log | M | — |
+
+**`MIR-20-b` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-12 from `03-impl-log.md` gate PASS; its row left this table.
 
 **`MIR-20-b` moved here at /advance on 2026-11-12**, from `01-plan.md` gate PASS (`produced_at: 2026-11-12T08:21:17Z`) with all six Definition of Ready items passing; `schema_delta` is non-none and cites ADR-100 (decision 8), already `ACCEPTED`. Applying the migration stays human (RULE-09). Run by `/run-ticket MIR-20-b`.
 
