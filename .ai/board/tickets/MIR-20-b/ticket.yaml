@@ -8,7 +8,7 @@ id: MIR-20-b
 title: "Every impersonation is visible to the org it touched: the touched org's org_admin, and for an Org public team its manager, read the log"
 feature_ids: [MIR-20]   # split of MIR-20 (operating model § ID scheme: splits get -a, -b)
 group: MIR
-state: REVIEW
+state: DONE
 owner: ""
 branch: ""
 size_estimate: "M"   # set by tech-lead-design at /plan MIR-20-b, 2026-11-12 (01-plan.md § 1)
