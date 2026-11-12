@@ -8,7 +8,7 @@ id: MIR-19-d
 title: "The root addresses send a member to their org"   # narrowed at /plan MIR-19-d, 2026-11-12 (01-plan.md § 1, Changelog). Was: "The root addresses send a member to their org, then email links, nginx, the panel's reserved list and sign-up follow" — items 3-5 are MIR-19-e, item 6 is MIR-19-f
 feature_ids: [MIR-19]   # split of MIR-19 (operating model § ID scheme: splits get -a, -b)
 group: MIR
-state: REVIEW
+state: DONE
 owner: ""
 branch: ""
 size_estimate: "M"   # set by tech-lead-design at /plan MIR-19-d, 2026-11-12 (01-plan.md § 1)
