@@ -22,6 +22,9 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
+| 1 | MIR-20 | system_admin impersonation is read-only, time-boxed, reasoned and logged, and visible to the org it touched | M | — |
+
+**`MIR-20` moved here at /advance on 2026-11-12**, from `01-plan.md` gate PASS (`produced_at: 2026-11-12T07:10:00Z`) with all six Definition of Ready items passing; `schema_delta` is non-none and cites ADR-100, `ACCEPTED by tech-lead-design` under ADR-067. PLAN split Phase 6 three ways: `MIR-20-b` (the touched org reads the log) and `MIR-20-c` (acting-as calendar reads), both `BACKLOG`. Applying the migration stays human (RULE-09). Run by `/run-ticket MIR-20`.
 
 **`MIR-19-f` shipped on 2026-11-12, `state: DONE`.** This is the last of MIR-19's slices (MIR-19, -b … -f); `features.md` row `MIR-19` is set to `DONE`, Invariants unchanged (every slice `[]`). Moved to `## ARCHIVE`, whose oldest row (MIR-16-f) left the rolling twenty.
 
