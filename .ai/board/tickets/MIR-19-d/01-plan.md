@@ -109,7 +109,8 @@ ticket reverses; it is rewritten to the flip (§ 4.5).
 - Moving `undecided` or `member-less` callers under an org. Decision 5.2 keeps them at the root.
 - Guest links under an org. Decision 6.
 - Editing any of the eleven pushState specs, the ten history-walk specs (MIR-19-c) or the nine
-  href specs (MIR-19-b). They must pass unedited — AC-9.
+  href specs (MIR-19-b). They must pass unedited — AC-12. **One exception:** `cal-08-holiday-shading`'s
+  two walks for an admin placed in the dedicated org (§ 4.5, AC-14).
 - An HTTP redirect. The flip is client-side; the server still serves `index.html` for every path.
 - The `features.md` row. It stays `PLANNED` until MIR-19-f ships.
 
@@ -196,9 +197,18 @@ named screen is visible.
 **AC-12: everything else passes unedited**
 - Given this ticket's commit
 - When `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm exec playwright test` run
-- Then all pass. No spec file other than the three in § 7 is in the diff; none is skipped, `fixme`'d or
+- Then all pass. No spec file other than the four in § 7 is in the diff; none is skipped, `fixme`'d or
   deleted; each existing spec keeps its test count. This covers the eleven pushState specs, the
   history-walk specs, `tests/route-role-guards.test.ts` and `tests/e2e-org-prefix.test.ts`.
+
+**AC-14: a dedicated-org admin's history walk in cal-08 stops at his own org address**
+- Given `tests/e2e/cal-08-holiday-shading.spec.ts` `AC-9 and AC-10` and `AC-14`, which place the admin
+  in the mock's dedicated org (`placeAdminInDedicatedOrg`, code `acme`), so the flip lands him at
+  `/acme/month/2026-09`
+- When the spec runs
+- Then both tests pass. The only change in the file is the path the two `backTo` calls after
+  `addHoliday` walk to (`/month/2026-09` → `/acme/month/2026-09`), with one comment line above each.
+  `backTo`, `appPathname`, every assertion, the loop bound and the test count are unchanged.
 
 **AC-13: `ownOrgAddress` maps a root address to the org address, and leaves alone what must stay**
 - Given `ownOrgAddress` (§ 4.1)
@@ -396,6 +406,21 @@ the same four `page.goto`s, the same visibility waits, and the expected pathname
 Test titles are not changed (they name EVT-14's criteria, whose `/` is now the landing the flip
 forwards). No other line changes.
 
+**`tests/e2e/cal-08-holiday-shading.spec.ts`** (added 2026-11-12, second question). Exactly two call
+sites change, at `ad49668` `:407` (test `AC-9 and AC-10`) and `:547` (test `AC-14`):
+
+```ts
+// before
+await backTo(page, "/month/2026-09");
+// after
+// MIR-19-d: this admin is in the dedicated org, so the flip lands him under /acme, which appPathname does not strip.
+await backTo(page, "/acme/month/2026-09");
+```
+
+Nothing else in the file changes: not `backTo`, not `placeAdminInDedicatedOrg`, not `openAs(…,
+"/month/2026-09")` (a root address, which the flip carries to `/acme/…`), and not the import.
+`tests/e2e/support/org-prefix.ts` is not edited (§ 8 alternative 5).
+
 ## 5. Seam impact
 
 None. No function in `src/lib/data/` is added, removed or changed. `getOwnOrgCode()` (MIR-19) is read
@@ -418,9 +443,10 @@ allowed_paths:
   - "tests/e2e/mir-19-d-flip.spec.ts"
   - "tests/e2e/mir-19-org-routing.spec.ts"
   - "tests/e2e/evt-14-guest-sign-in.spec.ts"
+  - "tests/e2e/cal-08-holiday-shading.spec.ts"
 ```
 
-Eight paths, so `size: M`, matching `size_estimate: M`. It was predicted `L` at `/plan MIR-19-c` for
+Nine paths (eight at first PLAN; cal-08 added by the second question, Changelog), so `size: M`, matching `size_estimate: M`. It was predicted `L` at `/plan MIR-19-c` for
 items 2 to 6 together; taking item 2 alone, and finding that none of the eleven pushState specs needs an
 edit (§ 1), is what brings it to `M`.
 
@@ -457,6 +483,13 @@ edit (§ 1), is what brings it to `M`.
    tests in `supabase/functions/`, and bundling it makes this ticket's diff two operations. Splitting
    by operation is the operating model's first rule.
 
+5. **For cal-08, widen `stripOrg` to strip `acme` as well**, so `appPathname` hides every mock org.
+   Rejected: `tests/e2e/support/org-prefix.ts:9-12` deliberately strips only `shared`, because *"a spec
+   that stripped any org-shaped segment would pass at another org's address"*; stripping `acme` too
+   would let a `shared` member's walk pass at `/acme/…`, the exact error it guards against. It is also
+   pinned by `tests/e2e-org-prefix.test.ts`, so it is the larger change. Two literal paths in the one
+   spec that places a member in `acme` say what that spec expects.
+
 ## Changelog
 
 - `2026-11-12T01:18:05Z`: all sections written. Scope narrowed from the ticket's title (*"The root
@@ -472,3 +505,10 @@ edit (§ 1), is what brings it to `M`.
   `ORG_CODE_SHAPE`), and `/no/such/page` → `null` is added as the counter-example. § 4.4 needs no text
   change: it already says one `it` per docblock example. Raised by `developer`
   (99-questions.md). Amended by `tech-lead-design`.
+- `2026-11-12T01:31:00Z`: § 1 Out of scope, § 2 AC-12 and new AC-14, § 4.5 (cal-08 block), § 7 (cal-08
+  added, nine paths, still `M`), § 8 alternative 5. The first PLAN missed that `cal-08-holiday-shading`
+  places its admin in the dedicated org `acme` (`placeAdminInDedicatedOrg`), so the flip lands him at
+  `/acme/month/2026-09`, and `appPathname` strips only `shared`: two walks ran past the first entry.
+  The app is correct; the spec's target path changes in two places. Also fixed § 1's
+  out-of-scope bullet, which cited AC-9 for "pass unedited" where AC-12 is meant. Raised by
+  `developer` (99-questions.md, second question). Amended by `tech-lead-design`.

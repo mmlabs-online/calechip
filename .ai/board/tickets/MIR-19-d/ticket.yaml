@@ -8,11 +8,11 @@ id: MIR-19-d
 title: "The root addresses send a member to their org"   # narrowed at /plan MIR-19-d, 2026-11-12 (01-plan.md § 1, Changelog). Was: "The root addresses send a member to their org, then email links, nginx, the panel's reserved list and sign-up follow" — items 3-5 are MIR-19-e, item 6 is MIR-19-f
 feature_ids: [MIR-19]   # split of MIR-19 (operating model § ID scheme: splits get -a, -b)
 group: MIR
-state: READY
+state: REVIEW
 owner: ""
 branch: ""
 size_estimate: "M"   # set by tech-lead-design at /plan MIR-19-d, 2026-11-12 (01-plan.md § 1)
-size: "M"            # 8 allowed_paths (01-plan.md § 7). Predicted L at /plan MIR-19-c for items 2-6 together; split here, items 3-5 are MIR-19-e and item 6 is MIR-19-f
+size: "M"            # 9 allowed_paths (8 at first PLAN; cal-08 added at the second developer question) (01-plan.md § 7). Predicted L at /plan MIR-19-c for items 2-6 together; split here, items 3-5 are MIR-19-e and item 6 is MIR-19-f
 depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-10, MIR-11, MIR-12, MIR-13, MIR-14, MIR-15, MIR-18, MIR-21, MIR-21-b, MIR-21-c, MIR-21-d, MIR-21-e, MIR-21-f, MIR-19, MIR-19-b, MIR-19-c]   # MIR-19-c moves the history-walk specs onto the helper; the flip must not land before them
 invariants_touched: []   # set at /plan MIR-19-d: routing only, no entry written or counted (01-plan.md § 2)
 allowed_paths:
@@ -24,12 +24,13 @@ allowed_paths:
   - "tests/e2e/mir-19-d-flip.spec.ts"
   - "tests/e2e/mir-19-org-routing.spec.ts"
   - "tests/e2e/evt-14-guest-sign-in.spec.ts"
+  - "tests/e2e/cal-08-holiday-shading.spec.ts"   # added 2026-11-12, second developer question (01-plan.md § 4.5, AC-14)
 glossary_owed: []
 schema_delta: none    # /plan MIR-19-d: none in this slice; item 6 (sign-up into an org) moved to MIR-19-f with its schema change and ADR
 requires_adr: false
 rework_count: 0
 chat_budget:
-  developer->tech-lead-design: { used: 1, max: 6 }
+  developer->tech-lead-design: { used: 2, max: 6 }
 tracker: { provider: "", external_id: "", sync_enabled: false }
 gates:
   plan:   { passed: true, at: "2026-11-12T01:24:33Z" }

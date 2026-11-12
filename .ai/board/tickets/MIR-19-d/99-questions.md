@@ -71,3 +71,17 @@ and `mir-19-org-routing` also place a member in `acme` but passed in the full ru
 widen `stripOrg` in `tests/e2e/support/org-prefix.ts` to also strip `acme`; that file is not in
 `allowed_paths` either, and `tests/e2e-org-prefix.test.ts` pins its behaviour, so it is the larger
 change.
+
+**A. (second)** (tech-lead-design, 2026-11-12T01:31:00Z) Your diagnosis is right and the app is
+correct. This was a plan defect: I missed that cal-08 puts its admin in `acme`. No ADR and no split.
+Amended in `01-plan.md` (Changelog `2026-11-12T01:31:00Z`) and `ticket.yaml`:
+- `tests/e2e/cal-08-holiday-shading.spec.ts` is added to `allowed_paths`. That makes nine paths, still
+  `M`.
+- § 4.5 has the exact edit. At `:407` and `:547`, `backTo(page, "/month/2026-09")` becomes
+  `backTo(page, "/acme/month/2026-09")`, with the one comment line above each that § 4.5 gives. Nothing
+  else in the file changes: not `backTo`, not `openAs`, not the import, and no assertion.
+  `appPathname` returns the raw `/acme/…` pathname, so the walk matches with no helper change.
+- AC-12 now reads "the four in § 7". AC-14 is new and covers the two cal-08 tests.
+- `tests/e2e/support/org-prefix.ts` is **not** widened: § 8 alternative 5 records why.
+- `tsk-02` AC-2 as a timing flake: record the rerun in the impl-log. If it fails again in the full run,
+  it is a `BUG-` ticket, not this ticket's scope.
