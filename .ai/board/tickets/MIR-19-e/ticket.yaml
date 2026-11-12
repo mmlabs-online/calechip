@@ -8,23 +8,32 @@ id: MIR-19-e
 title: "Email links carry the org, nginx drops $uri/, and the panel's mock reserved list gains tasks"
 feature_ids: [MIR-19]   # split of MIR-19 (operating model § ID scheme: splits get -a, -b)
 group: MIR
-state: BACKLOG
+state: READY
 owner: ""
 branch: ""
-size_estimate: ""     # S|M - set by tech-lead-design at PLAN; gates DoR
-size: ""              # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. Predicted at /plan MIR-19-d: M (three small edits plus their tests)
+size_estimate: M      # S|M - set by tech-lead-design at PLAN; gates DoR
+size: M               # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting. Predicted at /plan MIR-19-d: M (three small edits plus their tests). Counted at /plan MIR-19-e: 9 paths (01-plan.md § 7)
 depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-10, MIR-11, MIR-12, MIR-13, MIR-14, MIR-15, MIR-18, MIR-21, MIR-21-b, MIR-21-c, MIR-21-d, MIR-21-e, MIR-21-f, MIR-19, MIR-19-b, MIR-19-c, MIR-19-d]   # MIR-19-d is the flip; decision 5 orders these after it
 invariants_touched: []
-allowed_paths: []
+allowed_paths:
+  - ".ai/registry/decisions/ADR-098-an-email-to-a-member-carries-their-org-code-in-the-request-the-database-posts.md"
+  - "supabase/migrations/20261112090000_mir19e_email_org_code.sql"
+  - "supabase/functions/send-event-email/template.ts"
+  - "docker/nginx.conf"
+  - "src/lib/data/system.ts"
+  - "tests/email-org-links.test.ts"
+  - "tests/nginx-spa-fallback.test.ts"
+  - "tests/system-reserved-org-codes.test.ts"
+  - "tests/e2e/mir-19-e-reserved-tasks.spec.ts"
 glossary_owed: []
-schema_delta: none    # PLAN decides; item 3 may need the event's org_code in the email function's read, which PLAN checks against ADR-014
-requires_adr: false
+schema_delta: "20261112090000_mir19e_email_org_code.sql — re-creates the trigger functions public.email_notification() and public.email_invitation() so the request each posts carries orgCode (the recipient member's own org code; null for a guest). No table, column, policy, trigger, constraint or grant change; grants restated as they stand (ADR-098; 01-plan.md § 4.1, § 6)"
+requires_adr: true    # ADR-098, written at this PLAN under ADR-008 and ADR-067
 rework_count: 0
 chat_budget:
   developer->tech-lead-design: { used: 0, max: 6 }
 tracker: { provider: "", external_id: "", sync_enabled: false }
 gates:
-  plan:   { passed: false, at: null }
+  plan:   { passed: true, at: "2026-11-12T02:44:05Z" }
   review: { passed: false, at: null }
 
 # --- MIR extra fields ---------------------------------------------------------------------------
