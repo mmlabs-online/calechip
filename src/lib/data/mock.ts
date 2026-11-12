@@ -826,7 +826,10 @@ const mayReadEvent = (event: CalEvent, uid: string | null): boolean => {
   return (
     eventIsAdmin(uid) ||
     event.creatorId === uid ||
-    event.scope === "public" ||
+    // MIR-15, ADR-076 decision 1. Org public's branch only: every mock event is in Org public
+    // (MIR-15-d 01-plan.md § 1). SQL: `scope = 'public' and (not org_is_shared(org_id) or team_id in
+    // member_team_ids(uid))`.
+    (event.scope === "public" && event.teamId === mine) ||
     (event.scope === "team" && event.teamId === mine) ||
     (event.scope === "named" && isEventInvitee(event.id, uid)) ||
     // EVT-02, AC-5. The disjunct `event_select_visible` gains: someone pending or attending keeps
@@ -872,7 +875,10 @@ const isEventAudience = (event: CalEvent, uid: string | null): boolean => {
   if (mine === null) return false;
   return (
     event.creatorId === uid ||
-    event.scope === "public" ||
+    // MIR-15, ADR-076 decision 1. Org public's branch only: every mock event is in Org public
+    // (MIR-15-d 01-plan.md § 1). SQL: `scope = 'public' and (not org_is_shared(org_id) or team_id in
+    // member_team_ids(uid))`.
+    (event.scope === "public" && event.teamId === mine) ||
     (event.scope === "team" && event.teamId === mine) ||
     (event.scope === "named" && isEventInvitee(event.id, uid))
   );
@@ -3602,6 +3608,8 @@ export const seam: DataSeam = {
         e !== undefined && mayReadEvent(e, uid) && (a.status === "attending" || mayManageEvent(e, uid))
       );
     };
+    // Disjuncts (c) and (d) reach through `mayReadEvent`, which since MIR-15 bounds a `public` event
+    // to its own team in Org public (ADR-076 decision 3).
     const admitted = (m: Member): boolean =>
       eventIsAdmin(uid) ||
       m.teamId === ownTeam ||
@@ -3672,11 +3680,11 @@ export const seam: DataSeam = {
       return refusedInvitee;
     }
 
-    // EVT-04 AC-1. `notify_event_created`: own team is the creator's team, every team is everyone,
-    // named people is nobody.
+    // EVT-04 AC-1. `notify_event_created`: own team and `public` both notify the creator's team
+    // (MIR-15, ADR-076 decision 2, Org public's branch); named people is nobody.
     if (row.scope !== "named") {
       notify(
-        approvedMemberIds().filter((id) => row.scope === "public" || memberTeamId(id) === row.teamId),
+        approvedMemberIds().filter((id) => memberTeamId(id) === row.teamId),
         "event_created",
         row,
       );

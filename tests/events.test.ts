@@ -221,11 +221,51 @@ describe("who can read it", () => {
     expect(await canRead(FIXTURE_MEMBER.id, id)).toBe(false);
   });
 
-  it("AC-6: an every-team event is read by every approved member of every team", async () => {
+  // MIR-15-d (ADR-076 decision 1): in Org public a `public` event is a team event that is also open
+  // to guests. Superseded: "read by every approved member of every team".
+  it("AC-6 (MIR-15): a public event is read by its own team and the admin, and by no other team", async () => {
     const id = await createAs(FIXTURE_MEMBER.id, { scope: "public" });
-    for (const who of [FIXTURE_APPROVED_MEMBER.id, MANAGER_A, FIXTURE_OTHER_TEAM_MEMBER.id, MEMBER_B2, FIXTURE_SECOND_ADMIN.id]) {
+    for (const who of [FIXTURE_APPROVED_MEMBER.id, MANAGER_A, FIXTURE_SECOND_ADMIN.id]) {
       expect(await canRead(who, id)).toBe(true);
     }
+    for (const who of [FIXTURE_OTHER_TEAM_MEMBER.id, MEMBER_B2]) {
+      expect(await canRead(who, id)).toBe(false);
+    }
+    as(FIXTURE_APPROVED_MEMBER.id);
+    expect((await mock.getEvent(id))?.scope).toBe("public");
+  });
+
+  // MIR-15-d, AC-3, AC-8, AC-9: joining follows reading, the admin is unchanged, and a cross-team
+  // attendee keeps their place and loses the right to come back.
+  it("MIR-15: another team cannot join a public event; the admin reads but is not its audience; a cross-team attendee cannot re-join", async () => {
+    const id = await createAs(FIXTURE_MEMBER.id, { scope: "public" });
+    as(MEMBER_B2);
+    const refused = await mock.joinEvent(id);
+    expect(refused.ok ? null : refused.error.code).toBe("attendance_not_permitted");
+    as(FIXTURE_APPROVED_MEMBER.id);
+    const own = await mock.joinEvent(id);
+    expect(own.ok ? own.value.status : null).toBe("attending");
+
+    as(MEMBER_B2);
+    expect(await mock.listEvents()).toEqual([]);
+    // The admin reads another team's public event, and is not in its audience (no admin clause).
+    const theirs = await createAs(FIXTURE_OTHER_TEAM_MEMBER.id, { scope: "public" });
+    as(FIXTURE_ADMIN.id);
+    expect((await mock.getEvent(theirs))?.scope).toBe("public");
+    const admin = await mock.joinEvent(theirs);
+    expect(admin.ok ? null : admin.error.code).toBe("attendance_not_permitted");
+
+    const named = await createAs(FIXTURE_MEMBER.id, { scope: "named", inviteeIds: [MEMBER_B2] });
+    as(MEMBER_B2);
+    expect((await mock.joinEvent(named)).ok).toBe(true);
+    as(FIXTURE_MEMBER.id);
+    expect((await mock.updateEvent(named, input({ scope: "public" }))).ok).toBe(true);
+    expect(await canRead(MEMBER_B2, named)).toBe(true);
+    as(MEMBER_B2);
+    expect((await mock.leaveEvent(named)).ok).toBe(true);
+    const back = await mock.joinEvent(named);
+    expect(back.ok ? null : back.error.code).toBe("attendance_not_permitted");
+    expect(await canRead(MEMBER_B2, named)).toBe(false);
   });
 
   it("AC-6, AC-9: a pending or a rejected sign-up reads no event at all", async () => {
@@ -301,8 +341,9 @@ describe("who can read it", () => {
     expect(await mock.listEvents()).toEqual([]);
     const edit = await mock.updateEvent(own, input({ name: "Mine still?" }));
     expect(edit.ok ? null : edit.error.code).toBe("event_not_permitted");
-    // Their event is still there for everybody else — removing a member does not delete history.
-    expect(await canRead(FIXTURE_OTHER_TEAM_MEMBER.id, own)).toBe(true);
+    // Their event is still there for everybody else on their team — removing a member does not
+    // delete history.
+    expect(await canRead(FIXTURE_APPROVED_MEMBER.id, own)).toBe(true);
   });
 });
 
@@ -445,9 +486,10 @@ describe("changing and removing it", () => {
     as(FIXTURE_MEMBER.id);
     expect(await mock.listEventInvitees(id)).toEqual([]);
 
-    // Widen to every team: team B gains it.
+    // Widen to `public`: in Org public that is still the own team (MIR-15), so team B gains nothing.
     expect((await mock.updateEvent(id, input({ scope: "public" }))).ok).toBe(true);
-    expect(await canRead(MEMBER_B2, id)).toBe(true);
+    expect(await canRead(FIXTURE_APPROVED_MEMBER.id, id)).toBe(true);
+    expect(await canRead(MEMBER_B2, id)).toBe(false);
   });
 
   it("AC-15: the creator deletes an event, and it and its named list are gone for every reader", async () => {

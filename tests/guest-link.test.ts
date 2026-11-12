@@ -290,12 +290,13 @@ describe("the guest read (AC-9 to AC-17)", () => {
     expect(MIGRATION_SQL).toMatch(/list_guest_event_attendees\(p_token text\)\s+returns table \(display_name text\)/);
   });
 
-  it("AC-10: attendees by name in join order, any team; pending is not listed or counted; a removed one is a former member", async () => {
+  // MIR-15-d: attendees are own-team members, since another team cannot join a public event.
+  it("AC-10: attendees by name in join order; pending is not listed or counted; a removed one is a former member", async () => {
     const leaver = await approved("Guest Gone", FIXTURE_TEAM.id);
     const id = await createAs(FIXTURE_MEMBER.id, { capacity: 10 });
     await joinAs(MEMBER_A2, id);
     await new Promise((r) => setTimeout(r, 2));
-    await joinAs(MEMBER_B2, id);
+    await joinAs(MANAGER_A, id);
     await new Promise((r) => setTimeout(r, 2));
     await joinAs(leaver, id);
     const token = await tokenOf(FIXTURE_MEMBER.id, id);
@@ -310,7 +311,7 @@ describe("the guest read (AC-9 to AC-17)", () => {
 
     as(null);
     const read = await mock.getGuestEvent(token);
-    expect(read?.attendeeNames).toEqual(["Guest Second", "Guest B Two", null]);
+    expect(read?.attendeeNames).toEqual(["Guest Second", "Guest Manager", null]);
     expect(read?.seatsTaken).toBe(3);
 
     const pending = await mock.getGuestEvent(gatedToken);
@@ -443,8 +444,12 @@ describe("EVT-13 — the event behind a guest link, to a reader only (AC-1 to AC
   it("AC-1, AC-2: every kind of reader gets the event id", async () => {
     const pub = await createAs(FIXTURE_MEMBER.id, { scope: "public" });
     const pubToken = await tokenOf(FIXTURE_MEMBER.id, pub);
-    for (const who of [FIXTURE_ADMIN.id, FIXTURE_MEMBER.id, MEMBER_A2, FIXTURE_OTHER_TEAM_MEMBER.id]) {
+    for (const who of [FIXTURE_ADMIN.id, FIXTURE_MEMBER.id, MEMBER_A2]) {
       expect(await eventIdAs(who, pubToken)).toBe(pub);
+    }
+    // MIR-15, AC-2: in Org public another team is not a reader of a public event.
+    for (const who of [FIXTURE_OTHER_TEAM_MEMBER.id, MEMBER_B2]) {
+      expect(await eventIdAs(who, pubToken)).toBeNull();
     }
 
     const team = await createAs(FIXTURE_MEMBER.id, { scope: "team" });

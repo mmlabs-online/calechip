@@ -33,6 +33,7 @@ import {
 } from "../supabase/functions/send-event-email/template";
 import {
   FIXTURE_ADMIN,
+  FIXTURE_APPROVED_MEMBER,
   FIXTURE_MEMBER,
   FIXTURE_OTHER_TEAM,
   FIXTURE_OTHER_TEAM_MEMBER,
@@ -179,10 +180,13 @@ describe("who is emailed, and for what (AC-1 to AC-5)", () => {
     expect(to).not.toContain(await emailOf(FIXTURE_MEMBER.id));
   });
 
-  it("AC-1: an every-team event emails nobody, while its in-app rows are written as before", async () => {
+  // MIR-15-d: the in-app row goes to the creator's team only, so it is read by an own-team recipient.
+  it("AC-1: a public event emails nobody, while its in-app rows are written as before", async () => {
     const id = await createAs(FIXTURE_MEMBER.id, { scope: "public" });
     expect(mailFor(id)).toEqual([]);
     as(MEMBER_B2);
+    expect(await mock.listNotifications()).toEqual([]);
+    as(MEMBER_A2);
     expect((await mock.listNotifications()).map((n) => n.kind)).toEqual(["event_created"]);
   });
 
@@ -213,14 +217,14 @@ describe("who is emailed, and for what (AC-1 to AC-5)", () => {
   it("AC-3: approved, declined and removed each email the person; a creator deciding their own receives nothing", async () => {
     const id = await createAs(FIXTURE_MEMBER.id, { scope: "public", requiresApproval: true });
     await joinAs(MEMBER_A2, id);
-    await joinAs(MEMBER_B2, id);
+    await joinAs(FIXTURE_APPROVED_MEMBER.id, id);
     await decideAs(FIXTURE_MEMBER.id, id, MEMBER_A2, "attending");
-    await decideAs(FIXTURE_ADMIN.id, id, MEMBER_B2, "rejected");
+    await decideAs(FIXTURE_ADMIN.id, id, FIXTURE_APPROVED_MEMBER.id, "rejected");
     await decideAs(FIXTURE_ADMIN.id, id, MEMBER_A2, "removed");
 
     expect(mailFor(id).map((e) => [e.kind, e.to])).toEqual([
       ["attendance_approved", await emailOf(MEMBER_A2)],
-      ["attendance_rejected", await emailOf(MEMBER_B2)],
+      ["attendance_rejected", await emailOf(FIXTURE_APPROVED_MEMBER.id)],
       ["attendance_removed", await emailOf(MEMBER_A2)],
     ]);
 
@@ -247,8 +251,8 @@ describe("who is emailed, and for what (AC-1 to AC-5)", () => {
     await decideAs(FIXTURE_MEMBER.id, id, MEMBER_A2, "attending");
     const before = __sentEventEmails().length; // the approval
 
-    await joinAs(MEMBER_B2, id); // request
-    as(MEMBER_B2);
+    await joinAs(FIXTURE_APPROVED_MEMBER.id, id); // request
+    as(FIXTURE_APPROVED_MEMBER.id);
     expect((await mock.leaveEvent(id)).ok).toBe(true); // cancels the request
     as(MEMBER_A2);
     expect((await mock.leaveEvent(id)).ok).toBe(true); // withdrawal

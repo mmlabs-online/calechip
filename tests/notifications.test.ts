@@ -18,6 +18,7 @@ import { NOTIFICATION_LIMIT, type NotificationKind } from "@/lib/domain/types";
 import { notificationSentence } from "@/components/NotificationBell";
 import {
   FIXTURE_ADMIN,
+  FIXTURE_APPROVED_MEMBER,
   FIXTURE_MEMBER,
   FIXTURE_OTHER_TEAM,
   FIXTURE_OTHER_TEAM_MEMBER,
@@ -171,10 +172,15 @@ describe("who is notified, and of what", () => {
     expect(await kinds(FIXTURE_MEMBER.id)).toEqual([]);
   });
 
-  it("AC-1: an every-team event notifies every other approved member; a named event sends no event_created", async () => {
+  // MIR-15-d (ADR-076 decision 2, AC-4). Superseded: "an every-team event notifies every other
+  // approved member". In Org public a public event notifies the creator's team, as a team event does.
+  it("AC-1: a public event notifies the creator's team and nobody else; a named event sends no event_created", async () => {
     const id = await createAs(FIXTURE_MEMBER.id, { scope: "public" });
-    for (const who of [MEMBER_A2, FIXTURE_ADMIN.id, FIXTURE_OTHER_TEAM_MEMBER.id, MEMBER_B2, ADMIN_B]) {
+    for (const who of [MEMBER_A2, MANAGER_A, FIXTURE_ADMIN.id]) {
       expect(await kinds(who, id)).toEqual(["event_created"]);
+    }
+    for (const who of [FIXTURE_OTHER_TEAM_MEMBER.id, MEMBER_B2, ADMIN_B]) {
+      expect(await kinds(who, id)).toEqual([]);
     }
     expect(await kinds(FIXTURE_MEMBER.id)).toEqual([]);
 
@@ -219,11 +225,11 @@ describe("who is notified, and of what", () => {
   it("AC-4: approved, declined and removed reach the person; a creator approving their own request receives nothing", async () => {
     const id = await createAs(FIXTURE_MEMBER.id, { requiresApproval: true });
     await joinAs(MEMBER_A2, id);
-    await joinAs(MEMBER_B2, id);
+    await joinAs(MANAGER_A, id);
     await decideAs(FIXTURE_MEMBER.id, id, MEMBER_A2, "attending");
-    await decideAs(FIXTURE_ADMIN.id, id, MEMBER_B2, "rejected");
+    await decideAs(FIXTURE_ADMIN.id, id, MANAGER_A, "rejected");
     expect(await kinds(MEMBER_A2, id)).toEqual(["attendance_approved", "event_created"]);
-    expect(await kinds(MEMBER_B2, id)).toEqual(["attendance_rejected", "event_created"]);
+    expect(await kinds(MANAGER_A, id)).toEqual(["attendance_rejected", "event_created"]);
 
     await decideAs(FIXTURE_ADMIN.id, id, MEMBER_A2, "removed");
     expect((await kinds(MEMBER_A2, id))[0]).toBe("attendance_removed");
@@ -286,21 +292,21 @@ describe("who is notified, and of what", () => {
   it("AC-6: a cancellation reaches everyone taking part, survives the event, names it, and leads nowhere", async () => {
     const id = await createAs(FIXTURE_MEMBER.id, { name: "Picnic", requiresApproval: true });
     await joinAs(MEMBER_A2, id);
-    await joinAs(MEMBER_B2, id);
+    await joinAs(MANAGER_A, id);
     await decideAs(FIXTURE_MEMBER.id, id, MEMBER_A2, "attending");
-    await joinAs(FIXTURE_OTHER_TEAM_MEMBER.id, id);
-    await decideAs(FIXTURE_MEMBER.id, id, FIXTURE_OTHER_TEAM_MEMBER.id, "rejected");
+    await joinAs(FIXTURE_APPROVED_MEMBER.id, id);
+    await decideAs(FIXTURE_MEMBER.id, id, FIXTURE_APPROVED_MEMBER.id, "rejected");
 
     as(FIXTURE_ADMIN.id);
     expect((await mock.deleteEvent(id)).ok).toBe(true);
 
-    for (const who of [MEMBER_A2, MEMBER_B2]) {
+    for (const who of [MEMBER_A2, MANAGER_A]) {
       const cancelled = (await inbox(who)).filter((n) => n.kind === "event_cancelled");
       expect(cancelled).toHaveLength(1);
       expect(cancelled[0]).toMatchObject({ eventId: null, eventName: "Picnic", actorId: FIXTURE_ADMIN.id });
     }
     // Rejected no longer takes part; the creator did not take part.
-    expect((await inbox(FIXTURE_OTHER_TEAM_MEMBER.id)).some((n) => n.kind === "event_cancelled")).toBe(false);
+    expect((await inbox(FIXTURE_APPROVED_MEMBER.id)).some((n) => n.kind === "event_cancelled")).toBe(false);
     expect((await inbox(FIXTURE_MEMBER.id)).some((n) => n.kind === "event_cancelled")).toBe(false);
     // The cascade sent no withdrawal.
     expect((await inbox(FIXTURE_MEMBER.id)).some((n) => n.kind === "attendance_withdrawn")).toBe(false);
@@ -315,9 +321,9 @@ describe("who is notified, and of what", () => {
     expect(await kinds(FIXTURE_MEMBER.id, needs)).toEqual(["attendance_withdrawn", "attendance_requested"]);
 
     const open = await createAs(FIXTURE_MEMBER.id);
-    await joinAs(MEMBER_B2, open);
+    await joinAs(MANAGER_A, open);
     expect(await kinds(FIXTURE_MEMBER.id, open)).toEqual([]);
-    as(MEMBER_B2);
+    as(MANAGER_A);
     expect((await mock.leaveEvent(open)).ok).toBe(true);
     expect(await kinds(FIXTURE_MEMBER.id, open)).toEqual(["attendance_withdrawn"]);
 

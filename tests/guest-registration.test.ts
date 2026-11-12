@@ -442,7 +442,7 @@ describe("what members see (AC-14 to AC-18)", () => {
     await pause();
     await register(token, "Guest One", "one@example.com");
     await pause();
-    await joinAs(MEMBER_B2, id);
+    await joinAs(MANAGER_A, id);
     await pause();
     const cancelled = await register(token, "Guest Gone", "gone@example.com");
     as(null);
@@ -450,13 +450,15 @@ describe("what members see (AC-14 to AC-18)", () => {
 
     as(null);
     const read = await mock.getGuestEvent(token);
-    expect(read?.attendeeNames).toEqual(["Reg Second", "Guest One", "Reg B Two"]);
+    expect(read?.attendeeNames).toEqual(["Reg Second", "Guest One", "Reg Manager"]);
     expect(read?.seatsTaken).toBe(3);
 
-    for (const who of [MEMBER_A2, MEMBER_B2, MANAGER_A]) {
+    for (const who of [MEMBER_A2, MANAGER_A]) {
       const guests = await guestsAs(who, id);
       expect(guests.map((g) => [g.name, g.status, g.email])).toEqual([["Guest One", "attending", null]]);
     }
+    // MIR-15: another team's member is not a reader of a public event.
+    expect(await guestsAs(MEMBER_B2, id)).toEqual([]);
   });
 
   it("AC-15: only the creator and admins read emails; everyone else, and signed out, get null or nothing", async () => {
@@ -475,11 +477,12 @@ describe("what members see (AC-14 to AC-18)", () => {
     const guestId = await guestIdOf(id, "Private");
     as(FIXTURE_MEMBER.id);
     expect((await mock.decideGuest(guestId, "attending")).ok).toBe(true);
-    for (const who of [MEMBER_A2, MANAGER_A, MEMBER_B2]) {
+    for (const who of [MEMBER_A2, MANAGER_A]) {
       const guests = await guestsAs(who, id);
       expect(guests).toHaveLength(1);
       expect(guests[0]?.email).toBeNull();
     }
+    expect(await guestsAs(MEMBER_B2, id)).toEqual([]);
     expect(await guestsAs(null, id)).toEqual([]);
     // The email function answers the creator and admins only and is not anon's.
     expect(MIGRATION_SQL).toMatch(/public\.may_manage_event\(p_event_id, \(select auth\.uid\(\)\)\)/);

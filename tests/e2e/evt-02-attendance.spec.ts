@@ -153,14 +153,20 @@ test.describe("EVT-02 — attendance", () => {
     await expect(page.getByTestId("event-attendee")).toHaveCount(1);
     await expect(page.getByTestId("event-attendee")).toContainText(TEAMMATE.name);
 
-    // A reader on another team: sees the list, and no join control on a full event.
-    await switchTo(page, OTHER_TEAM.email);
+    // A reader who is not attending (MIR-15-d: on the event's team — in Org public a public event is
+    // not read by another team): sees the list, and no join control on a full event. An admin manages
+    // events, so the remove control is theirs and is not asserted absent.
+    await switchTo(page, ADMIN.email);
     await openEvent(page, "Lunch for one");
     await expect(page.getByTestId("event-attendee")).toContainText(TEAMMATE.name);
     await expect(page.getByTestId("event-seats")).toHaveAttribute("data-taken", "1");
     await expect(page.getByTestId("event-join-button")).toHaveCount(0);
     await expect(page.getByTestId("event-my-status")).toHaveCount(0);
-    await expect(page.getByTestId("event-attendee-remove")).toHaveCount(0);
+
+    // MIR-15, AC-12: another team does not see the event at all.
+    await switchTo(page, OTHER_TEAM.email);
+    await openEvents(page);
+    await expect(page.getByTestId("event-row").filter({ hasText: "Lunch for one" })).toHaveCount(0);
   });
 
   test("AC-7, AC-16, AC-22: a request waits, the creator approves or rejects it, and the requester sees the outcome", async ({ page }) => {
@@ -174,7 +180,7 @@ test.describe("EVT-02 — attendance", () => {
     await expect(page.getByTestId("event-attendee")).toHaveCount(0);
     await expect(page.getByTestId("event-requests")).toHaveCount(0);
 
-    await switchTo(page, OTHER_TEAM.email);
+    await switchTo(page, ADMIN.email);
     await openEvent(page, "Workshop");
     await page.getByTestId("event-join-button").click();
     await expect(page.getByTestId("event-my-status")).toHaveAttribute("data-status", "pending");
@@ -186,10 +192,10 @@ test.describe("EVT-02 — attendance", () => {
     await requests.filter({ hasText: TEAMMATE.name }).getByTestId("event-request-approve").click();
     await expect(page.getByTestId("event-attendee")).toContainText(TEAMMATE.name);
     await expect(page.getByTestId("event-seats")).toHaveText("1 going · 5 seats");
-    await requests.filter({ hasText: OTHER_TEAM.name }).getByTestId("event-request-reject").click();
+    await requests.filter({ hasText: ADMIN.name }).getByTestId("event-request-reject").click();
     await expect(page.getByTestId("event-requests")).toHaveCount(0);
 
-    await switchTo(page, OTHER_TEAM.email);
+    await switchTo(page, ADMIN.email);
     await openEvent(page, "Workshop");
     await expect(page.getByTestId("event-my-status")).toHaveAttribute("data-status", "rejected");
     // AC-19: rejected is final — no control to try again.

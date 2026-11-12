@@ -20,6 +20,7 @@ import {
 import { teamReadsFor } from "@/lib/viewed-team";
 import {
   FIXTURE_ADMIN,
+  FIXTURE_APPROVED_MEMBER,
   FIXTURE_MEMBER,
   FIXTURE_OTHER_TEAM,
   FIXTURE_OTHER_TEAM_MEMBER,
@@ -268,7 +269,8 @@ describe("listEventsForTeam (mock)", () => {
 describe("listOwnEventAttendance (mock)", () => {
   it("AC-11: an admin reads their OWN rows only, though the policy hands them every row", async () => {
     const eventId = await createAs(FIXTURE_MEMBER.id, { name: "open", scope: "public" });
-    as(FIXTURE_OTHER_TEAM_MEMBER.id);
+    // MIR-15: the other attendee is an own-team member; another team cannot join a public event.
+    as(FIXTURE_APPROVED_MEMBER.id);
     expect((await mock.joinEvent(eventId)).ok).toBe(true);
     as(FIXTURE_ADMIN.id);
     expect((await mock.joinEvent(eventId)).ok).toBe(true);
