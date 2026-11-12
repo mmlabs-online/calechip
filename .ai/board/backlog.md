@@ -23,6 +23,8 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
 
+**`MIR-19-e` was at `REVIEW` in `ticket.yaml`, `gates.review` passed** — recorded at /advance on 2026-11-12 from `04-review.md`: `gate: PASS`, `verdict: PASS`, `invariant_violation: false`, `route_to: none`. `state` stays `REVIEW` until /ship.
+
 **`MIR-19-e` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-12 from `03-impl-log.md` gate PASS; its row left this table.
 
 **`MIR-19-e` moved here at /advance on 2026-11-12**, from `01-plan.md` gate PASS (`produced_at: 2026-11-12T02:39:03Z`) with all six Definition of Ready items passing; `schema_delta` is non-none and cites ADR-098, `ACCEPTED by tech-lead-design` under ADR-067. Applying the migration and redeploying `send-event-email` stay human (RULE-09). Run by `/run-ticket MIR-19-e`.
