@@ -3,9 +3,11 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
+  ROOT_ONLY_SEGMENTS,
   RESERVED_ORG_CODES,
   isOrgCode,
   orgPath,
+  ownOrgAddress,
   routerBase,
   splitOrgPath,
 } from "../src/lib/org-path";
@@ -74,5 +76,29 @@ describe("splitOrgPath, orgPath and routerBase", () => {
     expect(routerBase("/shared")).toBe("/shared");
     expect(routerBase("/week")).toBe("/");
     expect(routerBase("/")).toBe("/");
+  });
+});
+
+describe("MIR-19-d ownOrgAddress", () => {
+  const cases: Array<[string, string, string | null]> = [
+    ["/", "", "/shared"],
+    ["/month/2026-10", "?team=x", "/shared/month/2026-10?team=x"],
+    ["/events", "?probe=1#top", "/shared/events?probe=1#top"],
+    ["/no/such/page", "", "/shared/no/such/page"],
+    ["/signins", "", "/shared/signins"],
+    ["/signin", "?next=%2Fevents", null],
+    ["/signup", "", null],
+    ["/guest", "", null],
+    ["/guest/abc", "", null],
+    ["/shared/week", "", null],
+    ["/acme/week", "", null],
+  ];
+  for (const [pathname, suffix, expected] of cases) {
+    it(`${pathname}${suffix} -> ${expected}`, () => {
+      expect(ownOrgAddress("shared", pathname, suffix)).toBe(expected);
+    });
+  }
+  it("ROOT_ONLY_SEGMENTS is the two account addresses and the guest links", () => {
+    expect(ROOT_ONLY_SEGMENTS).toEqual(["signin", "signup", "guest"]);
   });
 });

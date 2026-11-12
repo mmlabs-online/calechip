@@ -60,7 +60,7 @@ import Loader from "@/components/Loader";
 // EVT-14. The return-to `/signin` honours, and the rule that keeps it on this origin (AC-9).
 import { RETURN_TO_PARAM, safeReturnTo, signInReturningTo } from "@/lib/return-to";
 // MIR-19, ADR-097. The org address.
-import { isOrgCode, orgPath, routerBase } from "@/lib/org-path";
+import { isOrgCode, orgPath, ownOrgAddress, routerBase, splitOrgPath } from "@/lib/org-path";
 
 /**
  * UIE-02 § 4.6 and § 4.7 — the non-member arm of the shell layout route, and the home of the `p-8`
@@ -125,6 +125,28 @@ function EnterOrg({ onEnter }: { onEnter: () => void }): JSX.Element | null {
   return entering ? null : <Navigate to="/" replace />;
 }
 
+/** MIR-19-d, ADR-097 decision 5.2. The root router's catch-all for a member with an org code. */
+function EnterOwnOrg({
+  orgCode,
+  cross,
+  syncBase,
+}: {
+  orgCode: string;
+  cross: (path: string) => void;
+  syncBase: () => void;
+}): JSX.Element | null {
+  const { pathname, search, hash } = useLocation();
+  const alreadyInOrg = splitOrgPath(pathname).orgCode !== null;
+  const target = alreadyInOrg ? null : ownOrgAddress(orgCode, pathname, search + hash);
+  useEffect(() => {
+    if (alreadyInOrg) syncBase();
+    else if (target !== null) cross(target);
+  }, [alreadyInOrg, target, cross, syncBase]);
+  if (alreadyInOrg) return null;
+  // A root-only first segment no root route matched (e.g. `/guest`): `/` takes the next pass.
+  return target === null ? <Navigate to="/" replace /> : null;
+}
+
 /**
  * MIR-19. An org-prefixed address that leaves the org. `through` sends the same path (without the
  * prefix) to the root router; `sign-in` sends a signed-out caller to `/signin` returning here; `root`
@@ -185,10 +207,22 @@ export default function App() {
   // remounts on each, so every `<Link>`, `navigate()` and `<Navigate>` below keeps the org by default.
   const [base, setBase] = useState<string>(() => routerBase(window.location.pathname));
   const syncBase = useCallback(() => setBase(routerBase(window.location.pathname)), []);
+  // MIR-19-d, ADR-097 decision 5.2. The org a root address sends this caller to; null turns the flip off.
+  const ownOrg: string | null = membership.state === "member" ? orgCode : null;
   useEffect(() => {
-    window.addEventListener("popstate", syncBase);
-    return () => window.removeEventListener("popstate", syncBase);
-  }, [syncBase]);
+    const onPopState = (): void => {
+      if (ownOrg !== null) {
+        const { pathname, search, hash } = window.location;
+        const target = ownOrgAddress(ownOrg, pathname, search + hash);
+        if (target !== null) window.history.replaceState(window.history.state, "", target);
+      }
+      syncBase();
+    };
+    // Capture: runs before react-router's own popstate listener on window, so the router reads the
+    // rewritten org address and the shell is not remounted (01-plan.md § 4.3).
+    window.addEventListener("popstate", onPopState, true);
+    return () => window.removeEventListener("popstate", onPopState, true);
+  }, [ownOrg, syncBase]);
 
   /** Replaces the current history entry with `path`, keeping history.state, then re-reads the base. */
   const cross = useCallback(
@@ -779,8 +813,14 @@ export default function App() {
                 {/* MIR-19. A first segment that could be an org code: enter it (the router remounts
                     with that base) or, for anything else, the old catch-all's answer. Static
                     first segments above outrank this. */}
-                <Route path="/:orgCode/*" element={<EnterOrg onEnter={syncBase} />} />
-                {shellRoutes}
+                {ownOrg === null ? (
+                  <>
+                    <Route path="/:orgCode/*" element={<EnterOrg onEnter={syncBase} />} />
+                    {shellRoutes}
+                  </>
+                ) : (
+                  <Route path="*" element={<EnterOwnOrg orgCode={ownOrg} cross={cross} syncBase={syncBase} />} />
+                )}
               </>
             ) : (
               <>
