@@ -15,6 +15,8 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { DateRange, Holiday, HolidayKind, IssueKind, IssueStatus, Result } from "@/lib/domain/types";
 import { HOLIDAY_LIMIT, ISSUE_REPORT_LIMIT } from "@/lib/domain/types";
 import {
+  FIXTURE_ADMIN,
+  FIXTURE_APPROVED_MEMBER,
   FIXTURE_HOLIDAYS,
   FIXTURE_ISSUE_REPORT,
   FIXTURE_MEMBER,
@@ -74,6 +76,14 @@ export interface SystemSeam {
   listSharedTeams(): Promise<MoveResult<SharedTeam[]>>;
   /** `rpc("move_team_to_org", { p_team_id, p_target_org_id })`, first row. Never throws. */
   moveTeamToOrg(input: MoveTeamInput): Promise<MoveResult<TeamMoveSummary>>;
+  /** `rpc("current_impersonation")`, first row or null. Never throws. MIR-20. */
+  currentImpersonation(): Promise<ImpersonationResult<Impersonation | null>>;
+  /** `rpc("start_impersonation", { p_org_id, p_team_id, p_reason, p_minutes })`. Value is the id. Never throws. */
+  startImpersonation(input: StartImpersonationInput): Promise<ImpersonationResult<string>>;
+  /** `rpc("end_impersonation")`. Never throws. */
+  endImpersonation(): Promise<ImpersonationResult<null>>;
+  /** `rpc("impersonated_roster")`, mapped to camelCase. Never throws. */
+  impersonatedRoster(): Promise<ImpersonationResult<ImpersonatedRosterRow[]>>;
 }
 
 // =============================================================================================
@@ -265,6 +275,71 @@ function moveRefusal(
   return { ok: false, error: { code, message: MOVE_FAILURE_MESSAGES[code], detail } };
 }
 
+// =============================================================================================
+// MIR-20 — impersonation. 01-plan.md § 4.2, ADR-100.
+// =============================================================================================
+
+export type ImpersonationMinutes = 30 | 45 | 60;
+export const IMPERSONATION_MINUTES: readonly ImpersonationMinutes[] = [30, 45, 60];
+export const IMPERSONATION_REASON_MAX = 500;
+
+export interface StartImpersonationInput {
+  orgId: string;
+  teamId: string | null; // a team of Org public; null for a dedicated org
+  reason: string; // sent as typed; the RPC trims
+  minutes: ImpersonationMinutes;
+}
+
+/** One row of `public.current_impersonation()`. */
+export interface Impersonation {
+  id: string;
+  orgId: string;
+  orgCode: string;
+  orgName: string;
+  teamId: string | null;
+  teamName: string | null;
+  reason: string;
+  startedAt: string; // ISO 8601
+  expiresAt: string; // ISO 8601
+}
+
+/** One row of `public.impersonated_roster()`. */
+export interface ImpersonatedRosterRow {
+  memberId: string;
+  displayName: string;
+  memberRole: string; // 'member' | 'org_admin', shown as written
+  status: string; // 'pending' | 'approved' | 'rejected', shown as written
+  teamNames: string[];
+}
+
+export type ImpersonationFailureCode =
+  | "not_permitted" // 42501
+  | "impersonation_target_missing" // P0002
+  | "invalid_impersonation" // 22023
+  | "reason_required" // 23514, 23502
+  | "already_impersonating" // IM001, 23505
+  | "network"; // anything else, or a throw
+
+export type ImpersonationResult<T> =
+  | { ok: true; value: T }
+  | { ok: false; error: { code: ImpersonationFailureCode; message: string } };
+
+export const IMPERSONATION_FAILURE_MESSAGES: Record<ImpersonationFailureCode, string> = {
+  not_permitted: "You do not have permission to do that, or the impersonation session has ended.",
+  impersonation_target_missing: "That org or team no longer exists. Reload to see the current list.",
+  invalid_impersonation: "Choose 30, 45 or 60 minutes, and a team when the org is Org public.",
+  reason_required: "A reason is required, up to 500 characters.",
+  already_impersonating: "An impersonation session is already open. End it first.",
+  network: "Could not reach the server. Try again.",
+};
+
+function impersonationRefusal(code: ImpersonationFailureCode): {
+  ok: false;
+  error: { code: ImpersonationFailureCode; message: string };
+} {
+  return { ok: false, error: { code, message: IMPERSONATION_FAILURE_MESSAGES[code] } };
+}
+
 // The two refusals share `invalid_credentials`: both are a refused credential, and no other existing
 // `FailureCode` means that (01-plan.md § 4.4; `types.ts` is not edited).
 const WRONG_PASSWORD = "Email or password is incorrect.";
@@ -378,6 +453,9 @@ const supabaseSystemSeam: SystemSeam = {
   },
 
   async signOut() {
+    // MIR-20 AC-7: a session does not outlive the sign-in. The result is ignored; the database clock
+    // ends it anyway.
+    await supabaseSystemSeam.endImpersonation();
     try {
       await client().auth.signOut({ scope: "local" });
     } catch {
@@ -544,7 +622,119 @@ const supabaseSystemSeam: SystemSeam = {
       return moveRefusal("network");
     }
   },
+
+  async currentImpersonation() {
+    try {
+      const { data, error } = await client().rpc("current_impersonation");
+      if (error) return impersonationRefusal(impersonationFailureCode(error));
+      const row = ((data ?? []) as ImpersonationRpcRow[])[0];
+      return { ok: true, value: row ? toImpersonation(row) : null };
+    } catch {
+      return impersonationRefusal("network");
+    }
+  },
+
+  async startImpersonation(input) {
+    try {
+      const { data, error } = await client().rpc("start_impersonation", {
+        p_org_id: input.orgId,
+        p_team_id: input.teamId,
+        p_reason: input.reason,
+        p_minutes: input.minutes,
+      });
+      if (error) return impersonationRefusal(impersonationFailureCode(error));
+      return { ok: true, value: data as string };
+    } catch {
+      return impersonationRefusal("network");
+    }
+  },
+
+  async endImpersonation() {
+    try {
+      const { error } = await client().rpc("end_impersonation");
+      if (error) return impersonationRefusal(impersonationFailureCode(error));
+      return { ok: true, value: null };
+    } catch {
+      return impersonationRefusal("network");
+    }
+  },
+
+  async impersonatedRoster() {
+    try {
+      const { data, error } = await client().rpc("impersonated_roster");
+      if (error) return impersonationRefusal(impersonationFailureCode(error));
+      return { ok: true, value: ((data ?? []) as RosterRpcRow[]).map(toRosterRow) };
+    } catch {
+      return impersonationRefusal("network");
+    }
+  },
 };
+
+/** A row of `current_impersonation()` as PostgREST returns it. */
+interface ImpersonationRpcRow {
+  id: string;
+  org_id: string;
+  org_code: string;
+  org_name: string;
+  team_id: string | null;
+  team_name: string | null;
+  reason: string;
+  started_at: string;
+  expires_at: string;
+}
+
+/** A row of `impersonated_roster()` as PostgREST returns it. */
+interface RosterRpcRow {
+  member_id: string;
+  display_name: string;
+  member_role: string;
+  status: string;
+  team_names: string[];
+}
+
+function toImpersonation(row: ImpersonationRpcRow): Impersonation {
+  return {
+    id: row.id,
+    orgId: row.org_id,
+    orgCode: row.org_code,
+    orgName: row.org_name,
+    teamId: row.team_id,
+    teamName: row.team_name,
+    reason: row.reason,
+    startedAt: row.started_at,
+    expiresAt: row.expires_at,
+  };
+}
+
+function toRosterRow(row: RosterRpcRow): ImpersonatedRosterRow {
+  return {
+    memberId: row.member_id,
+    displayName: row.display_name,
+    memberRole: row.member_role,
+    status: row.status,
+    teamNames: row.team_names ?? [],
+  };
+}
+
+// The SQLSTATE is PostgREST's `code`. 01-plan.md § 4.2.
+function impersonationFailureCode(error: { code?: string }): ImpersonationFailureCode {
+  switch (error.code) {
+    case "42501":
+      return "not_permitted";
+    case "P0002":
+      return "impersonation_target_missing";
+    case "22023":
+      return "invalid_impersonation";
+    case "23514":
+    case "23502":
+      return "reason_required";
+    case "IM001":
+    case "23505":
+      return "already_impersonating";
+    default:
+      return "network";
+  }
+}
 
 /** A row of `list_shared_teams()` as PostgREST returns it. */
 interface SharedTeamRpcRow {
@@ -893,6 +1083,38 @@ export function __setMockIssueReports(rows: SystemIssueReport[]): void {
   mockIssueReports.push(...rows.map((row) => ({ ...row, images: [...row.images] })));
 }
 
+// MIR-20. The mock mirrors the database's checks, in module state reset on reload. A session is live
+// while `expiresAt` is ahead of `Date.now()`, so Playwright's `page.clock` drives the box's end.
+let mockImpersonation: Impersonation | null = null;
+let mockImpersonationCounter = 0;
+
+function mockRosterRow(member: { id: string; displayName: string }, role: string, teamName: string): ImpersonatedRosterRow {
+  return { memberId: member.id, displayName: member.displayName, memberRole: role, status: "approved", teamNames: [teamName] };
+}
+
+// Keyed by team id; a dedicated org's key is its own id. Acme Studio has no members.
+const mockRosters = new Map<string, ImpersonatedRosterRow[]>([
+  [
+    FIXTURE_TEAM.id,
+    [
+      mockRosterRow(FIXTURE_APPROVED_MEMBER, "member", FIXTURE_TEAM.name),
+      mockRosterRow(FIXTURE_ADMIN, "org_admin", FIXTURE_TEAM.name),
+      mockRosterRow(FIXTURE_MEMBER, "member", FIXTURE_TEAM.name),
+    ],
+  ],
+  [FIXTURE_OTHER_TEAM.id, [mockRosterRow(FIXTURE_OTHER_TEAM_MEMBER, "member", FIXTURE_OTHER_TEAM.name)]],
+]);
+
+/** The database's `impersonated_org_id()` for the mock: the session, only while the box is open. */
+function mockLiveImpersonation(): Impersonation | null {
+  if (!mockImpersonation) return null;
+  if (Date.parse(mockImpersonation.expiresAt) <= Date.now()) {
+    mockImpersonation = null;
+    return null;
+  }
+  return mockImpersonation;
+}
+
 function mockGate(): SystemGate {
   if (!mockSession) return { state: "signed-out" };
   const { email, aal2 } = mockSession;
@@ -955,6 +1177,7 @@ const mockSystemSeam: SystemSeam = {
   },
 
   async signOut() {
+    mockImpersonation = null;
     mockSession = null;
     mockPendingFactorId = null;
   },
@@ -1093,6 +1316,64 @@ const mockSystemSeam: SystemSeam = {
     }
     mockSharedTeams.splice(index, 1);
     return { ok: true, value: { movedMembers: team.activeMembers, deletedLinks: 0 } };
+  },
+
+  async currentImpersonation() {
+    if (!mockMaySeeOrgs()) return impersonationRefusal("not_permitted");
+    const live = mockLiveImpersonation();
+    return { ok: true, value: live ? { ...live } : null };
+  },
+
+  async startImpersonation(input) {
+    if (!mockMaySeeOrgs()) return impersonationRefusal("not_permitted");
+    if (!IMPERSONATION_MINUTES.includes(input.minutes)) return impersonationRefusal("invalid_impersonation");
+    const org = mockOrgs.find((candidate) => candidate.id === input.orgId);
+    if (!org) return impersonationRefusal("impersonation_target_missing");
+    let teamName: string | null = null;
+    if (org.isSharedTenant) {
+      if (input.teamId === null) return impersonationRefusal("invalid_impersonation");
+      const team = mockSharedTeams.find((candidate) => candidate.id === input.teamId);
+      if (!team) return impersonationRefusal("impersonation_target_missing");
+      teamName = team.name;
+    } else if (input.teamId !== null) {
+      return impersonationRefusal("invalid_impersonation");
+    }
+    const reason = input.reason.trim();
+    if (reason === "" || reason.length > IMPERSONATION_REASON_MAX) return impersonationRefusal("reason_required");
+    if (mockLiveImpersonation()) return impersonationRefusal("already_impersonating");
+    mockImpersonationCounter += 1;
+    const now = Date.now();
+    mockImpersonation = {
+      id: `00000000-0000-4000-8000-0000000e${String(mockImpersonationCounter).padStart(4, "0")}`,
+      orgId: org.id,
+      orgCode: org.orgCode,
+      orgName: org.name,
+      teamId: input.teamId,
+      teamName,
+      reason,
+      startedAt: new Date(now).toISOString(),
+      expiresAt: new Date(now + input.minutes * 60_000).toISOString(),
+    };
+    return { ok: true, value: mockImpersonation.id };
+  },
+
+  async endImpersonation() {
+    if (!mockMaySeeOrgs()) return impersonationRefusal("not_permitted");
+    mockImpersonation = null;
+    return { ok: true, value: null };
+  },
+
+  async impersonatedRoster() {
+    if (!mockMaySeeOrgs()) return impersonationRefusal("not_permitted");
+    const live = mockLiveImpersonation();
+    if (!live) return impersonationRefusal("not_permitted");
+    const rows = mockRosters.get(live.teamId ?? live.orgId) ?? [];
+    return {
+      ok: true,
+      value: rows
+        .map((row) => ({ ...row, teamNames: [...row.teamNames] }))
+        .sort((a, b) => a.displayName.localeCompare(b.displayName, "vi")),
+    };
   },
 };
 

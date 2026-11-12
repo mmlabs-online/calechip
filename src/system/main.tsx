@@ -5,15 +5,20 @@
 // a function of `SystemGate` plus the enrolment value held here.
 //
 // The layout is the Tech Lead's own (§ 2b, "Visual reference: none").
-import { StrictMode, useEffect, useRef, useState, type FormEvent, type JSX } from "react";
+import { Fragment, StrictMode, useEffect, useRef, useState, type FormEvent, type JSX } from "react";
 import { createRoot } from "react-dom/client";
 import { format, parseISO } from "date-fns";
 import {
   HOLIDAY_FAILURE_MESSAGES,
+  IMPERSONATION_MINUTES,
+  IMPERSONATION_REASON_MAX,
   ORG_FAILURE_MESSAGES,
   systemSeam,
   systemSeamName,
   __setMockIssueReports,
+  type ImpersonatedRosterRow,
+  type Impersonation,
+  type ImpersonationMinutes,
   type OrgSummary,
   type SharedTeam,
   type SystemGate,
@@ -1043,12 +1048,321 @@ function SharedTeams({ orgs }: { orgs: OrgSummary[] | null }): JSX.Element {
   );
 }
 
+// MIR-20 — impersonation (01-plan.md §§ 2b, 4.3; ADR-100). Every refusal is the database's; the banner's
+// countdown is a display, and the database clock is what ends a session.
+const COUNTDOWN_TICK_MS = 15_000;
+
+function impersonationLabel(session: Impersonation): string {
+  return session.teamName ? `${session.orgName} — ${session.teamName}` : session.orgName;
+}
+
+function minutesLeft(session: Impersonation, now: number): number {
+  return Math.max(0, Math.ceil((Date.parse(session.expiresAt) - now) / 60000));
+}
+
+function ImpersonationBanner({
+  session,
+  now,
+  onEnd,
+}: {
+  session: Impersonation;
+  now: number;
+  onEnd: () => void;
+}): JSX.Element {
+  return (
+    <div
+      data-testid="system-impersonation-banner"
+      data-expires-at={session.expiresAt}
+      className="sticky top-0 z-10 flex flex-col gap-1 rounded-2xl border-2 border-primary bg-card px-4 py-3"
+    >
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink">
+        <span className="font-bold">Impersonating</span>
+        <span data-testid="system-impersonation-org" className="font-semibold">
+          {impersonationLabel(session)}
+        </span>
+        <span>·</span>
+        <span>read-only</span>
+        <span>·</span>
+        <span data-testid="system-impersonation-left" className="tabular-nums">
+          {`${minutesLeft(session, now)} min left`}
+        </span>
+        <button
+          data-testid="system-impersonation-end"
+          type="button"
+          className={`${smallSecondaryButtonClass} ml-auto`}
+          onClick={onEnd}
+        >
+          End now
+        </button>
+      </div>
+      <p data-testid="system-impersonation-reason" className="text-sm text-ink-2">
+        {session.reason}
+      </p>
+    </div>
+  );
+}
+
+function ImpersonatedRoster({ session, onEnded }: { session: Impersonation; onEnded: () => void }): JSX.Element {
+  const [rows, setRows] = useState<ImpersonatedRosterRow[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  // Only the latest read may land.
+  const readCounter = useRef(0);
+
+  const load = async () => {
+    readCounter.current += 1;
+    const read = readCounter.current;
+    setError(null);
+    const result = await systemSeam.impersonatedRoster();
+    if (read !== readCounter.current) return;
+    if (!result.ok) {
+      // The database ended the session between the banner's last tick and this read.
+      if (result.error.code === "not_permitted") {
+        onEnded();
+        return;
+      }
+      setError(result.error.message);
+      return;
+    }
+    setRows(result.value);
+  };
+
+  useEffect(() => {
+    void load();
+  }, [session.id]); // One read per session: every read is logged, so it is not repeated on a timer.
+
+  let body: JSX.Element;
+  if (error) {
+    body = (
+      <div className="flex flex-col items-start gap-2">
+        <p data-testid="system-roster-error" role="alert" className="text-sm text-danger">
+          {error}
+        </p>
+        <button data-testid="system-roster-retry" type="button" className={textButtonClass} onClick={() => void load()}>
+          Try again
+        </button>
+      </div>
+    );
+  } else if (rows === null) {
+    body = (
+      <p data-testid="system-roster-loading" role="status" className="text-ink-3">
+        Loading roster…
+      </p>
+    );
+  } else if (rows.length === 0) {
+    body = (
+      <p data-testid="system-roster-empty" className="text-ink-3">
+        Nobody in this org yet.
+      </p>
+    );
+  } else {
+    body = (
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm whitespace-nowrap text-ink">
+          <thead>
+            <tr className="border-b border-line">
+              <th className={headerCellClass}>Name</th>
+              <th className={headerCellClass}>Rank</th>
+              <th className={headerCellClass}>Status</th>
+              <th className={headerCellClass}>Teams</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.memberId} data-testid="system-roster-row" data-member-id={row.memberId} className="border-b border-line last:border-b-0">
+                <td data-testid="system-roster-name" className="px-3 py-2">
+                  {row.displayName}
+                </td>
+                <td data-testid="system-roster-rank" className="px-3 py-2">
+                  {row.memberRole}
+                </td>
+                <td data-testid="system-roster-status" className="px-3 py-2">
+                  {row.status}
+                </td>
+                <td data-testid="system-roster-teams" className="px-3 py-2">
+                  {row.teamNames.join(", ")}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  return (
+    <section data-testid="system-roster" className="flex flex-col gap-4">
+      <h2 className="text-lg font-bold text-ink">{`Roster — ${impersonationLabel(session)}`}</h2>
+      {body}
+    </section>
+  );
+}
+
+function StartImpersonationForm({
+  org,
+  onStarted,
+  onCancel,
+}: {
+  org: OrgSummary;
+  onStarted: () => void;
+  onCancel: () => void;
+}): JSX.Element {
+  const [teams, setTeams] = useState<SharedTeam[]>([]);
+  const [teamId, setTeamId] = useState("");
+  const [reason, setReason] = useState("");
+  const [minutes, setMinutes] = useState<ImpersonationMinutes>(30);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!org.isSharedTenant) return;
+    let live = true;
+    void systemSeam.listSharedTeams().then((result) => {
+      if (live && result.ok) setTeams(result.value);
+    });
+    return () => {
+      live = false;
+    };
+  }, [org.id, org.isSharedTenant]);
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setError(null);
+    setBusy(true);
+    const result = await systemSeam.startImpersonation({
+      orgId: org.id,
+      teamId: org.isSharedTenant ? teamId : null,
+      reason,
+      minutes,
+    });
+    setBusy(false);
+    if (!result.ok) {
+      setError(result.error.message);
+      return;
+    }
+    onStarted();
+  };
+
+  return (
+    <form
+      data-testid="system-impersonate-form"
+      data-org-code={org.orgCode}
+      className="flex flex-col gap-3 rounded-xl bg-field/50 p-4 whitespace-normal"
+      onSubmit={(event) => void submit(event)}
+    >
+      <span className="text-sm font-bold text-ink">{`Impersonate ${org.name}`}</span>
+      {org.isSharedTenant ? (
+        <label className={labelClass}>
+          <span>Team</span>
+          <select
+            data-testid="system-impersonate-team"
+            className={formFieldClass}
+            value={teamId}
+            onChange={(event) => setTeamId(event.target.value)}
+          >
+            <option value=""></option>
+            {teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+      <label className={labelClass}>
+        <span>Reason</span>
+        <textarea
+          data-testid="system-impersonate-reason"
+          className="w-full rounded-xl bg-card px-4 py-2 text-sm text-ink outline-none"
+          rows={3}
+          maxLength={IMPERSONATION_REASON_MAX}
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+        />
+      </label>
+      <label className={labelClass}>
+        <span>Box</span>
+        <select
+          data-testid="system-impersonate-minutes"
+          className={formFieldClass}
+          value={minutes}
+          onChange={(event) => setMinutes(Number(event.target.value) as ImpersonationMinutes)}
+        >
+          {IMPERSONATION_MINUTES.map((value) => (
+            <option key={value} value={value}>
+              {`${value} minutes`}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="flex items-center gap-4">
+        <button
+          data-testid="system-impersonate-submit"
+          type="submit"
+          className={smallPrimaryButtonClass}
+          disabled={busy || (org.isSharedTenant && teamId === "")}
+        >
+          Start
+        </button>
+        <button data-testid="system-impersonate-cancel" type="button" className={textButtonClass} onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+      <OrgError testId="system-impersonate-error" error={error} />
+    </form>
+  );
+}
+
 type OpenForm = { kind: "create" } | { kind: "edit"; org: OrgSummary } | null;
 
 function OrgManagement({ email, onSignOut }: { email: string; onSignOut: () => void }): JSX.Element {
   const [orgs, setOrgs] = useState<OrgSummary[] | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [form, setForm] = useState<OpenForm>(null);
+  // MIR-20. The live session, the org whose start form is open, the countdown's clock, and whether the
+  // last session closed on its own.
+  const [session, setSession] = useState<Impersonation | null>(null);
+  const [impersonating, setImpersonating] = useState<OrgSummary | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const [expired, setExpired] = useState(false);
+
+  // Reads the database's answer: a session the clock has closed is gone, and says so.
+  const refreshSession = async (announceEnd: boolean) => {
+    const result = await systemSeam.currentImpersonation();
+    setNow(Date.now());
+    if (!result.ok) {
+      if (result.error.code === "not_permitted") {
+        setSession(null);
+        setExpired(announceEnd);
+      }
+      return;
+    }
+    if (result.value === null) {
+      setSession(null);
+      setExpired(announceEnd);
+      return;
+    }
+    setSession(result.value);
+    setExpired(false);
+  };
+
+  useEffect(() => {
+    void refreshSession(false);
+  }, []); // Read once on arriving at `signed-in`.
+
+  useEffect(() => {
+    if (!session) return;
+    const timer = setInterval(() => {
+      setNow(Date.now());
+      if (Date.parse(session.expiresAt) <= Date.now()) void refreshSession(true);
+    }, COUNTDOWN_TICK_MS);
+    return () => clearInterval(timer);
+  }, [session]);
+
+  const endSession = async () => {
+    await systemSeam.endImpersonation();
+    setSession(null);
+    setExpired(false);
+  };
 
   // Read again after every successful write rather than patching local state (§ 4.5). The list
   // already shown stays while a re-read is in flight.
@@ -1109,7 +1423,8 @@ function OrgManagement({ email, onSignOut }: { email: string; onSignOut: () => v
           </thead>
           <tbody>
             {orgs.map((org) => (
-              <tr key={org.id} data-testid="system-org-row" data-org-code={org.orgCode} className="border-b border-line last:border-b-0">
+              <Fragment key={org.id}>
+              <tr data-testid="system-org-row" data-org-code={org.orgCode} className="border-b border-line last:border-b-0">
                 <td data-testid="system-org-code" className="px-3 py-2 font-mono">
                   {org.orgCode}
                 </td>
@@ -1126,25 +1441,52 @@ function OrgManagement({ email, onSignOut }: { email: string; onSignOut: () => v
                 </td>
                 <NullableCell testId="system-org-licence" value={org.licenceExpiresOn} />
                 <td className="px-3 py-2 text-right">
-                  {org.isSharedTenant ? (
-                    <span
-                      data-testid="system-org-shared"
-                      className="rounded-pill bg-holiday px-3 py-1 text-xs font-semibold text-ink-2"
-                    >
-                      Shared
-                    </span>
-                  ) : (
-                    <button
-                      data-testid="system-org-edit"
-                      type="button"
-                      className={textButtonClass}
-                      onClick={() => setForm({ kind: "edit", org })}
-                    >
-                      Edit
-                    </button>
-                  )}
+                  <div className="flex items-center justify-end gap-4">
+                    {org.isSharedTenant ? (
+                      <span
+                        data-testid="system-org-shared"
+                        className="rounded-pill bg-holiday px-3 py-1 text-xs font-semibold text-ink-2"
+                      >
+                        Shared
+                      </span>
+                    ) : (
+                      <button
+                        data-testid="system-org-edit"
+                        type="button"
+                        className={textButtonClass}
+                        onClick={() => setForm({ kind: "edit", org })}
+                      >
+                        Edit
+                      </button>
+                    )}
+                    {session ? null : (
+                      <button
+                        data-testid="system-org-impersonate"
+                        type="button"
+                        className={textButtonClass}
+                        onClick={() => setImpersonating(org)}
+                      >
+                        Impersonate
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
+              {impersonating?.id === org.id && !session ? (
+                <tr className="border-b border-line">
+                  <td colSpan={8} className="px-3 py-2">
+                    <StartImpersonationForm
+                      org={org}
+                      onStarted={() => {
+                        setImpersonating(null);
+                        void refreshSession(false);
+                      }}
+                      onCancel={() => setImpersonating(null)}
+                    />
+                  </td>
+                </tr>
+              ) : null}
+              </Fragment>
             ))}
           </tbody>
         </table>
@@ -1154,6 +1496,13 @@ function OrgManagement({ email, onSignOut }: { email: string; onSignOut: () => v
 
   return (
     <div data-testid="system-signed-in" className="flex flex-col gap-6">
+      {session ? <ImpersonationBanner session={session} now={now} onEnd={() => void endSession()} /> : null}
+      {session ? <ImpersonatedRoster key={session.id} session={session} onEnded={() => void refreshSession(true)} /> : null}
+      {!session && expired ? (
+        <p data-testid="system-impersonation-expired" role="status" className="text-sm text-ink-2">
+          The impersonation session has ended.
+        </p>
+      ) : null}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-2">
           <h1 className="text-xl font-bold text-ink">System panel</h1>
