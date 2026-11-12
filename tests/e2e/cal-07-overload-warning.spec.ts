@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { choosePortion, chooseType, pickRange, setRange, unpickDate } from "./support/entry-form";
+import { appPathname } from "./support/org-prefix";
 
 // CAL-07 — the overload warning, shown while choosing dates and before the entry is saved.
 //
@@ -112,7 +113,7 @@ async function signOutFromHome(page: Page): Promise<void> {
  *  reload. `page.goto("/")` would reset the mock's module state and lose the seed. */
 async function backToHome(page: Page): Promise<void> {
   for (let step = 0; step < 8; step += 1) {
-    if (new URL(page.url()).pathname === "/") break;
+    if (appPathname(page) === "/") break;
     await page.goBack();
   }
   await expect(page.getByTestId("home-sign-out")).toBeVisible();

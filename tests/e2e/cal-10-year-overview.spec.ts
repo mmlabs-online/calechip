@@ -24,6 +24,7 @@
 //   (13 June, a mandated make-up day). AC-7 turns on the mandated Saturday not being counted.
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { choosePortion, chooseType, pickRange } from "./support/entry-form";
+import { appPathname } from "./support/org-prefix";
 
 const PASSWORD = "password123";
 const MEMBER_EMAIL = "thanh@example.com";
@@ -66,7 +67,7 @@ async function signIn(page: Page, email: string): Promise<void> {
  *  entry the test had created. */
 async function backTo(page: Page, path: string): Promise<void> {
   for (let step = 0; step < 10; step += 1) {
-    if (new URL(page.url()).pathname === path) break;
+    if (appPathname(page) === path) break;
     await page.goBack();
   }
 }
@@ -88,7 +89,7 @@ async function declare(
   fields: { start: string; end: string; portion?: string; type?: string },
   owned = 1,
 ): Promise<void> {
-  const path = new URL(page.url()).pathname;
+  const path = appPathname(page);
 
   // The create link is in the TOP BAR and renders on every route inside the shell (UIE-03 AC-12).
   await page.getByTestId("home-new-entry-link").click();

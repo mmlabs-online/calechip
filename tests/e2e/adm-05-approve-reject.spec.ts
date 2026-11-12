@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { pickRange } from "./support/entry-form";
+import { appPathname } from "./support/org-prefix";
 
 // ADM-05 — approve or reject an entry, with a reason on rejection.
 //
@@ -95,7 +96,7 @@ async function switchTo(page: Page, email: string): Promise<void> {
  *  reload. `page.goto("/")` would reset the mock's module state and lose the setup. */
 async function backToHome(page: Page): Promise<void> {
   for (let step = 0; step < 8; step += 1) {
-    if (new URL(page.url()).pathname === "/") break;
+    if (appPathname(page) === "/") break;
     await page.goBack();
   }
   await expect(page.getByTestId("home-sign-out")).toBeVisible();

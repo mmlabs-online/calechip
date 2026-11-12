@@ -4,6 +4,20 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { E2E_ORG_CODE, appHref, appPathname, stripOrg } from "./e2e/support/org-prefix";
 
+/** The specs whose history walks read the pathname through `appPathname`. MIR-19-c. Append only. */
+const WALK_SPECS: readonly string[] = [
+  "adm-05-approve-reject.spec.ts",
+  "cal-03-admin-edit-entry.spec.ts",
+  "cal-04-month-view.spec.ts",
+  "cal-05-week-view.spec.ts",
+  "cal-06-year-view.spec.ts",
+  "cal-07-overload-warning.spec.ts",
+  "cal-08-holiday-shading.spec.ts",
+  "cal-10-year-overview.spec.ts",
+  "solo-pending-approval-ui.spec.ts",
+  "uie-07-week-absence-count.spec.ts",
+];
+
 /** The specs that have moved to the helper. MIR-19-c appends to this list; nothing removes from it. */
 const MIGRATED_SPECS: readonly string[] = [
   "solo-admin-back-to-calendar.spec.ts",
@@ -15,6 +29,7 @@ const MIGRATED_SPECS: readonly string[] = [
   "tsk-01-tasks.spec.ts",
   "tsk-04-week-task-badge.spec.ts",
   "uie-09-admin-hub.spec.ts",
+  ...WALK_SPECS,
 ];
 
 describe("stripOrg", () => {
@@ -71,6 +86,16 @@ describe("migrated specs", () => {
 
     it("imports the org-prefix helper", () => {
       expect(source).toMatch(/from "\.\/support\/org-prefix"/);
+    });
+  });
+});
+
+describe("walk specs", () => {
+  describe.each(WALK_SPECS)("%s", (name) => {
+    const source = readFileSync(fileURLToPath(new URL(`./e2e/${name}`, import.meta.url)), "utf8");
+
+    it("reads no raw pathname", () => {
+      expect(source).not.toMatch(/new URL\(page\.url\(\)\)\.pathname/);
     });
   });
 });
