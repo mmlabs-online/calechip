@@ -404,7 +404,8 @@ test.describe("CAL-08 — holidays and bridge days in the calendar views", () =>
     // only visible consequence of that ticket, which is 01-plan.md section 1's point.
     await addHoliday(page, "2026-09-15", "Ngay nghi kiem thu", 5);
 
-    await backTo(page, "/month/2026-09");
+    // MIR-19-d: this admin is in the dedicated org, so the flip lands him under /acme, which appPathname does not strip.
+    await backTo(page, "/acme/month/2026-09");
     await expect(page.getByTestId("month-grid")).toBeVisible();
 
     // AC-9. NO SUPPRESSION. The count on the holiday is the number the same entry produces on the
@@ -544,7 +545,8 @@ test.describe("CAL-08 — holidays and bridge days in the calendar views", () =>
     // link, which renders on the grid.
     await addHoliday(page, "2026-09-30", "Ngay cuoi thang chin", 5);
 
-    await backTo(page, "/month/2026-09");
+    // MIR-19-d: this admin is in the dedicated org, so the flip lands him under /acme, which appPathname does not strip.
+    await backTo(page, "/acme/month/2026-09");
     await expect(page.getByTestId("month-grid")).toBeVisible();
 
     // In its own month it is drawn and named.

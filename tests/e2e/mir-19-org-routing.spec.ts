@@ -6,6 +6,7 @@ import { expect, test, type Page } from "@playwright/test";
 //
 // The session survives `page.goto` (the mock stores it in localStorage), so each test signs in once
 // and then addresses the application by URL.
+// MIR-19-d: AC-11 now asserts the flip (ADR-097 decision 5.2).
 
 const PASSWORD = "password123";
 const MEMBER_EMAIL = "thanh@example.com";
@@ -150,19 +151,19 @@ test.describe("MIR-19 the org address is served", () => {
     expect(new URL(page.url()).pathname).toBe("/");
   });
 
-  test("AC-11: the root addresses are unchanged", async ({ page }) => {
+  test("AC-11 (amended by MIR-19-d): a root address sends a member to the same address under the org", async ({ page }) => {
     await signedInMember(page);
     await page.goto("/");
     await expect(page.getByTestId("week-anchor")).toBeVisible();
-    expect(new URL(page.url()).pathname).toBe("/");
+    await expect.poll(() => new URL(page.url()).pathname).toBe("/shared");
 
     await page.goto("/month/2026-10");
     await expect(page.getByTestId("month-grid")).toBeVisible();
-    expect(new URL(page.url()).pathname).toBe("/month/2026-10");
+    await expect.poll(() => new URL(page.url()).pathname).toBe("/shared/month/2026-10");
 
     await page.goto("/admin");
-    expect(new URL(page.url()).pathname).toBe("/admin");
+    await expect.poll(() => new URL(page.url()).pathname).toBe("/shared/admin");
     await page.goto("/events");
-    expect(new URL(page.url()).pathname).toBe("/events");
+    await expect.poll(() => new URL(page.url()).pathname).toBe("/shared/events");
   });
 });

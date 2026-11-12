@@ -64,3 +64,33 @@ export function routerBase(pathname: string): string {
   const { orgCode } = splitOrgPath(pathname);
   return orgCode === null ? "/" : `/${orgCode}`;
 }
+
+/** MIR-19-d, ADR-097 decisions 1 and 6. First path segments that stay at the root for everybody:
+ *  the two account addresses and the guest links. */
+export const ROOT_ONLY_SEGMENTS: readonly string[] = ["signin", "signup", "guest"];
+
+/**
+ * MIR-19-d, ADR-097 decision 5.2. The address a member of `orgCode` is sent to from the root address
+ * `pathname` + `suffix`: `orgPath(orgCode, pathname) + suffix`. `null` when that pathname is not sent:
+ * its first segment is an org code (`splitOrgPath(pathname).orgCode !== null`), or is in
+ * ROOT_ONLY_SEGMENTS. `suffix` is the search and the hash, appended unchanged.
+ *
+ * ownOrgAddress("shared", "/", "") === "/shared"
+ * ownOrgAddress("shared", "/month/2026-10", "?team=x") === "/shared/month/2026-10?team=x"
+ * ownOrgAddress("shared", "/events", "?probe=1#top") === "/shared/events?probe=1#top"
+ * ownOrgAddress("shared", "/x/such/page", "") === "/shared/x/such/page"
+ * ownOrgAddress("shared", "/signin.html", "") === "/shared/signin.html"
+ * ownOrgAddress("shared", "/no/such/page", "") === null   (org-shaped first segment: MIR-19 AC-4)
+ * ownOrgAddress("shared", "/signin", "?next=%2Fevents") === null
+ * ownOrgAddress("shared", "/signup", "") === null
+ * ownOrgAddress("shared", "/guest", "") === null
+ * ownOrgAddress("shared", "/guest/abc", "") === null
+ * ownOrgAddress("shared", "/shared/week", "") === null
+ * ownOrgAddress("shared", "/acme/week", "") === null
+ */
+export function ownOrgAddress(orgCode: string, pathname: string, suffix: string): string | null {
+  if (splitOrgPath(pathname).orgCode !== null) return null;
+  const first = /^\/([^/]*)/.exec(pathname)?.[1] ?? "";
+  if (ROOT_ONLY_SEGMENTS.includes(first)) return null;
+  return orgPath(orgCode, pathname) + suffix;
+}
