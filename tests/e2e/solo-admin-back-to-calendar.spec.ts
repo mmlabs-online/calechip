@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { appHref } from "./support/org-prefix";
 
 // SOLO, 2026-09-11 — the top-bar control is the way BOTH ways.
 //
@@ -84,14 +85,14 @@ test.describe("SOLO — the Admin control goes back to the calendar", () => {
       // ONE NODE, one face. It no longer flips to `Calendar` here.
       await expect(control(page)).toHaveCount(1);
       await expect(control(page)).toHaveAttribute("data-state", "admin");
-      await expect(control(page)).toHaveAttribute("href", "/admin");
+      await expect.poll(() => appHref(control(page))).toBe("/admin");
       await expect(control(page)).toHaveText("Admin");
       await expect(control(page)).toHaveAttribute("aria-current", "page");
 
       // The way back is the always-drawn period group, named `shell-<kind>` off a period screen.
-      await expect(page.getByTestId("shell-week")).toHaveAttribute("href", "/week");
-      await expect(page.getByTestId("shell-month")).toHaveAttribute("href", "/month");
-      await expect(page.getByTestId("shell-year")).toHaveAttribute("href", "/year");
+      await expect.poll(() => appHref(page.getByTestId("shell-week"))).toBe("/week");
+      await expect.poll(() => appHref(page.getByTestId("shell-month"))).toBe("/month");
+      await expect.poll(() => appHref(page.getByTestId("shell-year"))).toBe("/year");
     }
   });
 
@@ -104,7 +105,7 @@ test.describe("SOLO — the Admin control goes back to the calendar", () => {
       await page.goto(address);
       await expect(control(page)).toHaveCount(1);
       await expect(control(page)).toHaveAttribute("data-state", "admin");
-      await expect(control(page)).toHaveAttribute("href", "/admin");
+      await expect.poll(() => appHref(control(page))).toBe("/admin");
       await expect(control(page)).toHaveText("Admin");
       await expect(control(page)).not.toHaveAttribute("aria-current", "page");
     }

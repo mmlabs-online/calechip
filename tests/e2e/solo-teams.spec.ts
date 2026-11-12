@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { appHref } from "./support/org-prefix";
 
 // SOLO, 2026-09-11 — the Teams tab: many teams, managed by every admin.
 //
@@ -77,7 +78,7 @@ test.describe("SOLO — the Teams tab", () => {
 
     const tab = page.getByTestId("admin-hub-teams-link");
     await expect(tab).toHaveText("Teams");
-    await expect(tab).toHaveAttribute("href", "/teams");
+    await expect.poll(() => appHref(tab)).toBe("/teams");
     await tab.click();
 
     // BOTH teams — the admin's own AND one they are not on. `getTeam()` would only ever have
