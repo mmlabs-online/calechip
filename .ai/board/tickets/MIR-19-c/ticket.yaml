@@ -8,7 +8,7 @@ id: MIR-19-c
 title: "The e2e specs that walk history to an exact pathname read it through the org-prefix helper"   # narrowed at /plan MIR-19-c, 2026-11-12 (01-plan.md § 1, Changelog). Was: "The history-walk specs learn the org prefix, then the root addresses send a member to their org" — the rest is MIR-19-d
 feature_ids: [MIR-19]   # split of MIR-19 (operating model § ID scheme: splits get -a, -b)
 group: MIR
-state: READY
+state: REVIEW
 owner: ""
 branch: ""
 size_estimate: "M"   # set by tech-lead-design at /plan MIR-19-c, 2026-11-12 (01-plan.md § 1)

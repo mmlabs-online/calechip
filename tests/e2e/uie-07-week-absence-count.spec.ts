@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { choosePortion, pickRange } from "./support/entry-form";
+import { appPathname } from "./support/org-prefix";
 
 // UIE-07 — the week view renders a per-day absence count.
 //
@@ -102,7 +103,7 @@ async function signIn(page: Page, email: string): Promise<void> {
  *  is a popstate and not a reload — a `page.goto` would reset the mock's module state. */
 async function backToWeek(page: Page, path: string): Promise<void> {
   for (let step = 0; step < 8; step += 1) {
-    if (new URL(page.url()).pathname === path) break;
+    if (appPathname(page) === path) break;
     await page.goBack();
   }
   await expect(page.getByTestId("week-anchor")).toBeVisible();
@@ -127,7 +128,7 @@ async function declare(
   fields: { start: string; end: string; portion: string },
   ownRows: number,
 ): Promise<void> {
-  const path = new URL(page.url()).pathname;
+  const path = appPathname(page);
 
   await page.getByTestId("home-new-entry-link").click();
   await pickRange(page, "new-entry", fields.start, fields.end);

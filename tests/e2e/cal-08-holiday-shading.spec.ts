@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { appPathname } from "./support/org-prefix";
 
 // CAL-08 — holidays and bridge days drawn in the month, week and year grids.
 //
@@ -144,10 +145,10 @@ async function placeAdminInDedicatedOrg(page: Page): Promise<void> {
  *  session and every row the test had added. */
 async function backTo(page: Page, path: string): Promise<void> {
   for (let step = 0; step < 12; step += 1) {
-    if (new URL(page.url()).pathname === path) break;
+    if (appPathname(page) === path) break;
     await page.goBack();
   }
-  expect(new URL(page.url()).pathname).toBe(path);
+  expect(appPathname(page)).toBe(path);
 }
 
 /** What each view draws once it is ready, so `openAs` waits on the right thing for each of them. */

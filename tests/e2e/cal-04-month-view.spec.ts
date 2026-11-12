@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { choosePortion } from "./support/entry-form";
+import { appPathname } from "./support/org-prefix";
 
 // CAL-04 — the month grid: who is away on each day, and which days are crowded.
 //
@@ -68,7 +69,7 @@ async function signIn(page: Page, email: string): Promise<void> {
  *  entry the test had created, which is the whole reason the setup can span three accounts. */
 async function backToMonth(page: Page): Promise<void> {
   for (let step = 0; step < 8; step += 1) {
-    if (new URL(page.url()).pathname === MONTH) break;
+    if (appPathname(page) === MONTH) break;
     await page.goBack();
   }
   await expect(page.getByTestId("month-grid")).toBeVisible();
