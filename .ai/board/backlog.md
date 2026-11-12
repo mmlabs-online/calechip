@@ -22,6 +22,9 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
+| 1 | MIR-20-b | Every impersonation is visible to the org it touched: the touched org's org_admin, and for an Org public team its manager, read the log | M | — |
+
+**`MIR-20-b` moved here at /advance on 2026-11-12**, from `01-plan.md` gate PASS (`produced_at: 2026-11-12T08:21:17Z`) with all six Definition of Ready items passing; `schema_delta` is non-none and cites ADR-100 (decision 8), already `ACCEPTED`. Applying the migration stays human (RULE-09). Run by `/run-ticket MIR-20-b`.
 
 **`MIR-20` shipped on 2026-11-12, `state: DONE`.** `features.md` row `MIR-20` left `PLANNED`: `MIR-20-b` and `MIR-20-c` are still `BACKLOG`. Moved to `## ARCHIVE`, whose oldest row (MIR-16-g) left the rolling twenty.
 
