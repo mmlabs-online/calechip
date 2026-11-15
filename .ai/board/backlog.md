@@ -22,7 +22,8 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
-| 1 | MIR-20-c | A system_admin reads an org's calendar only under a live, logged impersonation | S | MIR-20, MIR-20-b |
+
+**`MIR-20-c` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-15 from `03-impl-log.md` gate PASS; its row left this table.
 
 **`MIR-20-c` moved here at /advance on 2026-11-15**, from `01-plan.md` gate PASS (`produced_at: 2026-11-15T03:38:35Z`) with all six Definition of Ready items passing; `schema_delta` is non-none and cites ADR-100 (decisions 2, 6, 8), already `ACCEPTED`. It had no row in `## BACKLOG`, so no row left that table. Applying the migration stays human (RULE-09). Run by `/run-ticket MIR-20-c`.
 
