@@ -8,23 +8,29 @@ id: MIR-20-c
 title: "A system_admin reads an org's calendar only under a live, logged impersonation"
 feature_ids: [MIR-20]   # split of MIR-20 (operating model § ID scheme: splits get -a, -b)
 group: MIR
-state: BACKLOG
+state: READY   # `orchestrator` at /advance, 2026-11-15, on 01-plan.md `gate: PASS`, DoR 6/6
 owner: ""
 branch: ""
-size_estimate: ""     # S|M - set by tech-lead-design at PLAN; gates DoR
-size: ""              # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting
+size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR
+size: "S"             # S|M|L|XL - set by tech-lead-design at PLAN; decides splitting
 depends_on: [MIR-01, MIR-02, MIR-03, MIR-04, MIR-10, MIR-11, MIR-12, MIR-13, MIR-14, MIR-15, MIR-18, MIR-21, MIR-16, MIR-17, MIR-20, MIR-20-b]
-invariants_touched: []
-allowed_paths: []
+invariants_touched: [INV-04]
+allowed_paths:
+  - "supabase/migrations/20261115090000_mir20c_impersonated_calendar.sql"
+  - "supabase/tests/410-impersonated-calendar.test.sql"
+  - "supabase/tests/010-catalogue.test.sql"
+  - "src/lib/data/system.ts"
+  - "src/system/main.tsx"
+  - "tests/e2e/mir-20-c-impersonated-calendar.spec.ts"
 glossary_owed: []
-schema_delta: "TODO(plan): set at PLAN"
+schema_delta: "impersonation_action_known check gains read_calendar; new security definer function public.impersonated_calendar(date, date). Carried by ADR-100 decisions 2, 6 and 8 (01-plan.md section 6)."
 requires_adr: false
 rework_count: 0
 chat_budget:
   developer->tech-lead-design: { used: 0, max: 6 }
 tracker: { provider: "", external_id: "", sync_enabled: false }
 gates:
-  plan:   { passed: false, at: null }
+  plan:   { passed: true, at: "2026-11-15T03:41:05Z" }
   review: { passed: false, at: null }
 
 # --- MIR extra fields ---------------------------------------------------------------------------
@@ -33,6 +39,6 @@ gates:
 mir_phase: 6
 mir_plan_item: "Phase 6"             # .ai/board/plans/calechip-multi-tenancy-plan.md:287-305
 verification_required: false
-expected_impact: []   # set at PLAN
+expected_impact: ["system panel: a live impersonation session shows the org's (or team's) month of entries; each read is logged as read_calendar"]   # set at PLAN
 mir_detail: |
   ADR-100 decision 8, third bullet, within decisions 1 and 2 (read-only, only while live, every read logged). Plan Phase 6's acting-as items: identity resolution hard-wired to getUser() then the member row (supabase.ts:1034-1038, useSession.ts:72-93), read-only today only an affordance (viewed-team.ts:90-92). A policy route must still log each read (ADR-100 options considered).
