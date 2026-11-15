@@ -8,7 +8,7 @@ id: MIR-20-c
 title: "A system_admin reads an org's calendar only under a live, logged impersonation"
 feature_ids: [MIR-20]   # split of MIR-20 (operating model § ID scheme: splits get -a, -b)
 group: MIR
-state: REVIEW   # `orchestrator` at /advance, 2026-11-15, on 03-impl-log.md `gate: PASS`
+state: DONE   # `orchestrator` at /ship, 2026-11-15
 owner: ""
 branch: ""
 size_estimate: "M"    # S|M - set by tech-lead-design at PLAN; gates DoR
