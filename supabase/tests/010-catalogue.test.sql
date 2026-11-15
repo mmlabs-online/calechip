@@ -88,6 +88,8 @@ select set_eq(
     'public.end_impersonation()',
     'public.current_impersonation()',
     'public.impersonated_roster()',
+    -- MIR-20-b, 400-impersonation-log.test.sql
+    'public.list_impersonation_log()',
     -- guest functions, 080-guest-tokens.test.sql
     'public.get_guest_event(text)',
     'public.list_guest_event_attendees(text)',

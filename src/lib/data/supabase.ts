@@ -36,6 +36,8 @@ import type {
   // TSK-01, 01-plan.md section 4.2.
   CreateTaskInput,
   UpdateTaskInput,
+  // MIR-20-b, 01-plan.md section 4.2.
+  ImpersonationLogEntry,
 } from "./index";
 // MIR-09, ADR-069. A RUNTIME import: both implementations share this one guard rather than holding a
 // second copy of it, 01-plan.md section 4.
@@ -135,6 +137,31 @@ import {
 // EVT-01 — events. The rows, their mappers, the sentences and the SQLSTATEs.
 // 01-plan.md sections 4.2 and 4.3; `supabase/migrations/20260929120000_evt01_event.sql`.
 // ---------------------------------------------------------------------------
+
+/** MIR-20-b. One row of `public.list_impersonation_log()`. */
+interface ImpersonationLogRow {
+  id: string;
+  actor_email: string;
+  team_id: string | null;
+  team_name: string | null;
+  reason: string;
+  started_at: string;
+  expires_at: string;
+  ended_at: string | null;
+  reads: number;
+}
+
+const toImpersonationLogEntry = (row: ImpersonationLogRow): ImpersonationLogEntry => ({
+  id: row.id,
+  actorEmail: row.actor_email,
+  teamId: row.team_id,
+  teamName: row.team_name,
+  reason: row.reason,
+  startedAt: row.started_at,
+  expiresAt: row.expires_at,
+  endedAt: row.ended_at,
+  reads: row.reads,
+});
 
 /** MIR-14-b. One row of `public.list_entry_owners(uuid[])`: an owner and ONE of their active teams. */
 interface EntryOwnerRow {
@@ -4436,5 +4463,18 @@ export const seam: DataSeam = {
       return { ok: false, error: { code: "task_not_permitted", message: TASK_NOT_PERMITTED } };
     }
     return { ok: true, value: undefined };
+  },
+
+  // MIR-20-b. `public.list_impersonation_log()`: the sessions the caller may read, newest first, at
+  // most IMPERSONATION_LOG_LIMIT. No `.limit()`: the function's own bound is under DATASTORE_MAX_ROWS.
+  async listImpersonationLog(): Promise<ImpersonationLogEntry[]> {
+    const { data, error } = await client()
+      .rpc("list_impersonation_log")
+      .returns<ImpersonationLogRow[]>();
+    if (error) throw new Error(`listImpersonationLog failed: ${error.message}`);
+    if (!Array.isArray(data)) {
+      throw new Error("listImpersonationLog received a body that is not a list");
+    }
+    return data.map(toImpersonationLogEntry);
   },
 };

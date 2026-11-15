@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useState, type ReactElement } from "react";
 // The seam, through its one door. 02-design.md section 6.2: nothing above the seam names an
 // implementation, and this file must never import `./supabase` or `./mock`.
+import ImpersonationLog from "@/components/ImpersonationLog";
 import Modal from "@/components/Modal";
 import { seam } from "@/lib/data";
 // SOLO, 2026-09-12. `Team` added: the `ready` phase of `View` below carries `team: Team | null` and
@@ -24,6 +25,7 @@ import type { Failure, Member, MemberRole, Team, TeamRole } from "@/lib/domain/t
 import {
   managerToggleFor,
   mayAdminister,
+  mayDecide,
   mayPromoteMember,
   mayRemoveMember,
   maySetManager,
@@ -692,6 +694,9 @@ export default function MemberList() {
           </tbody>
         </table>
       )}
+
+      {/* MIR-20-b. An affordance: `list_impersonation_log()` decides the rows. */}
+      {mayDecide(me.role) ? <ImpersonationLog /> : null}
 
       {/* SOLO, 2026-09-10 — VIEW INFO. It renders the row that is already on screen and reads
           nothing: a panel that fetched would be a second source for facts the table just showed, and
