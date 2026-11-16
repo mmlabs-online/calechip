@@ -12,15 +12,17 @@
 // THE DATABASE IS THE CONTROL. `gate()` reaching `signed-in` is an affordance; every system-scope
 // read is gated on `public.is_system_admin()`, which requires the row AND `aal2` (ADR-074 decision 4).
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { DateRange, Holiday, HolidayKind, IssueKind, IssueStatus, Result } from "@/lib/domain/types";
+import type { DateRange, Entry, Holiday, HolidayKind, IssueKind, IssueStatus, Result } from "@/lib/domain/types";
 import { HOLIDAY_LIMIT, ISSUE_REPORT_LIMIT } from "@/lib/domain/types";
 import {
   FIXTURE_ADMIN,
+  FIXTURE_APPROVED_ENTRY,
   FIXTURE_APPROVED_MEMBER,
   FIXTURE_HOLIDAYS,
   FIXTURE_ISSUE_REPORT,
   FIXTURE_MEMBER,
   FIXTURE_OTHER_TEAM,
+  FIXTURE_OTHER_TEAM_ENTRY,
   FIXTURE_OTHER_TEAM_MEMBER,
   FIXTURE_TEAM,
 } from "@/lib/fixtures";
@@ -84,6 +86,8 @@ export interface SystemSeam {
   endImpersonation(): Promise<ImpersonationResult<null>>;
   /** `rpc("impersonated_roster")`, mapped to camelCase. Never throws. */
   impersonatedRoster(): Promise<ImpersonationResult<ImpersonatedRosterRow[]>>;
+  /** `rpc("impersonated_calendar", { p_start, p_end })`, mapped to camelCase, in the function's order. Never throws. MIR-20-c. */
+  impersonatedCalendar(range: DateRange): Promise<ImpersonationResult<ImpersonatedCalendarRow[]>>;
 }
 
 // =============================================================================================
@@ -310,6 +314,23 @@ export interface ImpersonatedRosterRow {
   memberRole: string; // 'member' | 'org_admin', shown as written
   status: string; // 'pending' | 'approved' | 'rejected', shown as written
   teamNames: string[];
+}
+
+// MIR-20-c — the calendar read under a live session. 01-plan.md § 4.2, ADR-100 decision 8.
+/** The widest range `impersonated_calendar` accepts, inclusive: `p_end - p_start <= 30`. */
+export const IMPERSONATED_CALENDAR_MAX_DAYS = 31;
+
+/** One row of `public.impersonated_calendar()`. */
+export interface ImpersonatedCalendarRow {
+  entryId: string;
+  memberId: string;
+  displayName: string;
+  type: string; // 'pto' | 'wfh', as written
+  portion: string; // 'full' | 'am' | 'pm', as written
+  startDate: string; // yyyy-MM-dd
+  endDate: string; // yyyy-MM-dd, inclusive
+  tentative: boolean;
+  status: string; // 'pending' | 'approved', as written
 }
 
 export type ImpersonationFailureCode =
@@ -668,7 +689,47 @@ const supabaseSystemSeam: SystemSeam = {
       return impersonationRefusal("network");
     }
   },
+
+  async impersonatedCalendar(range) {
+    try {
+      const { data, error } = await client().rpc("impersonated_calendar", {
+        p_start: range.start,
+        p_end: range.end,
+      });
+      if (error) return impersonationRefusal(impersonationFailureCode(error));
+      return { ok: true, value: ((data ?? []) as CalendarRpcRow[]).map(toCalendarRow) };
+    } catch {
+      return impersonationRefusal("network");
+    }
+  },
 };
+
+/** A row of `impersonated_calendar()` as PostgREST returns it. */
+interface CalendarRpcRow {
+  entry_id: string;
+  member_id: string;
+  display_name: string;
+  type: string;
+  portion: string;
+  start_date: string;
+  end_date: string;
+  tentative: boolean;
+  status: string;
+}
+
+function toCalendarRow(row: CalendarRpcRow): ImpersonatedCalendarRow {
+  return {
+    entryId: row.entry_id,
+    memberId: row.member_id,
+    displayName: row.display_name,
+    type: row.type,
+    portion: row.portion,
+    startDate: row.start_date,
+    endDate: row.end_date,
+    tentative: row.tentative,
+    status: row.status,
+  };
+}
 
 /** A row of `current_impersonation()` as PostgREST returns it. */
 interface ImpersonationRpcRow {
@@ -1105,6 +1166,29 @@ const mockRosters = new Map<string, ImpersonatedRosterRow[]>([
   [FIXTURE_OTHER_TEAM.id, [mockRosterRow(FIXTURE_OTHER_TEAM_MEMBER, "member", FIXTURE_OTHER_TEAM.name)]],
 ]);
 
+function mockCalendarRow(entry: Entry, displayName: string): ImpersonatedCalendarRow {
+  return {
+    entryId: entry.id,
+    memberId: entry.memberId,
+    displayName,
+    type: entry.type,
+    portion: entry.portion,
+    startDate: entry.startDate,
+    endDate: entry.endDate,
+    tentative: entry.tentative,
+    status: entry.status,
+  };
+}
+
+// Keyed as mockRosters is: by team id; a dedicated org's key is its own id. Acme Studio has none.
+const mockCalendars = new Map<string, ImpersonatedCalendarRow[]>([
+  [FIXTURE_TEAM.id, [mockCalendarRow(FIXTURE_APPROVED_ENTRY, FIXTURE_APPROVED_MEMBER.displayName)]],
+  [
+    FIXTURE_OTHER_TEAM.id,
+    [mockCalendarRow(FIXTURE_OTHER_TEAM_ENTRY, FIXTURE_OTHER_TEAM_MEMBER.displayName)],
+  ],
+]);
+
 /** The database's `impersonated_org_id()` for the mock: the session, only while the box is open. */
 function mockLiveImpersonation(): Impersonation | null {
   if (!mockImpersonation) return null;
@@ -1373,6 +1457,29 @@ const mockSystemSeam: SystemSeam = {
       value: rows
         .map((row) => ({ ...row, teamNames: [...row.teamNames] }))
         .sort((a, b) => a.displayName.localeCompare(b.displayName, "vi")),
+    };
+  },
+
+  async impersonatedCalendar(range) {
+    // The database's order of refusal: system admin, live session, then the range.
+    if (!mockMaySeeOrgs()) return impersonationRefusal("not_permitted");
+    const live = mockLiveImpersonation();
+    if (!live) return impersonationRefusal("not_permitted");
+    if (!range.start || !range.end || range.end < range.start) return impersonationRefusal("invalid_impersonation");
+    const days = (Date.parse(range.end) - Date.parse(range.start)) / 86_400_000 + 1;
+    if (days > IMPERSONATED_CALENDAR_MAX_DAYS) return impersonationRefusal("invalid_impersonation");
+    const rows = mockCalendars.get(live.teamId ?? live.orgId) ?? [];
+    return {
+      ok: true,
+      value: rows
+        .filter((row) => row.status !== "rejected" && row.startDate <= range.end && row.endDate >= range.start)
+        .map((row) => ({ ...row }))
+        .sort(
+          (a, b) =>
+            (a.startDate < b.startDate ? -1 : a.startDate > b.startDate ? 1 : 0) ||
+            a.displayName.localeCompare(b.displayName, "vi") ||
+            (a.entryId < b.entryId ? -1 : a.entryId > b.entryId ? 1 : 0),
+        ),
     };
   },
 };

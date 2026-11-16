@@ -16,6 +16,7 @@ import {
   systemSeam,
   systemSeamName,
   __setMockIssueReports,
+  type ImpersonatedCalendarRow,
   type ImpersonatedRosterRow,
   type Impersonation,
   type ImpersonationMinutes,
@@ -1197,6 +1198,174 @@ function ImpersonatedRoster({ session, onEnded }: { session: Impersonation; onEn
   );
 }
 
+// MIR-20-c — the calendar read under a live session. 01-plan.md §§ 2b, 4.3.
+const PORTION_LABELS: Record<string, string> = { full: "Full day", am: "Morning", pm: "Afternoon" };
+
+/** `yyyy-MM` stepped by whole months. */
+function stepMonth(month: string, by: number): string {
+  const [y, m] = month.split("-").map(Number) as [number, number];
+  return new Date(Date.UTC(y, m - 1 + by, 1)).toISOString().slice(0, 7);
+}
+
+function ImpersonatedCalendar({ session, onEnded }: { session: Impersonation; onEnded: () => void }): JSX.Element {
+  const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [rows, setRows] = useState<ImpersonatedCalendarRow[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  // Only the latest read may land.
+  const readCounter = useRef(0);
+
+  const load = async () => {
+    readCounter.current += 1;
+    const read = readCounter.current;
+    const [y, m] = month.split("-").map(Number) as [number, number];
+    const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    setError(null);
+    setRows(null);
+    setBusy(true);
+    const result = await systemSeam.impersonatedCalendar({
+      start: `${month}-01`,
+      end: `${month}-${String(last).padStart(2, "0")}`,
+    });
+    if (read !== readCounter.current) return;
+    setBusy(false);
+    if (!result.ok) {
+      // The database ended the session between the banner's last tick and this read.
+      if (result.error.code === "not_permitted") {
+        onEnded();
+        return;
+      }
+      setError(result.error.message);
+      return;
+    }
+    setRows(result.value);
+  };
+
+  // One read on mount and one per month change. Never on a timer: every read is logged.
+  useEffect(() => {
+    void load();
+  }, [session.id, month]);
+
+  const [year, monthNumber] = month.split("-").map(Number) as [number, number];
+  const monthLabel = new Date(Date.UTC(year, monthNumber - 1, 1)).toLocaleString("en-US", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+
+  let body: JSX.Element;
+  if (error) {
+    body = (
+      <div className="flex flex-col items-start gap-2">
+        <p data-testid="system-calendar-error" role="alert" className="text-sm text-danger">
+          {error}
+        </p>
+        <button data-testid="system-calendar-retry" type="button" className={textButtonClass} onClick={() => void load()}>
+          Try again
+        </button>
+      </div>
+    );
+  } else if (rows === null) {
+    body = (
+      <p data-testid="system-calendar-loading" role="status" className="text-ink-3">
+        Loading calendar…
+      </p>
+    );
+  } else if (rows.length === 0) {
+    body = (
+      <p data-testid="system-calendar-empty" className="text-ink-3">
+        Nothing on the calendar this month.
+      </p>
+    );
+  } else {
+    body = (
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm whitespace-nowrap text-ink">
+          <thead>
+            <tr className="border-b border-line">
+              <th className={headerCellClass}>Name</th>
+              <th className={headerCellClass}>Type</th>
+              <th className={headerCellClass}>Portion</th>
+              <th className={headerCellClass}>Dates</th>
+              <th className={headerCellClass}>Status</th>
+              <th className={headerCellClass}>Tentative</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr
+                key={row.entryId}
+                data-testid="system-calendar-row"
+                data-entry-id={row.entryId}
+                className={`border-b border-line last:border-b-0${row.tentative ? " opacity-70" : ""}`}
+              >
+                <td data-testid="system-calendar-name" className="px-3 py-2">
+                  {row.displayName}
+                </td>
+                <td data-testid="system-calendar-type" className="px-3 py-2">
+                  <span
+                    className={`rounded-pill px-2 text-xs font-semibold ${
+                      row.type === "pto" ? "bg-pto text-pto-ink" : "bg-wfh text-wfh-ink"
+                    }${row.tentative ? " border border-dashed" : ""}`}
+                  >
+                    {row.type.toUpperCase()}
+                  </span>
+                </td>
+                <td data-testid="system-calendar-portion" className="px-3 py-2">
+                  {PORTION_LABELS[row.portion] ?? row.portion}
+                </td>
+                <td data-testid="system-calendar-dates" className="px-3 py-2">
+                  {row.startDate === row.endDate ? row.startDate : `${row.startDate} – ${row.endDate}`}
+                </td>
+                <td data-testid="system-calendar-status" className="px-3 py-2">
+                  {row.status}
+                </td>
+                <td data-testid="system-calendar-tentative" className="px-3 py-2">
+                  {row.tentative ? "Tentative" : ""}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  return (
+    <section data-testid="system-calendar" className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-bold text-ink">{`Calendar — ${impersonationLabel(session)}`}</h2>
+        <div className="flex items-center gap-3">
+          <button
+            data-testid="system-calendar-prev"
+            type="button"
+            aria-label="Previous month"
+            className={smallSecondaryButtonClass}
+            disabled={busy}
+            onClick={() => setMonth(stepMonth(month, -1))}
+          >
+            ‹
+          </button>
+          <span data-testid="system-calendar-month" className="font-semibold tabular-nums">
+            {monthLabel}
+          </span>
+          <button
+            data-testid="system-calendar-next"
+            type="button"
+            aria-label="Next month"
+            className={smallSecondaryButtonClass}
+            disabled={busy}
+            onClick={() => setMonth(stepMonth(month, 1))}
+          >
+            ›
+          </button>
+        </div>
+      </div>
+      {body}
+    </section>
+  );
+}
+
 function StartImpersonationForm({
   org,
   onStarted,
@@ -1498,6 +1667,7 @@ function OrgManagement({ email, onSignOut }: { email: string; onSignOut: () => v
     <div data-testid="system-signed-in" className="flex flex-col gap-6">
       {session ? <ImpersonationBanner session={session} now={now} onEnd={() => void endSession()} /> : null}
       {session ? <ImpersonatedRoster key={session.id} session={session} onEnded={() => void refreshSession(true)} /> : null}
+      {session ? <ImpersonatedCalendar key={`calendar-${session.id}`} session={session} onEnded={() => void refreshSession(true)} /> : null}
       {!session && expired ? (
         <p data-testid="system-impersonation-expired" role="status" className="text-sm text-ink-2">
           The impersonation session has ended.
