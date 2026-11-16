@@ -1,6 +1,6 @@
 ---
-doc_version: 12
-last_updated: 2026-10-09
+doc_version: 13
+last_updated: 2026-11-16
 governed_by: [RULE-01, RULE-03, RULE-04, RULE-05, RULE-06, RULE-07, RULE-08, RULE-09, RULE-10, RULE-11, RULE-12, RULE-13, RULE-14, RULE-15, RULE-16, RULE-17]
 ---
 
@@ -81,7 +81,7 @@ this list and the stage ownership table below stay in agreement in both directio
 | PLAN | `tech-lead-design` | registry, standards, `ticket.yaml`, the source tree | `01-plan.md`, `ticket.yaml`; the `glossary_owed` rows in `glossary.md`, which goes in `allowed_paths` (ADR-047) | Sections 1-8 complete; ACs in Given/When/Then each with an ID; `invariants_touched` populated; `size_estimate` and `size` set; `allowed_paths` enumerated; Out-of-scope non-empty; every `glossary_owed` term has a row |
 | READY | `orchestrator`, via `/advance` | `ticket.yaml`, `01-plan.md`, `features.md` | `ticket.yaml`, `backlog.md` | Full DoR, below |
 | IN_PROGRESS | `developer` | the plan first, then the source tree within `allowed_paths` | code, `03-impl-log.md` | typecheck + lint exit 0; every contract item implemented |
-| REVIEW | `tech-lead-review` | plan, impl-log, `git diff` | `04-review.md` | R1-R8, each citing `file:line` |
+| REVIEW | `tech-lead-review` | plan, impl-log, `git diff` | `04-review.md` | R1-R8, each citing `file:line`; R10 as well on a `BUG-nnn` ticket (ADR-101) |
 | REWORK | routed agent | the failing verdict plus its own prior artifact | its own artifact, code | The specific failed checks now pass |
 | ESCALATED | human | everything | anything | A human decides; the ticket does not self-resume |
 | DONE | `orchestrator` | all | `ticket.yaml`, `backlog.md`, `metrics.md` | Full DoD; opens PR (human merges, RULE-09) |
@@ -141,6 +141,7 @@ ADR-019 records this as the cost it is, not as a safeguard.
 | R6 | Permission gating matches plan section 3 |
 | R7 | No invariant violated — reason through each ID in `invariants_touched` (RULE-07) |
 | R8 | No dependency added without an ADR |
+| R10 | **`BUG-nnn` tickets only:** the regression test `01-plan.md` § 2 names exists and passes, and it fails with the diff's non-test paths restored from `origin/main` — both runs cited (ADR-101) |
 
 **An item with no `file:line` citation counts as failed.** Not "counts as unverified" — failed. A
 reviewer that cannot point at a line has not checked anything, and a checklist that accepts assertion
@@ -173,6 +174,14 @@ never prohibited.
   edit — so failing the gate on it deadlocks the ticket. The repo-wide run is DoD item 3 at `/ship`,
   and since ADR-041 it is the only backstop.
 
+**R10 is numbered past R9 on purpose.** ADR-033 accepted an R9, a visual comparison with the
+reference image, which never landed in this table. R10 does not take its number. To check R10, the
+reviewer runs `git checkout origin/main -- <each non-test path in the diff>`, runs the named test and
+expects it to fail, then runs `git checkout HEAD -- <the same paths>` and expects it to pass. The
+`/advance` checkpoint has committed the implementation by then (ADR-048), so `HEAD` is a complete
+copy. `git status --porcelain` must be empty afterwards, or the review is void. A ticket that is not
+`BUG-nnn` records R10 as `n/a`.
+
 R2 is not scoped. A typecheck is whole-program, and a per-file typecheck would report errors the
 build does not have and miss errors it does.
 
@@ -182,6 +191,8 @@ build does not have and miss errors it does.
 |---|---|---|
 | R1, R2, R3, R4, R5 implementable, R8 | `developer` | Yes |
 | R5 impossible as specified | `tech-lead-design` | No |
+| R10, test missing, or it passes on the unfixed code | `developer` | Yes |
+| R10, `01-plan.md` names no regression test | `tech-lead-design` | No |
 | R6 | `tech-lead-design` | No |
 | **R7** | **human, immediately** | ESCALATE (RULE-07) |
 | A lint error outside the diff, reported under R3 | a human, as an `OPS-nnn` chore — **the gate still passes** (ADR-041) | No |
@@ -371,7 +382,7 @@ why the code is right, which is the one thing a review must not be handed.
 
 | State | ARTIFACTS_FOR |
 |---|---|
-| PLAN | `ticket.yaml`, registry, standards, the source tree |
+| PLAN | `ticket.yaml`, registry, standards, the source tree; on a `BUG-nnn` ticket also `00-bug-report.md` (ADR-101) |
 | IN_PROGRESS | `ticket.yaml`, `01-plan.md`, standards |
 | REVIEW | `01-plan.md`, `03-impl-log.md`, `git diff`, registry |
 
@@ -390,6 +401,11 @@ Sections: `## READY`, `## BACKLOG`, `## BLOCKED`, `## ARCHIVE (last 20)`.
 
 Ticket ID equals feature ID in the 1:1 case. Splits get `-a`, `-b`. Defects are `BUG-nnn`, chores are
 `OPS-nnn`, decisions are `ADR-nnn`.
+
+**A `BUG-nnn` is issued by `/bug`** (ADR-101), never by `/triage`. It issues no feature ID. Its
+`feature_ids` names the shipped feature whose behaviour is broken, so DoR item 1 holds without a
+registry write. Its record is `00-bug-report.md` beside `ticket.yaml`. From there it runs the
+lifecycle above, unchanged, on `feat/BUG-nnn`, with R10 added at REVIEW.
 
 ## Definition of Ready
 

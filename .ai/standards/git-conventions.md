@@ -1,6 +1,6 @@
 ---
-doc_version: 6
-last_updated: 2026-10-13
+doc_version: 7
+last_updated: 2026-11-16
 governed_by: [RULE-03, RULE-09, RULE-10]
 ---
 
@@ -103,6 +103,13 @@ ticket, never `git add`ed, lost to one switch from `feat/CAL-12` to `main`.
 |---|---|---|---|
 | `/handoff`, as the last step of every `/advance` | `orchestrator` | the ship set as it stands — `/ship` step 4's rule — on `feat/<ID>` | **no** |
 | `/ship` | `orchestrator` | what remains of the ship set: at least `state: DONE`, the board files, the `features.md` row — then the pull request | yes, and it prompts |
+| `/bug` | the session acting as orchestrator | one record per commit — `.ai/board/tickets/<BUG-ID>/**` and its `backlog.md` row — on `ops/record-<first-id>`, cut from `origin/main` | only on option A, and it prompts |
+
+**`/bug` adds a third commit point, before any ticket branch exists** — ADR-101, `PROPOSED`. A
+record is not a ticket's work, so it goes on an `ops/` branch, and `check-allowed-paths.mjs`
+correctly checks nothing there. Its fix still runs on `feat/BUG-nnn`, which `/plan` creates. If
+the operator picks A, the branch is pushed and becomes a records-only pull request. That is the
+operator's instruction, under § *The second exception* below.
 
 **A checkpoint is not an assertion that the gates passed.** It runs after FAIL and BLOCKED too,
 because a failed stage's artifact is the record of why. The pull request, not a commit, is what

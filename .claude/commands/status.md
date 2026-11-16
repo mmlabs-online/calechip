@@ -56,6 +56,11 @@ not from the presence of an artifact file.
 - any unanswered question in a `99-questions.md` — a block with a `Q.` and no `A.`
 - any 🟡 in a story
 - any registry paste outstanding, per the session log in `.ai/steward/context.md`
+- any `BUG-nnn` whose `00-bug-report.md` says `severity: S1` while its row is not the first
+  non-`DONE` row of `## BACKLOG`. `/bug` appends and never places, so moving it up is yours
+  (ADR-101)
+- any `ops/record-*` branch, local or on `origin`, with no open pull request: bugs recorded and
+  neither fixed nor sent for merge. Name the branch and the IDs it holds
 
 **Empty is a valid and good answer.** Do not manufacture entries to make the section look
 substantial. "Nothing is waiting on you" is a real result and the one the loop is supposed to produce.

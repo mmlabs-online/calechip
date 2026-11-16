@@ -81,6 +81,22 @@ exactly one of its two lines**; `invariants_touched` populated; `size_estimate` 
 `allowed_paths` enumerated; Out-of-scope non-empty; **every term in `glossary_owed` has a row in
 `.ai/registry/glossary.md`, and that path is in `allowed_paths`** — `[]` or an absent field passes.
 
+## A `BUG-nnn` ticket — ADR-101
+
+The ticket was recorded by `/bug`, not by `/triage`. **Read `00-bug-report.md` beside
+`ticket.yaml` before section 1.** It holds the report, steps, expected and actual, and the root cause,
+marked confirmed, suspected or unknown. A suspected or unknown cause is yours to settle before § 4.
+Do not treat it as settled.
+
+**§ 2 carries a regression criterion, and the gate fails without one.** It names the test file and
+the test, at the level the defect is visible to (`.ai/standards/testing-standards.md`). It says the
+test fails on `origin/main` and passes after the change. Put the test file in `allowed_paths`.
+Review check R10 reads this criterion. If it is missing, R10 routes back to you, and RULE-08 keeps it
+off the developer's rework count.
+
+The report's *Open questions* are decisions the fix would make about behaviour, permissions or an
+invariant. Take them as any PLAN decision is taken: under ADR-067, or with an ADR.
+
 ## Glossary terms owed by triage — ADR-047
 
 Read `glossary_owed` in `ticket.yaml`. `/triage` names the terms and deliberately writes no row,

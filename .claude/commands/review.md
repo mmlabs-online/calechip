@@ -43,6 +43,14 @@ the implementation before you run, so `git diff` alone is empty — read the bra
 
 **Gate:** R1 through R8, each citing `file:line`. An item with no citation counts as failed.
 
+**On a `BUG-nnn` ticket, R10 as well** (ADR-101). R10 checks that the regression test named in
+`01-plan.md` § 2 passes on the branch, and fails with the diff's non-test paths restored from
+`origin/main`. Run it the way § *Review checklist* in `.ai/01-operating-model.md` says, and cite
+both runs. Leave the tree as clean as you found it. Route a failure by the failure routing table:
+a missing test, or one that passes on the unfixed code, goes to `developer`; no regression test in
+the plan goes to `tech-lead-design`. A fix that cannot show its test failing before it is not a
+PASS, however good the diff.
+
 **Fill the five routing fields in the front-matter, every time, including on a PASS.** `verdict`,
 `failed_checks`, `invariant_violation`, `route_to`, `increments_rework` — the valid combinations are
 tabulated in `.ai/templates/review-report.md`. `/advance` and `scripts/run-loop.mjs` route on

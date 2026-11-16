@@ -59,6 +59,13 @@ review lost R1–R3 (run 20261023-065554).
 Check the branch first. `guard-allowed-paths.mjs` resolves the ticket from `feat/<ID>`, so work done
 on another branch name runs with the path guard inactive.
 
+**On a `BUG-nnn` ticket, write the regression test first** (ADR-101). Write the test `01-plan.md`
+§ 2 names, run it against the unfixed code, and record the run in `03-impl-log.md` under
+`## Regression test`: the command, the exit code and the failing assertion. Then fix, run it again,
+and record the pass beside it. A test that passes before the fix does not reproduce the defect.
+Say so under *Open questions*, and do not ship it as the regression test. Review check R10 re-runs
+both halves.
+
 The Developer may consult `tech-lead-design` by writing
 `.ai/board/tickets/$ARGUMENTS/99-questions.md` with `to:` naming the agent. It may not address
 `tech-lead-review` or `qa` before their verdicts exist — `chat-guard.mjs` blocks that write
