@@ -1,6 +1,6 @@
 ---
-doc_version: 6
-last_updated: 2026-10-09
+doc_version: 7
+last_updated: 2026-11-16
 governed_by: [RULE-02, RULE-03, RULE-04, RULE-07, RULE-08, RULE-12, RULE-13, RULE-16]
 ---
 
@@ -48,6 +48,7 @@ increments_rework: false   # RULE-08: true only for a Developer-caused failure
 | R6 | Permission gating matches plan section 3 | PASS / FAIL | `file:line` |
 | R7 | No invariant violated (RULE-07) | PASS / FAIL | `file:line` |
 | R8 | No dependency added without an ADR | PASS / FAIL | `file:line` |
+| R10 | `BUG-nnn` only: the regression test `01-plan.md` § 2 names passes, and fails with the diff's non-test paths restored from `origin/main` (ADR-101). `n/a` on any other ticket | PASS / FAIL / n/a | both test runs, command and result |
 
 ## R5 detail
 

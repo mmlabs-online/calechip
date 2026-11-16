@@ -1,6 +1,6 @@
 ---
-doc_version: 1
-last_updated: 2026-09-01
+doc_version: 2
+last_updated: 2026-11-16
 governed_by: [RULE-03, RULE-04, RULE-08, RULE-15, RULE-16]
 ---
 
@@ -96,6 +96,16 @@ Commands actually executed, with exit codes. Not intentions.
 
 Those are R1 through R5 and R7 run early. Running them here is not duplicated effort — it is the
 difference between one dispatch and three.
+
+## Regression test
+
+**`BUG-nnn` tickets only (ADR-101). Delete this section on any other ticket.** The test `01-plan.md`
+§ 2 names, run twice, in this order. Review check R10 re-runs both.
+
+| Run | Command | Exit | Failing assertion or result |
+|-----|---------|------|-----------------------------|
+| before the fix | | non-zero | the line that failed, quoted |
+| after the fix | | 0 | |
 
 ## Testability contract
 

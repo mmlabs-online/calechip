@@ -35,6 +35,9 @@ was denied `git switch -c feat/CICD-08`).
    new idea, use `/idea` then `/triage`.
 2. Read its `state`. `DONE` → stop, nothing to do. `ESCALATED` → stop, it is a human decision.
 3. `git fetch origin --quiet`, then `git status --porcelain --untracked-files=all` must be empty.
+   **One exception, when `/bug` option C started this run** (ADR-101). The tree may then hold this
+   ticket's own `.ai/board/tickets/<ID>/**` and its row in `.ai/board/backlog.md`, uncommitted, on a
+   detached `origin/main`. `/plan` step 0 carries both. Anything else dirty is still a stop.
 4. Be on `feat/<ID>` if it exists (locally or on `origin`). Otherwise be on `main` at `origin/main`
    and leave the branch to `/plan` step 0, which is the only command that may create it.
 

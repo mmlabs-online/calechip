@@ -2928,3 +2928,23 @@ Antigravity with thin shims.
   *"this repository passes its own audit with zero errors"*) are that ADR-068 D9 finding, and fail
   identically on a clean `origin/main` worktree. Every D16 test passes.
 - No registry write. No ticket in flight.
+
+### 2026-11-16 — `/bug`: a defect's intake, and review check R10 (ADR-101, `PROPOSED`)
+
+- **Asked for:** a `/bug` command that records a defect, investigates it read-only and checks for a
+  duplicate first, then asks A (a records-only pull request), B (record another bug) or C (fix the
+  batch through the loop in one pull request). Every fix needs a regression test that fails before
+  the fix. The request came from another session, so ADR-101 is `PROPOSED`, not accepted. The
+  operator accepts or rejects it at the pull request.
+- **Registry write:** one new file, `.ai/registry/decisions/ADR-101-a-defect-is-recorded-by-bug-and-fixed-by-the-loop-with-a-regression-test.md`.
+  No rule, invariant, feature or glossary row changed.
+- **Not built: one pull request for the whole batch under C.** It conflicts with ADR-006, ADR-023,
+  `/plan` as the only creator of `feat/` branches, and RULE-03's CI check, which resolves one ticket
+  per branch. C runs `/run-ticket` per bug and opens one pull request per bug. ADR-101 records the
+  single batch pull request as the operator's open question.
+- **Two numbering facts:** `BUG-nnn` was already the defect ID (§ *ID scheme*), so no new scheme was
+  added. The new review check is **R10**, because ADR-033's accepted R9 never landed and its number
+  stays reserved.
+- **Found, not fixed:** `git-conventions.md` § *The four names* still lists `bugfix/`, although every
+  shipped bug ran on `feat/BUG-nnn`. That is ADR-101's open question 3. `MODEL-OVERVIEW.md` and
+  `README.md` do not list `/bug`; both are derived documents outside the audit.

@@ -101,6 +101,8 @@ view. Details, and the Vui/Gọn density toggle, are in
   merge gate passes — RULE-09, ADR-067. *Until 2026-10-23: "Humans merge … Merging is permanently
   human."* Scope and limits in
   [.ai/standards/git-conventions.md](.ai/standards/git-conventions.md).
+  **`/bug` is the third commit point** (ADR-101, `PROPOSED`). It commits each record on
+  `ops/record-<id>`, and pushes that branch only when the operator picks option A.
 - **One working directory.** Every role is launched in the same folder, and one working tree holds
   one branch — so exactly one ticket is ever in flight, enforced by git rather than by policy
   (ADR-006). **Read `git branch --show-current` and `git status` before the first instruction of a
@@ -222,6 +224,10 @@ at the pull request.
 
 **Outside the loop** — `/solo`, for work where the loop's overhead exceeds its value. It skips every
 stage and every gate, deliberately.
+
+**Defects** — `/bug "<what is wrong>"` records a `BUG-nnn` and asks: A, a record pull request;
+B, record another; C, fix the batch through `/run-ticket`. Every fix carries a regression test,
+checked at R10 (ADR-101).
 
 `/spec` and `/design` are **retired** — ADR-019 merged them into PLAN. **`/qa` is retired too** —
 ADR-022 removed the QA stage outright. Their files are kept, carrying a retirement banner, so
