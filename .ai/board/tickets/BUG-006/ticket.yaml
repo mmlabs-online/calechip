@@ -5,7 +5,7 @@ id: BUG-006
 title: "TSK-01 AC-13 to AC-15 e2e test fails intermittently under a two-worker run: it adds a task before the next day has rendered"
 feature_ids: [TSK-01]
 group: TSK
-state: REVIEW
+state: DONE
 owner: ""
 branch: ""
 size_estimate: "S"    # S|M - set by tech-lead-design at PLAN; gates DoR. 01-plan.md section 1.
