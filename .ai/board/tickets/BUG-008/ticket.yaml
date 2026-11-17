@@ -5,7 +5,7 @@ id: BUG-008
 title: "UIE-10 AC-3 e2e test fails intermittently: returnToCalendar checks for shell-week, then the /week redirect renames it to week-week before the click"
 feature_ids: [UIE-10]
 group: UIE
-state: REVIEW
+state: DONE
 owner: ""
 branch: ""
 size_estimate: S      # S|M - set by tech-lead-design at PLAN; gates DoR
