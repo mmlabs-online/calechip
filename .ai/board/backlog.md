@@ -23,13 +23,21 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
 
-**`BUG-008` shipped on 2026-11-17, `state: DONE`.** Test-only fix; `features.md` row `UIE-10` already `DONE`, unchanged. Moved to `## ARCHIVE`, whose oldest row (MIR-17-b) left the rolling twenty.
+**`BUG-008` shipped on 2026-11-17, `state: DONE`.** Test-only fix; `features.md` row `UIE-10` already `DONE`, unchanged. Moved to `## ARCHIVE`, whose oldest row (MIR-17-c) left the rolling twenty.
 
 **`BUG-008` was at `REVIEW` in `ticket.yaml`, `gates.review` passed** — recorded at /advance on 2026-11-17 from `04-review.md`: `gate: PASS`, `verdict: PASS`, `invariant_violation: false`, `route_to: none`. `state` stays `REVIEW` until /ship.
 
 **`BUG-008` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-17 from `03-impl-log.md` gate PASS; its row left this table.
 
 **`BUG-008` moved here at /advance on 2026-11-17**, from `01-plan.md` gate PASS (`produced_at: 2026-11-17T03:19:41+00:00`) with all six Definition of Ready items passing; `schema_delta: none`. Run by `/run-ticket BUG-008` under `/bug` option C (ADR-101).
+
+**`BUG-006` shipped on 2026-11-17, `state: DONE`.** Test-only fix; `features.md` row `TSK-01` already `DONE`, unchanged. Moved to `## ARCHIVE`, whose oldest row (MIR-17-b) left the rolling twenty.
+
+**`BUG-006` was at `REVIEW` in `ticket.yaml`, `gates.review` passed** — recorded at /advance on 2026-11-17 from `04-review.md`: `gate: PASS`, `verdict: PASS`, `invariant_violation: false`, `route_to: none`. `state` stays `REVIEW` until /ship.
+
+**`BUG-006` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-17 from `03-impl-log.md` gate PASS; its row left this table.
+
+**`BUG-006` moved here at /advance on 2026-11-17**, from `01-plan.md` gate PASS (`produced_at: 2026-11-17T00:59:16Z`) with all six Definition of Ready items passing; `schema_delta: none`, test-only fix. Run by `/run-ticket BUG-006` under `/bug` option C (ADR-101).
 
 **`MIR-20-b` shipped on 2026-11-12, `state: DONE`.** `features.md` row `MIR-20` left `PLANNED`: `MIR-20-c` is still `BACKLOG`. Moved to `## ARCHIVE`, whose oldest row (MIR-17) left the rolling twenty.
 
@@ -1947,25 +1955,25 @@ các tính năng mới và đưa vào backlog"*. The four solo rows registered e
 
 | # | Ticket | Title | Shipped | PR |
 |---|--------|-------|---------|-----|
-| 1 | MIR-17-c | The approval worklist decides per row, per team, from `listEntryOwners` — third slice of the client role-guard work (ADR-090; the rest of P4-2 is MIR-17-d) | 2026-11-09 | PENDING_PR |
-| 2 | MIR-17-d | The seam's `appRole` reads the manager rank from `manages_a_team`, not a single team's role — fourth slice of the client role-guard work (ADR-091; the rest of P4-2 is MIR-17-e) | 2026-11-09 | PENDING_PR |
-| 3 | MIR-17-e | The entry and event affordances ask `mayAdminister` — fifth slice of the client role-guard work (ADR-092; the rest of P4-2 is MIR-17-f) | 2026-11-09 | PENDING_PR |
-| 4 | BUG-003 | The sidebar's week, year and holidays links are commented out, so twenty shipped end-to-end criteria fail | 2026-11-11 | PENDING_PR |
-| 5 | BUG-004 | EVT-09 AC-6, the failed-invitation handoff, fails in CI on both attempts and passes locally | 2026-11-11 | PENDING_PR |
-| 6 | BUG-005 | EVT-02 AC-28 and EVT-10 AC-2/3/4 fail on first attempt under full-suite load and pass on retry | 2026-11-11 | PENDING_PR |
-| 7 | MIR-15-c | A system admin moves a team from Org public to another org from the system panel | 2026-11-11 | PENDING_PR |
-| 8 | MIR-15-d | The mock seam reproduces Org public's team-bound public events, and the seam tests assert it | 2026-11-11 | PENDING_PR |
-| 9 | MIR-17-f | MemberList's controls are scoped per team, the team picker is re-keyed, and the router gains role guards | 2026-11-11 | PENDING_PR |
-| 10 | MIR-18-c | The system panel is served unindexed at an unguessable path, with rate limiting and failed-login logging on its second factor | 2026-11-11 | PENDING_PR |
-| 11 | MIR-17-g | The router gains role guards, or records why the screens' in-place refusals are the guards | 2026-11-11 | PENDING_PR |
-| 12 | MIR-19 | Every authenticated page is served under `/{org_code}` | 2026-11-11 | PENDING_PR |
-| 13 | MIR-19-b | The e2e specs that assert an in-app link read it through an org-prefix helper | 2026-11-11 | PENDING_PR |
-| 14 | MIR-19-c | The e2e specs that walk history to an exact pathname read it through the org-prefix helper | 2026-11-12 | PENDING_PR |
-| 15 | MIR-19-d | The root addresses send a member to their org | 2026-11-12 | PENDING_PR |
-| 16 | MIR-19-e | Email links carry the org, nginx drops $uri/, and the panel's mock reserved list gains tasks | 2026-11-12 | PENDING_PR |
-| 17 | MIR-19-f | A sign-up at /{org_code}/signup lands in that org | 2026-11-12 | PENDING_PR |
-| 18 | MIR-20 | system_admin impersonation is read-only, time-boxed, reasoned and logged, and visible to the org it touched | 2026-11-12 | PENDING_PR |
-| 19 | MIR-20-b | Every impersonation is visible to the org it touched: the touched org's org_admin, and for an Org public team its manager, read the log | 2026-11-12 | PENDING_PR |
+| 1 | MIR-17-d | The seam's `appRole` reads the manager rank from `manages_a_team`, not a single team's role — fourth slice of the client role-guard work (ADR-091; the rest of P4-2 is MIR-17-e) | 2026-11-09 | PENDING_PR |
+| 2 | MIR-17-e | The entry and event affordances ask `mayAdminister` — fifth slice of the client role-guard work (ADR-092; the rest of P4-2 is MIR-17-f) | 2026-11-09 | PENDING_PR |
+| 3 | BUG-003 | The sidebar's week, year and holidays links are commented out, so twenty shipped end-to-end criteria fail | 2026-11-11 | PENDING_PR |
+| 4 | BUG-004 | EVT-09 AC-6, the failed-invitation handoff, fails in CI on both attempts and passes locally | 2026-11-11 | PENDING_PR |
+| 5 | BUG-005 | EVT-02 AC-28 and EVT-10 AC-2/3/4 fail on first attempt under full-suite load and pass on retry | 2026-11-11 | PENDING_PR |
+| 6 | MIR-15-c | A system admin moves a team from Org public to another org from the system panel | 2026-11-11 | PENDING_PR |
+| 7 | MIR-15-d | The mock seam reproduces Org public's team-bound public events, and the seam tests assert it | 2026-11-11 | PENDING_PR |
+| 8 | MIR-17-f | MemberList's controls are scoped per team, the team picker is re-keyed, and the router gains role guards | 2026-11-11 | PENDING_PR |
+| 9 | MIR-18-c | The system panel is served unindexed at an unguessable path, with rate limiting and failed-login logging on its second factor | 2026-11-11 | PENDING_PR |
+| 10 | MIR-17-g | The router gains role guards, or records why the screens' in-place refusals are the guards | 2026-11-11 | PENDING_PR |
+| 11 | MIR-19 | Every authenticated page is served under `/{org_code}` | 2026-11-11 | PENDING_PR |
+| 12 | MIR-19-b | The e2e specs that assert an in-app link read it through an org-prefix helper | 2026-11-11 | PENDING_PR |
+| 13 | MIR-19-c | The e2e specs that walk history to an exact pathname read it through the org-prefix helper | 2026-11-12 | PENDING_PR |
+| 14 | MIR-19-d | The root addresses send a member to their org | 2026-11-12 | PENDING_PR |
+| 15 | MIR-19-e | Email links carry the org, nginx drops $uri/, and the panel's mock reserved list gains tasks | 2026-11-12 | PENDING_PR |
+| 16 | MIR-19-f | A sign-up at /{org_code}/signup lands in that org | 2026-11-12 | PENDING_PR |
+| 17 | MIR-20 | system_admin impersonation is read-only, time-boxed, reasoned and logged, and visible to the org it touched | 2026-11-12 | PENDING_PR |
+| 18 | MIR-20-b | Every impersonation is visible to the org it touched: the touched org's org_admin, and for an Org public team its manager, read the log | 2026-11-12 | PENDING_PR |
+| 19 | BUG-006 | TSK-01 AC-13 to AC-15 e2e test fails intermittently under a two-worker run: it adds a task before the next day has rendered | 2026-11-17 | PENDING_PR |
 | 20 | BUG-008 | UIE-10 AC-3 e2e test fails intermittently: returnToCalendar checks for shell-week, then the /week redirect renames it to week-week before the click | 2026-11-17 | PENDING_PR |
 
 **The window displaced `MIR-21` at MIR-17-e's ship** — *MIR-21, `member.team_id` is dropped once every reader has moved to `membership` — read slice (ADR-077, roster team), shipped 2026-11-05,* PENDING_PR.
