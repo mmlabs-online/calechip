@@ -7,6 +7,7 @@ import { expect, test, type Page } from "@playwright/test";
 // The session survives `page.goto` (the mock stores it in localStorage), so tests address the app by
 // URL, except AC-5 (Back) and AC-6 (pushState), which must not reload. Pathnames are read raw: the
 // subject here is the exact address.
+// BUG-011: AC-5 waits for the settled year address (/shared/year/<yyyy>) before Back.
 
 const PASSWORD = "password123";
 const MEMBER_EMAIL = "thanh@example.com";
@@ -87,8 +88,12 @@ test.describe("MIR-19-d the root addresses send a member to their org", () => {
     await expect(page.getByTestId("month-grid")).toBeVisible();
     await expect.poll(pathnameOf(page)).toBe("/shared/month/2026-10");
 
+    await expect(page.getByTestId("home-year-link")).toHaveAttribute("href", "/shared/year");
     await page.getByTestId("home-year-link").click();
-    await expect.poll(pathnameOf(page)).toBe("/shared/year");
+    // BUG-011. `/shared/year` is replaced by `/shared/year/<yyyy>` at once (YearOverview's
+    // <Navigate replace>); wait for the settled screen so Back is pressed after the redirect, not during.
+    await expect(page.getByTestId("year-overview")).toBeVisible();
+    await expect.poll(pathnameOf(page)).toMatch(/^\/shared\/year\/\d{4}$/);
 
     await page.goBack();
     await expect.poll(pathnameOf(page)).toBe("/shared/month/2026-10");

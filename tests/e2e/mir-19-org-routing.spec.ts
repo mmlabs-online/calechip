@@ -8,6 +8,7 @@ import { expect, test, type Page } from "@playwright/test";
 // and then addresses the application by URL.
 // MIR-19-d: AC-11 now asserts the flip (ADR-097 decision 5.2).
 // MIR-19-f: AC-9's sign-up block now asserts the screen is served at the org address (ADR-099 decision 3).
+// BUG-011: AC-2 reads the year link's href, then waits for the settled year address.
 
 const PASSWORD = "password123";
 const MEMBER_EMAIL = "thanh@example.com";
@@ -41,8 +42,11 @@ test.describe("MIR-19 the org address is served", () => {
     await page.goto("/shared/month/2026-10");
     await expect(page.getByTestId("month-grid")).toBeVisible();
 
+    await expect(page.getByTestId("home-year-link")).toHaveAttribute("href", "/shared/year");
     await page.getByTestId("home-year-link").click();
-    await expect.poll(() => new URL(page.url()).pathname).toBe("/shared/year");
+    // BUG-011. The link is `/shared/year`; the settled address is `/shared/year/<yyyy>`.
+    await expect(page.getByTestId("year-overview")).toBeVisible();
+    await expect.poll(() => new URL(page.url()).pathname).toMatch(/^\/shared\/year\/\d{4}$/);
 
     await page.getByTestId("shell-brand-logo").click();
     await expect.poll(() => new URL(page.url()).pathname).toBe("/shared");
