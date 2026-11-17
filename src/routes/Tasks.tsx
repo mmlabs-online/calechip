@@ -633,7 +633,14 @@ export default function Tasks(): JSX.Element {
   }
   const ticker = tickerRef.current;
 
+  // BUG-013. Numbers each load; only the latest may write `state`. A slower, older read — of a day the
+  // member has already left, or of the same day before a reload — is dropped, as WeekView, MonthView
+  // and YearView already do (`loadSeq`).
+  const loadSeq = useRef(0);
+
   const load = useCallback(async (): Promise<void> => {
+    const seq = ++loadSeq.current;
+    const stale = (): boolean => seq !== loadSeq.current;
     // TSK-05 AC-6. A tick that ends while this load is out wins over what the load read.
     const mark = ticker.mark();
     try {
@@ -643,6 +650,7 @@ export default function Tasks(): JSX.Element {
         seam.listTasks(weekStart, weekEnd),
         isToday ? seam.listOverdueTasks(today) : Promise.resolve([]),
       ]);
+      if (stale()) return;
       const reconciled = week.map((t) => ticker.reconcile(t, mark));
       setState({
         phase: "ready",
@@ -652,6 +660,7 @@ export default function Tasks(): JSX.Element {
         overdue: overdue.map((t) => ticker.reconcile(t, mark)),
       });
     } catch {
+      if (stale()) return;
       setState({ phase: "failed" });
     }
   }, [day, weekStart, weekEnd, isToday, today, ticker]);
