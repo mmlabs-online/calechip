@@ -132,6 +132,11 @@ async function signInAt(
   await expect(page.getByTestId("shell-sidebar")).toBeVisible();
 }
 
+/** BUG-008. A week address after the anchorless `/week` has redirected (`WeekView.tsx:632`). */
+const SETTLED_WEEK = /\/week\/\d{4}-\d{2}-\d{2}$/;
+/** BUG-008. The anchorless week address, with or without the org segment (`/shared/week`, MIR-19). */
+const BARE_WEEK = /^(\/[^/]+)?\/week$/;
+
 /**
  * SOLO 2026-09-11. Stand on the calendar, pressing the way back only when off a period screen.
  * *Until 2026-10-19: "pressing the top-bar control only if it is currently showing its `Calendar`
@@ -145,11 +150,17 @@ async function signInAt(
 async function returnToCalendar(page: Page): Promise<void> {
   // AMENDED 2026-10-19. The control no longer has a `Calendar` face; the period group is drawn on
   // every shell screen, so off a period screen its Week segment (`shell-week`) is the way back.
-  const back = page.getByTestId("shell-week");
-  if ((await back.count()) > 0) {
-    await back.click();
-    await expect(page).toHaveURL(/\/week\/\d{4}-\d{2}-\d{2}$/);
+  //
+  // BUG-008, 2026-11-17. *Until 2026-11-17: "`count()` on `shell-week`, then `click()` if it was
+  // there."* That was a check followed by a separate action: on the anchorless `/week` the redirect
+  // (`WeekView.tsx:632`) renames the segment to `week-week` between the two, and `click()` waited
+  // out its timeout for a node that never came back. The decision is now made from the URL path
+  // alone, and the wait is an auto-retrying URL assertion, so there is nothing to race.
+  const { pathname } = new URL(page.url());
+  if (!BARE_WEEK.test(pathname) && !SETTLED_WEEK.test(pathname)) {
+    await page.getByTestId("shell-week").click();
   }
+  await expect(page).toHaveURL(SETTLED_WEEK);
   await expect(page.getByTestId("shell-admin-link")).toHaveAttribute("data-state", "admin");
 }
 
