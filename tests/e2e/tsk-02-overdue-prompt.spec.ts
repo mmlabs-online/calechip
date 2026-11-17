@@ -168,6 +168,35 @@ test.describe("TSK-02 — the overdue prompt", () => {
     await expect(page.getByTestId("tasks-overdue-count")).toHaveText("2");
   });
 
+  /** BUG-012. Escape is dispatched in the microtask right after the prompt's backdrop is inserted —
+   *  before React's passive effects, which is where `Modal` used to attach its listener. The flag
+   *  proves the key was sent while the prompt was in the DOM, so a pass cannot come from the key
+   *  never being sent. */
+  test("BUG-012, AC-4: Escape pressed the moment the prompt is attached closes it", async ({ page }) => {
+    await twoOverdue(page);
+    await expect(prompt(page)).toBeVisible();
+    await page.getByTestId("overdue-prompt-close").click();
+    await expect(page.getByTestId("overdue-prompt-modal")).toHaveCount(0);
+
+    await page.evaluate(() => {
+      const w = window as unknown as { __escapeAtAttach?: boolean };
+      w.__escapeAtAttach = false;
+      const observer = new MutationObserver(() => {
+        if (!document.querySelector('[data-testid="overdue-prompt-modal"]')) return;
+        observer.disconnect();
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+        w.__escapeAtAttach = true;
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    });
+    await reopen(page);
+
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as { __escapeAtAttach?: boolean }).__escapeAtAttach))
+      .toBe(true);
+    await expect(page.getByTestId("overdue-prompt-modal")).toHaveCount(0);
+  });
+
   test("AC-5: a tick shows at once, stays in place, drops the count, and persists", async ({ page }) => {
     await twoOverdue(page);
 

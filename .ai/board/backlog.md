@@ -22,7 +22,8 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
-| 1 | BUG-012 | TSK-02 AC-4 e2e test fails intermittently: Escape pressed as the overdue prompt appears does not close it | S | — |
+
+**`BUG-012` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-17 from `03-impl-log.md` gate PASS; its row left this table.
 
 **`BUG-012` moved here at /advance on 2026-11-17**, from `01-plan.md` gate PASS (`produced_at: 2026-11-17T12:28:41Z`) with all six Definition of Ready items passing; `schema_delta: none`. Run by `/run-ticket BUG-012` under `/bug` option C (ADR-101).
 
