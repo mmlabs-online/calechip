@@ -60,6 +60,14 @@ const todayTitles = async (page: Page): Promise<string[]> =>
   (await page.getByTestId("tasks-list").getByTestId("task-title").allTextContents()).sort();
 
 const heading = (page: Page) => page.getByTestId("tasks-day-heading");
+
+/** BUG-007, as BUG-006 in tsk-01-tasks.spec.ts. Presses a day arrow and returns only once the page
+ *  shows `day`. The router commits each navigation inside a React transition, so until it does the
+ *  previous day — its arrows and its add form — is still on screen and still takes clicks and typing. */
+async function stepDay(page: Page, arrow: "tasks-prev-day" | "tasks-next-day", day: string): Promise<void> {
+  await page.getByTestId(arrow).click();
+  await expect(heading(page)).toHaveAttribute("data-day", day);
+}
 const prompt = (page: Page) => page.getByTestId("overdue-prompt");
 const promptRow = (page: Page, title: string) =>
   page.getByTestId("overdue-prompt-row").filter({ has: page.getByTestId("overdue-prompt-title").filter({ hasText: title }) });
@@ -80,10 +88,10 @@ async function twoOverdue(page: Page): Promise<void> {
     .click();
   await expect(page.getByTestId("task-row").filter({ hasText: "Finished" })).toHaveAttribute("data-done", "true");
 
-  await page.getByTestId("tasks-next-day").click();
+  await stepDay(page, "tasks-next-day", DAY_2);
   await expect(heading(page)).toHaveAttribute("data-day", DAY_2);
   await addTask(page, "Second");
-  await page.getByTestId("tasks-next-day").click();
+  await stepDay(page, "tasks-next-day", DAY_3);
   await expect(heading(page)).toHaveAttribute("data-day", DAY_3);
   await addTask(page, "For today");
 
@@ -112,7 +120,7 @@ test.describe("TSK-02 — the overdue prompt", () => {
     await addTask(page, "Done already");
     await page.getByTestId("task-done").click();
     await expect(page.getByTestId("task-row")).toHaveAttribute("data-done", "true");
-    await page.getByTestId("tasks-next-day").click();
+    await stepDay(page, "tasks-next-day", DAY_2);
     await addTask(page, "Tomorrow's");
 
     await page.clock.setFixedTime(at(DAY_2));
@@ -173,8 +181,8 @@ test.describe("TSK-02 — the overdue prompt", () => {
     await page.getByTestId("overdue-prompt-dismiss").click();
     await openTasks(page);
     await expect(page.getByTestId("tasks-overdue-count")).toHaveText("1");
-    await page.getByTestId("tasks-prev-day").click();
-    await page.getByTestId("tasks-prev-day").click();
+    await stepDay(page, "tasks-prev-day", DAY_2);
+    await stepDay(page, "tasks-prev-day", DAY_1);
     await expect(heading(page)).toHaveAttribute("data-day", DAY_1);
     await expect(page.getByTestId("task-row").filter({ hasText: "Oldest" })).toHaveAttribute("data-done", "true");
   });
@@ -193,8 +201,8 @@ test.describe("TSK-02 — the overdue prompt", () => {
     await expect(page.getByTestId("tasks-overdue")).toHaveCount(0);
     await expect(page.getByTestId("tasks-list").getByTestId("task-title")).toHaveCount(2);
     await expect(todayTitles(page)).resolves.toEqual(["For today", "Second"]);
-    await page.getByTestId("tasks-prev-day").click();
-    await page.getByTestId("tasks-prev-day").click();
+    await stepDay(page, "tasks-prev-day", DAY_2);
+    await stepDay(page, "tasks-prev-day", DAY_1);
     await expect(heading(page)).toHaveAttribute("data-day", DAY_1);
     await expect(page.getByTestId("task-row").filter({ hasText: "Oldest" })).toHaveAttribute("data-done", "true");
   });
