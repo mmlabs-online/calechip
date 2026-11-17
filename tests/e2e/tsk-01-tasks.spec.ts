@@ -29,6 +29,12 @@ const YESTERDAY = "2030-03-11";
 const TOMORROW = "2030-03-13";
 const DAY_AFTER = "2030-03-14";
 
+/** BUG-013. Two handles the test puts on the page's window to hold one `listTasks` read. */
+type HeldRead = Window & {
+  __bug013Held?: boolean;
+  __bug013Release?: () => Promise<void>;
+};
+
 const at = (day: string): Date => new Date(`${day}T10:00:00+07:00`);
 
 async function fillSignIn(page: Page, email: string): Promise<void> {
@@ -320,5 +326,50 @@ test.describe("TSK-01 — my tasks", () => {
     await page.getByTestId("task-move-save").click();
     await expect(page.getByTestId("tasks-overdue")).toHaveCount(0);
     await expect(page.getByTestId("tasks-list").getByTestId("task-title")).toHaveText(["From the 13th"]);
+  });
+
+  test("AC-2 (BUG-013): a slow read of a day already left does not hold the day on screen on its loader", async ({ page }) => {
+    await signIn(page, MEMBER);
+    await openTasks(page);
+    await stepDay(page, "tasks-next-day", TOMORROW);
+    await expect(page.getByTestId("tasks-empty")).toBeVisible();
+
+    // Hold the next `listTasks` call only, on a promise the test releases, so the resolve order is exact.
+    await page.evaluate(() => {
+      const w = window as HeldRead;
+      const seam = w.__calechipMockSeam as unknown as {
+        listTasks: (...args: unknown[]) => Promise<unknown>;
+      };
+      const original = seam.listTasks;
+      let gate!: () => void;
+      const gated = new Promise<void>((resolve) => {
+        gate = resolve;
+      });
+      let held: Promise<unknown> = Promise.resolve();
+      seam.listTasks = function (this: unknown, ...args: unknown[]) {
+        seam.listTasks = original;
+        w.__bug013Held = true;
+        held = gated.then(() => original.apply(this, args));
+        return held;
+      };
+      w.__bug013Release = async () => {
+        gate();
+        await held.catch(() => undefined);
+        await new Promise((r) => setTimeout(r, 0));
+        await new Promise((r) => requestAnimationFrame(() => r(undefined)));
+      };
+    });
+
+    await stepDay(page, "tasks-next-day", DAY_AFTER);
+    await page.waitForFunction(() => (window as HeldRead).__bug013Held === true);
+    await stepDay(page, "tasks-prev-day", TOMORROW);
+    await expect(page.getByTestId("tasks-empty")).toBeVisible();
+
+    // The stale DAY_AFTER read lands now, after TOMORROW's.
+    await page.evaluate(() => (window as HeldRead).__bug013Release!());
+
+    await expect(heading(page)).toHaveAttribute("data-day", TOMORROW);
+    await expect(page.getByTestId("tasks-page").getByTestId("loader")).toHaveCount(0);
+    await expect(page.getByTestId("tasks-empty")).toHaveText("Nothing planned yet. Add the first task below.");
   });
 });
