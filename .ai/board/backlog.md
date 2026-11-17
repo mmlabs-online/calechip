@@ -22,6 +22,9 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
+| 1 | BUG-013 | The task page can stay on its loader when a slow read of a day the member has already left lands after the read of the new day | S | — |
+
+**`BUG-013` moved here at /advance on 2026-11-17**, from `01-plan.md` gate PASS (`produced_at: 2026-11-17T12:40:10Z`) with all six Definition of Ready items passing; `schema_delta: none`. Run by `/run-ticket BUG-013` under `/bug` option C (ADR-101).
 
 **`BUG-011` shipped on 2026-11-17, `state: DONE`.** Test-only fix; `features.md` row `MIR-19` already `DONE`, unchanged. Moved to `## ARCHIVE`, whose oldest row (BUG-004) left the rolling twenty.
 
