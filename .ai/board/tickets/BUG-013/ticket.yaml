@@ -5,7 +5,7 @@ id: BUG-013
 title: "The task page can stay on its loader when a slow read of a day the member has already left lands after the read of the new day"
 feature_ids: [TSK-01]
 group: TSK
-state: REVIEW
+state: DONE
 owner: ""
 branch: ""
 size_estimate: "S"    # S|M - set by tech-lead-design at PLAN; gates DoR
