@@ -12,7 +12,7 @@
 // successful write should dismiss the dialog is the caller's decision — the create routes keep it
 // open so a second run of days can be declared without reopening, which is the behaviour the entry
 // form's `afterSubmit: "clear"` has had since CAL-01.
-import { useEffect, type JSX, type ReactNode } from "react";
+import { useLayoutEffect, type JSX, type ReactNode } from "react";
 
 export interface ModalProps {
   /** The selector family of whatever is inside — `new-entry` or `month-entry`. The close control is
@@ -27,7 +27,13 @@ export interface ModalProps {
 export default function Modal({ testIdPrefix, label, onClose, children }: ModalProps): JSX.Element {
   // Escape closes. Bound on the document rather than on the card, so it works before anything inside
   // has taken focus.
-  useEffect(() => {
+  //
+  // **A LAYOUT EFFECT, NOT A PASSIVE ONE** — BUG-012. A dialog opened from a promise (the overdue
+  // prompt opens when `listOverdueTasks` answers) has its passive effects run in a later task,
+  // after paint. Until then the dialog was on screen with no listener, and an Escape pressed in that
+  // gap was lost. A layout effect runs in the same task that inserts the backdrop, so nothing outside
+  // React ever sees the dialog without its listener.
+  useLayoutEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
       if (event.key === "Escape") onClose();
     };
