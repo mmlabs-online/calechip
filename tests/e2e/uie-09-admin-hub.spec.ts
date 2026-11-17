@@ -56,6 +56,8 @@ const DESTINATIONS: readonly {
   testId: string;
   path: string;
   landmarks: readonly [string, ...string[]];
+  /** The address the screen settles on, when it is not `path` itself. Absent means `path$`. */
+  settledPath?: RegExp;
 }[] = [
   {
     testId: "admin-hub-pending-link",
@@ -98,6 +100,8 @@ const DESTINATIONS: readonly {
     testId: "admin-hub-holidays-link",
     path: "/holidays",
     landmarks: ["holidays-year"],
+    // ADM-02 AC-9: `/holidays` redirects to `/holidays/<yyyy>` (src/routes/Holidays.tsx:223). BUG-009.
+    settledPath: /\/holidays\/\d{4}$/,
   },
   {
     testId: "admin-hub-teams-link",
@@ -250,11 +254,15 @@ test.describe("UIE-09 — the admin hub", () => {
 
     for (const destination of DESTINATIONS) {
       await page.getByTestId(destination.testId).click();
-      await expect(page).toHaveURL(new RegExp(`${destination.path}$`));
 
       // The screen at the far end renders exactly as it does today — asserted by an id that belongs
       // to that screen's own ticket and that this one never touches.
       await expect(landmarkOf(page, destination.landmarks)).toBeVisible();
+
+      // BUG-009: the landmark comes FIRST and the URL second, so the URL read is the address the screen
+      // settled on and never a transient one. Reading it before the render let a redirect race the
+      // assertion — `/holidays` is replaced by `/holidays/<yyyy>` (ADM-02 AC-9) the moment it mounts.
+      await expect(page).toHaveURL(destination.settledPath ?? new RegExp(`${destination.path}$`));
 
       // **BACK TO THE HUB THROUGH THE CONTROL, WHICH IS NOW TWO PRESSES OF IT AND NOT ONE.** SOLO
       // 2026-09-11: standing on a destination the control is the way back to the CALENDAR, so the
