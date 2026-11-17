@@ -5,7 +5,7 @@ id: BUG-011
 title: "MIR-19-d AC-5 e2e test fails intermittently: it polls for /shared/year, which the year page replaces with /shared/year/<year> at once"
 feature_ids: [MIR-19]
 group: MIR
-state: REVIEW
+state: DONE
 owner: ""
 branch: ""
 size_estimate: S      # S|M - set by tech-lead-design at PLAN; gates DoR
