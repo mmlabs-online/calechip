@@ -22,7 +22,8 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
-| 1 | BUG-008 | UIE-10 AC-3 e2e test fails intermittently: returnToCalendar checks for shell-week, then the /week redirect renames it to week-week before the click | S | — |
+
+**`BUG-008` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-17 from `03-impl-log.md` gate PASS; its row left this table.
 
 **`BUG-008` moved here at /advance on 2026-11-17**, from `01-plan.md` gate PASS (`produced_at: 2026-11-17T03:19:41+00:00`) with all six Definition of Ready items passing; `schema_delta: none`. Run by `/run-ticket BUG-008` under `/bug` option C (ADR-101).
 
