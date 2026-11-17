@@ -22,6 +22,9 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
+| 1 | BUG-011 | MIR-19-d AC-5 e2e test fails intermittently: it polls for /shared/year, which the year page replaces with /shared/year/<year> at once | S | — |
+
+**`BUG-011` moved here at /advance on 2026-11-17**, from `01-plan.md` gate PASS (`produced_at: 2026-11-17T04:26:49Z`) with all six Definition of Ready items passing; `schema_delta: none`. Run by `/run-ticket BUG-011` under `/bug` option C (ADR-101).
 
 **`MIR-20-b` shipped on 2026-11-12, `state: DONE`.** `features.md` row `MIR-20` left `PLANNED`: `MIR-20-c` is still `BACKLOG`. Moved to `## ARCHIVE`, whose oldest row (MIR-17) left the rolling twenty.
 
