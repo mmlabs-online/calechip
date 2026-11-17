@@ -308,6 +308,7 @@ One row per escalation, kept separately because they halt rather than queue.
 | ts | ticket | invariant or check | decided by | outcome |
 |----|--------|--------------------|------------|---------|
 | 2026-11-17T09:11:51Z | BUG-011 | DoD 1–5 (gates plan + review; allowed-paths PASS; typecheck, lint, test 1227 passed, build exit 0; no invariant violation; impl-log complete) | orchestrator (/ship via /run-ticket, /bug option C) | DONE, PR opened |
+| 2026-11-17T04:24:06Z | BUG-010 | DoD 1–5 (gates plan + review; allowed-paths PASS; typecheck, lint, test 1227 passed, build exit 0; no invariant violation; impl-log complete) | orchestrator (/ship via /run-ticket, /bug option C) | DONE, PR opened |
 | 2026-11-17T04:05:22Z | BUG-009 | DoD 1–5 (gates plan + review; allowed-paths PASS; typecheck, lint, test 1227 passed, build exit 0; no invariant violation; impl-log complete) | orchestrator (/ship via /run-ticket, /bug option C) | DONE, PR opened |
 | 2026-11-17T03:43:52Z | BUG-008 | DoD 1–5 (gates plan + review; allowed-paths PASS; typecheck, lint, test 1227 passed, build exit 0; no invariant violation; impl-log complete) | orchestrator (/ship via /run-ticket, /bug option C) | DONE, PR opened |
 | 2026-11-17T03:17:57Z | BUG-007 | DoD 1–5 (gates plan + review; allowed-paths PASS; typecheck, lint, test 1227 passed, build exit 0; no invariant violation; impl-log complete) | orchestrator (/ship via /run-ticket, /bug option C) | DONE, PR opened |

@@ -121,6 +121,10 @@ test.describe("EVT-07 — guest registration", () => {
 
     // AC-3. Coming back to the guest page shows the form, not the link.
     await navigate(page, "/");
+    // BUG-010. <BrowserRouter> applies each history change in a transition. A second navigation
+    // before `/` has rendered merges with the first, the guest page is never left, and the receipt
+    // stays on screen. Wait for `/` (signed out: the sign-in screen) before going back.
+    await expect(page.getByTestId("sign-in-submit")).toBeVisible();
     await navigate(page, address);
     await expect(page.getByTestId("guest-register-name")).toBeVisible();
     await expect(page.getByTestId("guest-manage-link")).toHaveCount(0);
@@ -165,6 +169,9 @@ test.describe("EVT-07 — guest registration", () => {
 
     await registerAsGuest(page, "Lan", "lan@example.com");
     await navigate(page, "/");
+    // BUG-010. As in the AC-1 test: let `/` render before going back, or the guest page keeps
+    // showing the registration it just made.
+    await expect(page.getByTestId("sign-in-submit")).toBeVisible();
     await navigate(page, address);
     await page.getByTestId("guest-register-name").fill("Lan again");
     await page.getByTestId("guest-register-email").fill(" LAN@example.com ");
