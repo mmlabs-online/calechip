@@ -22,6 +22,9 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
+| 1 | BUG-009 | UIE-09 AC-4 e2e test fails intermittently: it asserts /holidays, which the page redirects to /holidays/<year> at once | S | — |
+
+**`BUG-009` moved here at /advance on 2026-11-17**, from `01-plan.md` gate PASS (`produced_at: 2026-11-17T03:45:00Z`) with all six Definition of Ready items passing; `schema_delta: none`. Run by `/run-ticket BUG-009` under `/bug` option C (ADR-101).
 
 **`MIR-20-b` shipped on 2026-11-12, `state: DONE`.** `features.md` row `MIR-20` left `PLANNED`: `MIR-20-c` is still `BACKLOG`. Moved to `## ARCHIVE`, whose oldest row (MIR-17) left the rolling twenty.
 
