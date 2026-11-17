@@ -5,7 +5,7 @@ id: BUG-012
 title: "TSK-02 AC-4 e2e test fails intermittently: Escape pressed as the overdue prompt appears does not close it"
 feature_ids: [TSK-02]
 group: TSK
-state: REVIEW
+state: DONE
 owner: ""
 branch: ""
 size_estimate: "S"    # S|M - set by tech-lead-design at PLAN; gates DoR. 01-plan.md section 1.
