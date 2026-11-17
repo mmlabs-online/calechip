@@ -22,7 +22,8 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
-| 1 | BUG-007 | TSK-02 AC-2 e2e test fails intermittently under a two-worker run: it adds a task before the next day has rendered | S | — |
+
+**`BUG-007` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-17 from `03-impl-log.md` gate PASS; its row left this table.
 
 **`BUG-007` moved here at /advance on 2026-11-17**, from `01-plan.md` gate PASS (`produced_at: 2026-11-17T02:10:05Z`) with all six Definition of Ready items passing; `schema_delta: none`. Run by `/run-ticket BUG-007` under `/bug` option C (ADR-101).
 
