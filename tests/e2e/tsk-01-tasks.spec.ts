@@ -64,6 +64,14 @@ const row = (page: Page, title: string) =>
 
 const heading = (page: Page) => page.getByTestId("tasks-day-heading");
 
+/** BUG-006. Presses a day arrow and returns only once the page shows `day`. The router commits each
+ *  navigation inside a React transition, so until it does the previous day — its arrows and its add
+ *  form — is still on screen and still takes clicks and typing. */
+async function stepDay(page: Page, arrow: "tasks-prev-day" | "tasks-next-day", day: string): Promise<void> {
+  await page.getByTestId(arrow).click();
+  await expect(heading(page)).toHaveAttribute("data-day", day);
+}
+
 test.describe("TSK-01 — my tasks", () => {
   test("AC-5: one My tasks link for a member, a manager and an admin, current on /tasks only", async ({ page }) => {
     // Make the teammate a manager, as an admin does, on the same document.
@@ -82,7 +90,7 @@ test.describe("TSK-01 — my tasks", () => {
       await expect(link).not.toHaveAttribute("aria-current", "page");
       await openTasks(page);
       await expect(link).toHaveAttribute("aria-current", "page");
-      await page.getByTestId("tasks-next-day").click();
+      await stepDay(page, "tasks-next-day", TOMORROW);
       await expect(page).toHaveURL(new RegExp(`/tasks/${TOMORROW}$`));
       await expect(link).toHaveAttribute("aria-current", "page");
       await page.getByTestId("home-sign-out").click();
@@ -103,7 +111,7 @@ test.describe("TSK-01 — my tasks", () => {
       await expect(page).toHaveURL(/\/tasks$/);
       await expect(page.getByTestId("tasks-page")).toBeVisible();
       await expect(pill).toHaveAttribute("aria-current", "page");
-      await page.getByTestId("tasks-next-day").click();
+      await stepDay(page, "tasks-next-day", TOMORROW);
       await expect(page).toHaveURL(new RegExp(`/tasks/${TOMORROW}$`));
       await expect(pill).toHaveAttribute("aria-current", "page");
 
@@ -129,14 +137,14 @@ test.describe("TSK-01 — my tasks", () => {
     await expect(page.getByTestId("tasks-today")).toHaveCount(0);
     await expect(page.getByTestId("tasks-empty")).toHaveText("Nothing planned yet. Add the first task below.");
 
-    await page.getByTestId("tasks-prev-day").click();
+    await stepDay(page, "tasks-prev-day", YESTERDAY);
     await expect(page).toHaveURL(new RegExp(`/tasks/${YESTERDAY}$`));
     await expect(heading(page)).toHaveAttribute("data-day", YESTERDAY);
     await expect(page.getByTestId("tasks-empty")).toHaveText("Nothing was planned for this day.");
     await expect(page.getByTestId("tasks-today")).toBeVisible();
 
-    await page.getByTestId("tasks-next-day").click();
-    await page.getByTestId("tasks-next-day").click();
+    await stepDay(page, "tasks-next-day", TODAY);
+    await stepDay(page, "tasks-next-day", TOMORROW);
     await expect(heading(page)).toHaveAttribute("data-day", TOMORROW);
     await expect(page.getByTestId("tasks-empty")).toHaveText("Nothing planned yet. Add the first task below.");
 
@@ -184,14 +192,14 @@ test.describe("TSK-01 — my tasks", () => {
     await expect(titles).toHaveCount(2);
 
     // Not on any other day.
-    await page.getByTestId("tasks-next-day").click();
+    await stepDay(page, "tasks-next-day", TOMORROW);
     await expect(page.getByTestId("tasks-empty")).toBeVisible();
   });
 
   test("AC-7: an earlier day has no add form", async ({ page }) => {
     await signIn(page, MEMBER);
     await openTasks(page);
-    await page.getByTestId("tasks-prev-day").click();
+    await stepDay(page, "tasks-prev-day", YESTERDAY);
     await expect(page.getByTestId("task-add-form")).toHaveCount(0);
     await expect(page.getByTestId("tasks-past-day-note")).toHaveText("Past days take no new tasks.");
   });
@@ -209,8 +217,8 @@ test.describe("TSK-01 — my tasks", () => {
     await expect(page.getByTestId("tasks-list").getByTestId("task-title")).toHaveText(["Alpha", "Beta"]);
 
     // Persists across a reload of the page (a re-read, not a `goto`, which would reset the mock).
-    await page.getByTestId("tasks-next-day").click();
-    await page.getByTestId("tasks-prev-day").click();
+    await stepDay(page, "tasks-next-day", TOMORROW);
+    await stepDay(page, "tasks-prev-day", TODAY);
     await expect(row(page, "Alpha")).toHaveAttribute("data-done", "true");
 
     await row(page, "Alpha").getByTestId("task-done").click();
@@ -252,8 +260,8 @@ test.describe("TSK-01 — my tasks", () => {
     await page.getByTestId("task-move-save").click();
     await expect(page.getByTestId("tasks-empty")).toBeVisible();
 
-    await page.getByTestId("tasks-next-day").click();
-    await page.getByTestId("tasks-next-day").click();
+    await stepDay(page, "tasks-next-day", TOMORROW);
+    await stepDay(page, "tasks-next-day", DAY_AFTER);
     await expect(heading(page)).toHaveAttribute("data-day", DAY_AFTER);
     await expect(row(page, "Movable")).toHaveAttribute("data-done", "true");
     await expect(row(page, "Movable").getByTestId("task-note")).toHaveText("keep me");
@@ -280,7 +288,7 @@ test.describe("TSK-01 — my tasks", () => {
     await signIn(page, MEMBER);
     await openTasks(page);
     await addTask(page, "From the 12th");
-    await page.getByTestId("tasks-next-day").click();
+    await stepDay(page, "tasks-next-day", TOMORROW);
     await addTask(page, "From the 13th");
     await addTask(page, "Done on the 13th");
     await row(page, "Done on the 13th").getByTestId("task-done").click();
@@ -298,7 +306,7 @@ test.describe("TSK-01 — my tasks", () => {
     await expect(overdue.getByTestId("task-date-chip")).toHaveText(["Tue 12 Mar", "Wed 13 Mar"]);
 
     // AC-15. Absent on any other day.
-    await page.getByTestId("tasks-prev-day").click();
+    await stepDay(page, "tasks-prev-day", "2030-03-14");
     await expect(page.getByTestId("tasks-overdue")).toHaveCount(0);
     await page.getByTestId("tasks-today").click();
 
