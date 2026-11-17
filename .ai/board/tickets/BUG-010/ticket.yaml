@@ -5,7 +5,7 @@ id: BUG-010
 title: "EVT-07 guest-registration e2e tests fail intermittently: two back-to-back client navigations merge, so the guest page never remounts and the form never returns"
 feature_ids: [EVT-07]
 group: EVT
-state: READY
+state: REVIEW
 owner: ""
 branch: ""
 size_estimate: S      # S|M - set by tech-lead-design at PLAN; gates DoR. 01-plan.md section 1.

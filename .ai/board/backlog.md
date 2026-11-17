@@ -22,7 +22,8 @@ planned, sized, and safe to build** — the next stage for a row here is IN_PROG
 
 | # | Ticket | Title | Size | Depends on |
 |---|--------|-------|------|------------|
-| 1 | BUG-010 | EVT-07 guest-registration e2e tests fail intermittently: two back-to-back client navigations merge, so the guest page never remounts and the form never returns | S | — |
+
+**`BUG-010` was at `READY` in `ticket.yaml`, moved to `REVIEW`** — recorded at /advance on 2026-11-17 from `03-impl-log.md` gate PASS; its row left this table.
 
 **`BUG-010` moved here at /advance on 2026-11-17**, from `01-plan.md` gate PASS (`produced_at: 2026-11-17T04:07:33+00:00`) with all six Definition of Ready items passing; `schema_delta: none`. Run by `/run-ticket BUG-010` under `/bug` option C (ADR-101).
 
