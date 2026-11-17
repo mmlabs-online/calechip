@@ -5,7 +5,7 @@ id: BUG-009
 title: "UIE-09 AC-4 e2e test fails intermittently: it asserts /holidays, which the page redirects to /holidays/<year> at once"
 feature_ids: [UIE-09]
 group: UIE
-state: REVIEW
+state: DONE
 owner: ""
 branch: ""
 size_estimate: S      # S|M - set by tech-lead-design at PLAN; gates DoR
